@@ -1,0 +1,29 @@
+/* Key detail drawer — right slide-in. Vendored from handoff app.css, scoped .kb.
+ * position:fixed (not absolute) so it overlays the viewport from inside any page. */
+
+.kb .ks-drawer-scrim { position: fixed; inset: 0; background: rgba(8, 10, 14, 0.5); backdrop-filter: blur(2px); z-index: 60; animation: ksfade .15s ease; }
+.kb .ks-drawer { position: fixed; top: 0; right: 0; bottom: 0; width: 460px; max-width: 92vw; z-index: 61; background: var(--bg-2); border-left: 1px solid var(--div-2); box-shadow: -24px 0 60px rgba(0, 0, 0, 0.4); display: flex; flex-direction: column; animation: ksslide .18s ease; }
+@keyframes ksslide { from { transform: translateX(100%); } }
+@keyframes ksfade { from { opacity: 0; } }
+
+.kb .ks-drawer__hd { flex: none; padding: 18px 22px; border-bottom: 1px solid var(--div); position: relative; }
+.kb .ks-drawer__close { position: absolute; top: 16px; right: 18px; color: var(--tx-dim); cursor: pointer; background: none; border: none; padding: 4px; display: flex; }
+.kb .ks-drawer__close:hover { color: var(--tx); }
+.kb .ks-drawer__name { font-family: var(--font-mono); font-size: 16px; font-weight: 600; color: var(--tx); padding-right: 28px; }
+.kb .ks-drawer__tags { display: flex; gap: 8px; margin-top: 12px; }
+
+.kb .ks-drawer__body { flex: 1; min-height: 0; overflow-y: auto; }
+.kb .ks-dsect { padding: 18px 22px; border-bottom: 1px solid var(--div); }
+.kb .ks-dsect__l { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--tx-dim); margin-bottom: 13px; }
+.kb .ks-kv { display: flex; justify-content: space-between; gap: 12px; font-family: var(--font-mono); font-size: 12px; padding: 6px 0; }
+.kb .ks-kv .k { color: var(--tx-dim); }
+.kb .ks-kv .v { color: var(--tx); }
+.kb .ks-code { font-family: var(--font-mono); font-size: 11.5px; color: var(--tx-mut); background: var(--inset); border: 1px solid var(--div); border-radius: 2px; padding: 12px 14px; line-height: 1.7; word-break: break-all; }
+.kb .ks-code .ln { color: var(--tx-dim); margin-right: 12px; user-select: none; }
+.kb .ks-code .hit { color: var(--crit); }
+
+/* "if you promote" explainer — bordered inset box, matches the render */
+.kb .ks-drawer__promote { display: flex; gap: 10px; align-items: flex-start; padding: 13px 14px; background: var(--inset); border: 1px solid var(--div-2); font-size: 12.5px; line-height: 1.55; color: var(--tx-mut); }
+.kb .ks-drawer__promote b { color: var(--tx); font-weight: 600; }
+
+.kb .ks-drawer__foot { flex: none; display: flex; gap: 10px; padding: 14px 22px; border-top: 1px solid var(--div); }

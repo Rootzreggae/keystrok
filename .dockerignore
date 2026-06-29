@@ -1,0 +1,28 @@
+# Build artifacts and deps (reinstalled/rebuilt in the image)
+node_modules
+.next
+out
+
+# Local env / secrets — NEVER bake into an image
+.env
+.env.*
+!.env.example
+
+# Git + VCS
+.git
+.gitignore
+
+# Docs, history, and test fixtures not needed at runtime
+archive
+test-scanner
+test-auth-flow.js
+*.md
+!README.md
+
+# Editor / OS cruft
+.vscode
+.idea
+.DS_Store
+
+# Claude tooling
+.claude

@@ -1,0 +1,70 @@
+# Self-contained Keystrok stack: app + Postgres + a MailHog-style mail catcher.
+#
+#   1. Generate secrets and put them in a local .env (compose reads it):
+#        echo "NEXTAUTH_SECRET=$(openssl rand -base64 32)" >> .env
+#        echo "ENCRYPTION_KEY=$(openssl rand -base64 32)"  >> .env
+#        echo "ALLOWED_EMAILS=you@example.com"             >> .env
+#   2. docker compose up --build
+#   3. App:  http://localhost:3001   Mail UI:  http://localhost:8025
+#
+# Mail catcher is Mailpit — the maintained, multi-arch, MailHog-compatible
+# inbox (same SMTP-on-1025 + web UI idea; works natively on Apple Silicon).
+# All sign-in / waitlist email lands in its web UI; nothing leaves your machine.
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: keystrok
+      POSTGRES_PASSWORD: keystrok
+      POSTGRES_DB: keystrok
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432" # exposed so you can run `prisma studio` from the host
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U keystrok -d keystrok"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  mailpit:
+    image: axllent/mailpit:latest
+    restart: unless-stopped
+    ports:
+      - "8025:8025" # web UI
+      - "1025:1025" # SMTP (also reachable in-network as mailpit:1025)
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      mailpit:
+        condition: service_started
+    environment:
+      DATABASE_URL: postgresql://keystrok:keystrok@db:5432/keystrok
+      NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3001}
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:?set NEXTAUTH_SECRET in .env (openssl rand -base64 32)}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:?set ENCRYPTION_KEY in .env (openssl rand -base64 32)}
+      # Route all mail to the bundled catcher (no auth, plaintext SMTP).
+      EMAIL_TRANSPORT: smtp
+      EMAIL_SERVER_HOST: mailpit
+      EMAIL_SERVER_PORT: "1025"
+      EMAIL_FROM: ${EMAIL_FROM:-Keystrok <no-reply@keystrok.local>}
+      # Invite-only by default; list yourself so you can sign in.
+      ALLOWED_EMAILS: ${ALLOWED_EMAILS:-}
+      ALLOWED_EMAIL_DOMAINS: ${ALLOWED_EMAIL_DOMAINS:-}
+      AUTH_OPEN_REGISTRATION: ${AUTH_OPEN_REGISTRATION:-false}
+      # Internal observability targets are blocked by default; flip if needed.
+      ALLOW_PRIVATE_PLATFORM_URLS: ${ALLOW_PRIVATE_PLATFORM_URLS:-false}
+      PORT: "3000"
+    ports:
+      - "3001:3000"
+
+volumes:
+  pg_data:

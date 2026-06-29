@@ -1,0 +1,51 @@
+/* Home — attention overview. Vendored from the handoff app.css ks-home, scoped .kb. */
+
+.kb .ks-home { width: 100%; margin: 0; padding: clamp(16px, 2vw, 24px) clamp(16px, 2.2vw, 28px) 40px; }
+
+/* stat strip */
+.kb .ks-home__statbar { display: grid; grid-template-columns: repeat(4, 1fr); background: var(--panel); border: 1px solid var(--div-2); margin: 0 0 24px; }
+.kb .ks-home__statcell { padding: 15px 18px; border-right: 1px solid var(--div); }
+.kb .ks-home__statcell:last-child { border-right: none; }
+.kb .ks-stat__n { font-size: 26px; font-weight: 700; color: var(--tx); letter-spacing: -0.02em; line-height: 1; }
+/* semantic hierarchy: actionable stats pop when non-zero; clean (zero) ones recede */
+.kb .ks-stat__n.crit { color: var(--crit); }
+.kb .ks-stat__n.warn { color: var(--high); }
+.kb .ks-stat__n.active { color: var(--a); }
+.kb .ks-stat__n.zero { color: var(--tx-dim); }
+.kb .ks-stat__l { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--tx-dim); margin-top: 8px; }
+
+.kb .ks-home__grid { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 24px; align-items: start; }
+.kb .ks-home__col { display: flex; flex-direction: column; gap: 24px; }
+
+/* reflow on the content width (container), not the viewport */
+@container page (max-width: 820px) { .kb .ks-home__grid { grid-template-columns: minmax(0, 1fr); } }
+@container page (max-width: 520px) { .kb .ks-home__statbar { grid-template-columns: repeat(2, 1fr); } .kb .ks-home__statcell:nth-child(2) { border-right: none; } }
+
+/* action queue */
+.kb .ks-aq { display: flex; flex-direction: column; }
+.kb .ks-aqrow { display: flex; align-items: center; gap: 13px; padding: 13px 18px; border-bottom: 1px solid var(--div); cursor: pointer; transition: background .1s; }
+.kb .ks-aqrow:last-child { border-bottom: none; }
+.kb .ks-aqrow:hover { background: var(--elev); }
+.kb .ks-aqrow__sev { width: 3px; height: 30px; flex: none; }
+.kb .ks-aqrow__main { flex: 1; min-width: 0; }
+.kb .ks-aqrow__name { font-family: var(--font-mono); font-size: 13px; font-weight: 600; color: var(--tx); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.kb .ks-aqrow__meta { font-family: var(--font-mono); font-size: 11px; color: var(--tx-dim); margin-top: 3px; }
+.kb .ks-aqrow__u { font-family: var(--font-mono); font-size: 11.5px; flex: none; text-align: right; }
+.kb .ks-aqrow__cta { flex: none; }
+
+/* in-progress rotation mini */
+.kb .ks-rotmini { padding: 16px 18px; }
+.kb .ks-rotmini__steps { display: flex; gap: 6px; margin: 13px 0; }
+.kb .ks-rotmini__seg { flex: 1; height: 4px; background: var(--inset); }
+.kb .ks-rotmini__seg.done { background: var(--tx-mut); }
+.kb .ks-rotmini__seg.active { background: var(--tx-2); }
+.kb .ks-rotmini__lbl { display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: 11px; color: var(--tx-mut); }
+
+/* recent activity mini */
+.kb .ks-mini { display: flex; flex-direction: column; }
+.kb .ks-minirow { display: flex; align-items: center; gap: 11px; padding: 11px 18px; border-bottom: 1px solid var(--div); font-family: var(--font-mono); font-size: 11.5px; }
+.kb .ks-minirow:last-child { border-bottom: none; }
+.kb .ks-minirow__dot { flex: none; display: inline-flex; align-items: center; color: var(--tx-mut); }
+.kb .ks-minirow__txt { color: var(--tx-mut); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.kb .ks-minirow__txt b { color: var(--tx); font-weight: 600; }
+.kb .ks-minirow__when { color: var(--tx-dim); flex: none; }

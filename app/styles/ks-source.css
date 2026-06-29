@@ -1,0 +1,61 @@
+/* Source-connect wizard — GitHub App install flow. Uses the .ks-drawer shell. */
+
+.kb .ks-wiz { width: 480px; }
+
+/* stepper in the header */
+.kb .ks-wiz__steps { display: flex; align-items: center; gap: 0; padding-right: 34px; }
+.kb .ks-wiz__step { display: flex; align-items: center; gap: 6px; }
+.kb .ks-wiz__sdot { width: 18px; height: 18px; border-radius: 50%; flex: none; display: flex; align-items: center; justify-content: center; font-family: var(--font-mono); font-size: 10px; font-weight: 600; border: 1px solid var(--div-3); color: var(--tx-dim); }
+.kb .ks-wiz__step.active .ks-wiz__sdot { background: var(--a); border-color: var(--a); color: #06251a; }
+.kb .ks-wiz__step.done .ks-wiz__sdot { border-color: var(--a-line); color: var(--a); }
+.kb .ks-wiz__slabel { font-family: var(--font-mono); font-size: 9.5px; letter-spacing: 0.07em; text-transform: uppercase; color: var(--tx-dim); white-space: nowrap; }
+.kb .ks-wiz__step.active .ks-wiz__slabel { color: var(--tx); }
+.kb .ks-wiz__sline { width: 10px; height: 1px; background: var(--div-2); margin: 0 6px; flex: none; }
+
+.kb .ks-wiz__title { font-size: 17px; font-weight: 600; color: var(--tx); letter-spacing: -0.01em; }
+.kb .ks-wiz__sub { font-size: 12.5px; color: var(--tx-mut); line-height: 1.55; margin-top: 9px; margin-bottom: 18px; }
+
+/* provider cards */
+.kb .ks-prov { display: flex; align-items: center; gap: 14px; width: 100%; text-align: left; padding: 14px 15px; background: var(--panel); border: 1px solid var(--div-2); border-radius: 0; margin-bottom: 12px; cursor: pointer; transition: border-color .1s, background .1s; }
+.kb button.ks-prov:hover { border-color: var(--div-3); }
+.kb .ks-prov.sel { border-color: var(--a); background: var(--a-dim); }
+.kb .ks-prov.soon { opacity: 0.55; cursor: default; }
+.kb .ks-prov__icon { width: 40px; height: 40px; border-radius: 2px; background: var(--inset); border: 1px solid var(--div-2); display: flex; align-items: center; justify-content: center; color: var(--tx-2); flex: none; }
+.kb .ks-prov.sel .ks-prov__icon { color: var(--a); border-color: var(--a-line); }
+.kb .ks-prov__main { flex: 1; min-width: 0; }
+.kb .ks-prov__name { font-size: 14px; font-weight: 600; color: var(--tx); }
+.kb .ks-prov__meta { font-family: var(--font-mono); font-size: 11px; color: var(--tx-dim); margin-top: 3px; }
+.kb .ks-prov__badge { flex: none; font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.06em; text-transform: uppercase; padding: 3px 8px; border-radius: 99px; border: 1px solid var(--div-2); color: var(--tx-dim); }
+.kb .ks-prov__badge--rec { color: var(--a); border-color: var(--a-line); background: var(--a-dim); }
+
+/* permissions list (authorize step) */
+.kb .ks-perm { display: flex; gap: 13px; align-items: flex-start; padding: 14px 0; border-bottom: 1px solid var(--div); }
+.kb .ks-perm__icon { color: var(--tx-mut); flex: none; margin-top: 1px; }
+.kb .ks-perm__name { font-size: 13.5px; font-weight: 600; color: var(--tx); display: flex; align-items: center; gap: 9px; }
+.kb .ks-perm__tag { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.06em; text-transform: uppercase; padding: 2px 7px; border-radius: 2px; color: var(--a); border: 1px solid var(--a-line); background: var(--a-dim); }
+.kb .ks-perm__desc { font-size: 12px; color: var(--tx-mut); line-height: 1.5; margin-top: 5px; }
+.kb .ks-perm-neg { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+.kb .ks-perm-neg span { display: inline-flex; align-items: center; gap: 5px; font-family: var(--font-mono); font-size: 10.5px; color: var(--tx-dim); border: 1px solid var(--div-2); border-radius: 99px; padding: 4px 10px; }
+.kb .ks-wiz__note { display: flex; gap: 10px; align-items: flex-start; margin-top: 20px; padding: 13px 14px; background: var(--a-dim); border: 1px solid var(--a-line); font-size: 12px; line-height: 1.55; color: var(--tx-mut); }
+.kb .ks-wiz__note b { color: var(--tx); font-weight: 600; }
+
+/* repositories step */
+.kb .ks-wiz__filterrow { display: flex; gap: 10px; margin-bottom: 14px; }
+.kb .ks-wiz__filter { flex: 1; display: flex; align-items: center; gap: 9px; padding: 8px 12px; background: var(--bg-2); border: 1px solid var(--div-2); border-radius: 2px; }
+.kb .ks-wiz__filter input { flex: 1; background: none; border: none; outline: none; font-family: var(--font-mono); font-size: 12px; color: var(--tx); }
+.kb .ks-wiz__filter input::placeholder { color: var(--tx-dim); }
+.kb .ks-repo { display: flex; align-items: center; gap: 13px; width: 100%; text-align: left; padding: 12px 4px; border-bottom: 1px solid var(--div); background: none; border-left: none; border-right: none; border-top: none; cursor: pointer; }
+.kb .ks-repo__check { width: 18px; height: 18px; border-radius: 2px; border: 1px solid var(--div-3); flex: none; display: flex; align-items: center; justify-content: center; color: #06251a; }
+.kb .ks-repo.on .ks-repo__check { background: var(--a); border-color: var(--a); }
+.kb .ks-repo__main { flex: 1; min-width: 0; }
+.kb .ks-repo__name { font-family: var(--font-mono); font-size: 13px; font-weight: 600; color: var(--tx); display: flex; align-items: center; gap: 9px; }
+.kb .ks-repo__badge { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.05em; text-transform: uppercase; color: var(--tx-dim); border: 1px solid var(--div-2); border-radius: 2px; padding: 1px 6px; font-weight: 400; }
+.kb .ks-repo__meta { font-family: var(--font-mono); font-size: 11px; color: var(--tx-dim); margin-top: 3px; }
+
+/* done step */
+.kb .ks-wiz__check { width: 56px; height: 56px; border-radius: 50%; background: var(--a-dim); border: 1px solid var(--a-line); color: var(--a); display: flex; align-items: center; justify-content: center; margin: 18px auto 22px; }
+.kb .ks-wiz__stats { display: grid; grid-template-columns: repeat(3, 1fr); border: 1px solid var(--div-2); }
+.kb .ks-wiz__stat { padding: 14px 12px; border-right: 1px solid var(--div); text-align: center; }
+.kb .ks-wiz__stat:last-child { border-right: none; }
+.kb .ks-wiz__statn { font-size: 20px; font-weight: 700; color: var(--tx); letter-spacing: -0.01em; }
+.kb .ks-wiz__statl { font-family: var(--font-mono); font-size: 9.5px; letter-spacing: 0.07em; text-transform: uppercase; color: var(--tx-dim); margin-top: 6px; }

@@ -1,0 +1,72 @@
+/* Keystrok primitive components — square per DESIGN_SYSTEM.md §1.
+ * Built on the .kb tokens in ks-tokens.css. Used by components/ks/index.tsx. */
+
+/* Button — primary = green fill, the one proceed action */
+.kb .ks-btn {
+  display: inline-flex; align-items: center; gap: 7px;
+  height: 32px; padding: 0 13px;
+  border-radius: var(--r-ctl); border: 1px solid var(--div-2);
+  background: transparent; color: var(--tx);
+  font-family: var(--font-sans); font-size: 12.5px; font-weight: 500;
+  cursor: pointer; white-space: nowrap;
+  transition: background .12s, border-color .12s, filter .12s;
+}
+.kb .ks-btn:hover { background: rgba(255, 255, 255, .05); border-color: var(--div-3); }
+.kb .ks-btn--primary { background: var(--a); border-color: var(--a); color: #06251a; font-weight: 600; }
+.kb .ks-btn--primary:hover { filter: brightness(1.07); background: var(--a); }
+.kb .ks-btn--ghost { border-color: transparent; color: var(--tx-mut); }
+.kb .ks-btn--ghost:hover { color: var(--tx); background: rgba(255, 255, 255, .04); }
+.kb .ks-btn--sm { height: 27px; padding: 0 10px; font-size: 12px; }
+.kb .ks-btn:disabled { opacity: .5; cursor: not-allowed; }
+
+/* Status pill (mono) */
+.kb .ks-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  height: 22px; padding: 0 9px; border-radius: var(--r-ctl);
+  font-family: var(--font-mono); font-size: 10.5px; letter-spacing: .02em;
+  border: 1px solid var(--div-2); color: var(--tx-mut); white-space: nowrap;
+}
+.kb .ks-pill--crit { color: var(--crit); border-color: var(--crit-line); background: var(--crit-dim); }
+.kb .ks-pill--high { color: var(--high); border-color: var(--high-line); background: var(--high-dim); }
+.kb .ks-pill--a { color: var(--a); border-color: var(--a-line); background: var(--a-dim); }
+
+/* Severity dot */
+.kb .ks-dot { width: 8px; height: 8px; border-radius: var(--r-dot); flex: none; }
+.kb .ks-dot--critical { background: var(--crit); }
+.kb .ks-dot--high { background: var(--high); }
+.kb .ks-dot--medium { background: var(--med); }
+.kb .ks-dot--low { background: var(--low); }
+.kb .ks-dot--ok { background: var(--ok); box-shadow: 0 0 0 3px var(--a-dim); }
+
+/* Platform mark — mono code cell, NEVER coloured (platform identity != colour) */
+.kb .ks-mark {
+  font-family: var(--font-mono); font-size: 9px; letter-spacing: .02em;
+  color: var(--tx-mut); border: 1px solid var(--div-2); border-radius: var(--r-ctl);
+  min-width: 28px; height: 19px; padding: 0 5px; background: var(--inset);
+  display: inline-flex; align-items: center; justify-content: center; flex: none;
+}
+
+/* 3px severity left-tick — the primary at-a-glance severity signal on rows */
+.kb .ks-tick { width: 3px; align-self: stretch; flex: none; background: var(--div-2); }
+.kb .ks-tick--critical { background: var(--crit); }
+.kb .ks-tick--high { background: var(--high); }
+.kb .ks-tick--medium { background: var(--med); }
+.kb .ks-tick--low { background: var(--low); }
+
+/* Panel — filled charcoal, 1px border, radius 0 */
+.kb .ks-panel { background: var(--panel); border: 1px solid var(--div-2); border-radius: var(--r-panel); }
+.kb .ks-panel__hd { display: flex; align-items: center; gap: 10px; padding: 15px 18px; border-bottom: 1px solid var(--div); }
+.kb .ks-panel__t { font-size: 13.5px; font-weight: 600; color: var(--tx); }
+.kb .ks-panel__sub { font-family: var(--font-mono); font-size: 10.5px; color: var(--tx-dim); }
+
+/* Text input */
+.kb .ks-input { height: 32px; padding: 0 11px; background: var(--inset); border: 1px solid var(--div-2); border-radius: var(--r-ctl); color: var(--tx); font-family: var(--font-sans); font-size: 12.5px; outline: none; transition: border-color .12s; width: 100%; }
+.kb .ks-input:focus { border-color: var(--a-line); }
+.kb .ks-input::placeholder { color: var(--tx-dim); }
+
+/* Keycap */
+.kb .ks-kbd {
+  font-family: var(--font-mono); font-size: 10.5px; color: var(--tx-mut);
+  border: 1px solid var(--div-2); border-radius: var(--r-ctl);
+  padding: 2px 6px; background: var(--inset); line-height: 1;
+}

@@ -1,0 +1,57 @@
+/* Rotations — queue + guided stepper. Vendored from handoff app.css, scoped .kb. */
+
+.kb .ks-page--wide { max-width: none; padding: 0; height: 100%; display: flex; flex-direction: column; }
+
+.kb .ks-rot { display: grid; grid-template-columns: 320px minmax(0, 1fr); gap: 0; height: 100%; min-height: 0; }
+.kb .ks-rot__queue { border-right: 1px solid var(--div); display: flex; flex-direction: column; min-height: 0; background: var(--bg-2); }
+.kb .ks-rot__qhd { flex: none; padding: 16px 18px; border-bottom: 1px solid var(--div); }
+.kb .ks-rot__qlist { flex: 1; min-height: 0; overflow-y: auto; }
+.kb .ks-qitem { display: flex; gap: 12px; padding: 14px 18px; border-bottom: 1px solid var(--div); cursor: pointer; transition: background .1s; }
+.kb .ks-qitem:hover { background: var(--elev); }
+.kb .ks-qitem.sel { background: var(--a-dim); box-shadow: inset 2px 0 0 var(--a); }
+.kb .ks-qitem__state { width: 8px; height: 8px; border-radius: 50%; margin-top: 5px; flex: none; background: var(--tx-dim); }
+.kb .ks-qitem__state.active { background: var(--a); box-shadow: 0 0 0 3px var(--a-dim); }
+.kb .ks-qitem__state.ready { background: var(--high); }
+.kb .ks-qitem__state.done { background: var(--tx-dim); }
+.kb .ks-qitem__name { font-family: var(--font-mono); font-size: 12.5px; font-weight: 600; color: var(--tx); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.kb .ks-qitem__meta { font-family: var(--font-mono); font-size: 10.5px; color: var(--tx-dim); margin-top: 4px; }
+
+.kb .ks-h { display: flex; align-items: baseline; gap: 8px; }
+.kb .ks-h__t { font-size: 14px; font-weight: 600; color: var(--tx); }
+.kb .ks-h__n { font-family: var(--font-mono); font-size: 11px; color: var(--tx-dim); }
+
+.kb .ks-rotmain { min-height: 0; overflow-y: auto; padding: 26px 30px; }
+.kb .ks-rotmain__hd { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 8px; }
+.kb .ks-rotmain__name { font-family: var(--font-mono); font-size: 18px; font-weight: 600; color: var(--tx); }
+.kb .ks-rotmain__sub { font-family: var(--font-mono); font-size: 11.5px; color: var(--tx-dim); margin-top: 6px; letter-spacing: 0.02em; }
+
+.kb .ks-stepper { margin-top: 24px; display: flex; flex-direction: column; }
+.kb .ks-step { display: grid; grid-template-columns: 40px minmax(0, 1fr); gap: 16px; padding-bottom: 8px; }
+.kb .ks-step__rail { display: flex; flex-direction: column; align-items: center; }
+.kb .ks-step__num { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: var(--font-mono); font-size: 12px; font-weight: 600; border: 1.5px solid var(--div-2); color: var(--tx-dim); background: var(--bg); flex: none; }
+.kb .ks-step.done .ks-step__num { background: var(--inset); border-color: var(--div-3); color: var(--tx-mut); }
+.kb .ks-step.active .ks-step__num { border-color: var(--a); color: var(--a); box-shadow: 0 0 0 4px var(--a-dim); }
+.kb .ks-step__line { width: 1.5px; flex: 1; background: var(--div-2); margin: 4px 0; min-height: 18px; }
+.kb .ks-step.done .ks-step__line { background: var(--div-3); }
+.kb .ks-step__body { padding-bottom: 22px; }
+.kb .ks-step:not(.active) .ks-step__body { padding-bottom: 15px; }
+.kb .ks-step__t { font-size: 14.5px; font-weight: 600; color: var(--tx); display: flex; align-items: center; gap: 10px; }
+.kb .ks-step.todo .ks-step__t { color: var(--tx-mut); }
+.kb .ks-step__d { font-size: 12.5px; color: var(--tx-mut); margin-top: 7px; line-height: 1.55; max-width: 64ch; }
+.kb .ks-step__actors { margin-top: 13px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 12.5px; color: var(--tx-mut); }
+.kb .ks-actor { flex: none; font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.07em; text-transform: uppercase; padding: 2px 6px; border: 1px solid var(--div-2); border-radius: 2px; }
+.kb .ks-actor--you { color: var(--tx); border-color: var(--div-3); }
+.kb .ks-actor--sys { color: var(--tx-dim); }
+/* Rotations uses rounded status pills (severity + irreversible), unlike the square key tags. */
+.kb .ks-rot .ks-pill { border-radius: 99px; }
+/* advisory rendered as a bordered status box, matching the render's per-step info box */
+.kb .ks-step__adv { display: flex; gap: 10px; align-items: flex-start; margin-top: 14px; padding: 13px 15px; background: var(--inset); border: 1px solid var(--div-2); font-size: 12.5px; line-height: 1.5; color: var(--tx-mut); }
+.kb .ks-step__cta { margin-top: 14px; display: flex; gap: 10px; }
+.kb .ks-step__lockhint { display: flex; align-items: center; gap: 8px; margin-top: 9px; font-family: var(--font-mono); font-size: 11.5px; color: var(--tx-dim); }
+.kb .ks-gate { display: flex; gap: 11px; align-items: flex-start; margin-top: 16px; padding: 13px 15px; background: var(--crit-dim); border: 1px solid var(--crit-line); font-size: 12.5px; line-height: 1.5; color: var(--tx-2); }
+.kb .ks-gate b { color: var(--crit); }
+
+@container page (max-width: 720px) {
+  .kb .ks-rot { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); }
+  .kb .ks-rot__queue { border-right: none; border-bottom: 1px solid var(--div); max-height: 40vh; }
+}

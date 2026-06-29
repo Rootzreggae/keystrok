@@ -1,0 +1,681 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                  String             @id @default(cuid())
+  email               String             @unique
+  emailVerified       DateTime?
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+  image               String?
+  name                String?
+  accounts            Account[]
+  activities          Activity[]
+  auditLogs           AuditLog[]
+  discoveredKeys      DiscoveredKey[]
+  fileScans           FileScan[]
+  keyHashes           KeyHash[]
+  keys                Key[]
+  localFindings       LocalScanFinding[]
+  platforms           Platform[]
+  rotationWorkflows   RotationWorkflow[]
+  scanResults         ScanResult[]
+  scanSessions        ScanSession[]
+  sessions            Session[]
+  sourceConnections   SourceConnection[]
+  assistantProvider   AssistantProvider?
+  waitlistConversions Waitlist[]
+  workflowAuditLogs   WorkflowAuditLog[]
+
+  @@map("users")
+}
+
+// Bring-your-own AI provider for the assistant. One per user (v1). The API key
+// is stored encrypted at rest; the assistant only ever sends key METADATA to it.
+model AssistantProvider {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  type      String // local | anthropic | openai | openai_compat
+  label     String
+  baseUrl   String?
+  model     String
+  apiKeyEnc String? // encrypted; null for a local model with no auth
+  status    String   @default("connected")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("assistant_providers")
+}
+
+// A connected code source (GitHub App installation, later GitLab/Bitbucket).
+// We store the installationId, never a token — installation tokens are minted
+// on demand from the App's private key.
+model SourceConnection {
+  id             String   @id @default(cuid())
+  userId         String
+  provider       String   @default("github") // github | gitlab | bitbucket
+  installationId String // GitHub App installation id
+  accountLogin   String // org/user the app is installed on
+  accountType    String? // User | Organization
+  repoSelection  String   @default("selected") // all | selected
+  status         String   @default("active") // active | suspended | revoked
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, installationId])
+  @@index([userId])
+  @@map("source_connections")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verificationtokens")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Platform {
+  id                String             @id @default(cuid())
+  name              String
+  type              String
+  userId            String
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  apiUrl            String
+  apiKey            String
+  authHeader        String             @default("Authorization")
+  authType          String             @default("bearer")
+  category          String             @default("Other")
+  description       String?
+  testEndpoint      String?
+  discoveredKeys    DiscoveredKey[]
+  keys              Key[]
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rotationWorkflows RotationWorkflow[]
+
+  @@index([userId])
+  @@map("platforms")
+}
+
+model Key {
+  id                String             @id @default(cuid())
+  userId            String
+  platformId        String?
+  platform          String
+  name              String
+  lastFour          String?
+  status            String             @default("healthy")
+  expiresAt         DateTime?
+  lastRotated       DateTime?
+  riskLevel         String?
+  discoveredFrom    String?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  platformRef       Platform?          @relation(fields: [platformId], references: [id])
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rotationWorkflows RotationWorkflow[]
+
+  @@index([userId, status])
+  @@index([expiresAt])
+  @@index([userId, riskLevel])
+  @@map("keys")
+}
+
+model DiscoveredKey {
+  id                String             @id @default(cuid())
+  keyPreview        String
+  platform          String
+  source            String
+  status            String
+  severity          String
+  userId            String
+  platformId        String?
+  foundAt           DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  keyName           String
+  location          String
+  rotatedAt         DateTime?
+  confidence        Float
+  detectionPattern  String
+  environmentType   String?
+  expiresAt         DateTime?
+  fileContext       String?
+  fileScanId        String?
+  ignoredReason     String?
+  isExpired         Boolean            @default(false)
+  isIgnored         Boolean            @default(false)
+  keyHashId         String
+  keyType           String
+  lastVerifiedAt    DateTime?
+  repositoryInfo    String?
+  riskScore         Int
+  userNotes         String?
+  fileScan          FileScan?          @relation(fields: [fileScanId], references: [id])
+  keyHash           KeyHash            @relation(fields: [keyHashId], references: [id])
+  platformRef       Platform?          @relation(fields: [platformId], references: [id])
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rotationWorkflows RotationWorkflow[]
+
+  @@index([userId, status])
+  @@index([keyHashId])
+  @@index([severity, status])
+  @@index([keyType])
+  @@index([source])
+  @@index([foundAt])
+  @@index([userId, keyType, status])
+  @@map("discovered_keys")
+}
+
+model Activity {
+  id          String   @id @default(cuid())
+  action      String
+  description String
+  userId      String
+  createdAt   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("activities")
+}
+
+model ScanResult {
+  id         String   @id @default(cuid())
+  repository String
+  filePath   String
+  lineNumber Int
+  keyPreview String
+  keyType    String
+  pattern    String
+  severity   String
+  confidence Float
+  verified   Boolean  @default(false)
+  platform   String?
+  status     String   @default("active")
+  userId     String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([repository])
+  @@index([severity])
+  @@map("scan_results")
+}
+
+model ScanSession {
+  id             String             @id @default(cuid())
+  name           String
+  scanType       String
+  targetPath     String
+  status         String
+  progress       Float              @default(0)
+  totalFiles     Int                @default(0)
+  scannedFiles   Int                @default(0)
+  findingsCount  Int                @default(0)
+  errorMessage   String?
+  includeHidden  Boolean            @default(false)
+  maxDepth       Int?
+  fileExtensions String[]
+  excludePaths   String[]
+  userId         String
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+  completedAt    DateTime?
+  keyTypes       String[]           @default([])
+  minConfidence  Float?
+  fileScans      FileScan[]
+  findings       LocalScanFinding[]
+  user           User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("scan_sessions")
+}
+
+model LocalScanFinding {
+  id              String      @id @default(cuid())
+  sessionId       String
+  filePath        String
+  relativePath    String
+  fileName        String
+  lineNumber      Int
+  lineContent     String
+  keyPreview      String
+  keyType         String
+  pattern         String
+  patternName     String
+  severity        String
+  confidence      Float
+  riskLevel       String
+  status          String      @default("active")
+  notes           String?
+  fixedAt         DateTime?
+  userId          String
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  afterContext    String[]
+  assignedTo      String?
+  beforeContext   String[]
+  columnEnd       Int?
+  columnStart     Int?
+  detectionRule   String
+  fileScanId      String?
+  isBase64Encoded Boolean     @default(false)
+  isInComment     Boolean     @default(false)
+  isInEnvFile     Boolean     @default(false)
+  isInString      Boolean     @default(false)
+  isLikelyActive  Boolean     @default(true)
+  isValidated     Boolean     @default(false)
+  keyHashId       String?
+  remediationPlan String?
+  riskFactors     String[]
+  rotationStarted DateTime?
+  validationError String?
+  verifiedAt      DateTime?
+  isExampleKey    Boolean     @default(false)
+  isTestKey       Boolean     @default(false)
+  fileScan        FileScan?   @relation(fields: [fileScanId], references: [id])
+  keyHash         KeyHash?    @relation(fields: [keyHashId], references: [id])
+  session         ScanSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([sessionId])
+  @@index([fileScanId])
+  @@index([keyHashId])
+  @@index([severity, status])
+  @@index([keyType])
+  @@index([status, assignedTo])
+  @@index([isLikelyActive])
+  @@index([userId, status, severity])
+  @@index([createdAt])
+  @@map("local_scan_findings")
+}
+
+model RotationWorkflow {
+  id                String         @id @default(cuid())
+  name              String
+  description       String?
+  status            String
+  priority          String         @default("medium")
+  currentStep       Int            @default(1)
+  totalSteps        Int            @default(0)
+  progress          Float          @default(0)
+  keyName           String
+  keyType           String
+  keyPreview        String
+  rotationType      String
+  keyId             String?
+  discoveredKeyId   String?
+  platformId        String?
+  estimatedDuration Int?
+  actualDuration    Int?
+  automationLevel   String         @default("manual")
+  userId            String
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  startedAt         DateTime?
+  completedAt       DateTime?
+  pausedAt          DateTime?
+  errorMessage      String?
+  retryCount        Int            @default(0)
+  maxRetries        Int            @default(3)
+  createdBy         String
+  lastModifiedBy    String
+  steps             RotationStep[]
+  key               Key?           @relation(fields: [keyId], references: [id])
+  discoveredKey     DiscoveredKey? @relation(fields: [discoveredKeyId], references: [id])
+  platform          Platform?      @relation(fields: [platformId], references: [id])
+  user              User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+  @@index([priority])
+  @@index([keyType])
+  @@index([createdAt])
+  @@index([keyId])
+  @@index([discoveredKeyId])
+  @@index([platformId])
+  @@index([userId, status])
+  @@map("rotation_workflows")
+}
+
+model RotationStep {
+  id              String           @id @default(cuid())
+  workflowId      String
+  stepNumber      Int
+  name            String
+  description     String
+  stepType        String
+  status          String           @default("pending")
+  isRequired      Boolean          @default(true)
+  isAutomated     Boolean          @default(false)
+  instructions    String?
+  automationCmd   String?
+  validationRules String?
+  startedAt       DateTime?
+  completedAt     DateTime?
+  duration        Int?
+  result          String?
+  output          String?
+  errorMessage    String?
+  // User-provided note for this step — a completion note or a skip reason.
+  // The terminal timestamp for both completed and skipped steps is completedAt;
+  // `status` distinguishes which.
+  notes           String?
+  dependsOnSteps  Int[]
+  blocksSteps     Int[]
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  workflow        RotationWorkflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+
+  @@unique([workflowId, stepNumber])
+  @@index([workflowId])
+  @@index([stepNumber])
+  @@index([status])
+  @@index([stepType])
+  @@index([workflowId, stepNumber])
+  @@map("rotation_steps")
+}
+
+model KeyHash {
+  id              String             @id @default(cuid())
+  keyHash         String             @unique
+  hashSalt        String
+  hashAlgorithm   String             @default("SHA256_SALTED")
+  keyType         String
+  keyFormat       String
+  estimatedLength Int
+  firstSeenAt     DateTime           @default(now())
+  lastSeenAt      DateTime           @default(now())
+  seenCount       Int                @default(1)
+  isRevoked       Boolean            @default(false)
+  revokedAt       DateTime?
+  revokedReason   String?
+  userId          String
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+  discoveredKeys  DiscoveredKey[]
+  user            User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  scanFindings    LocalScanFinding[]
+
+  @@index([keyHash])
+  @@index([userId, keyType])
+  @@index([firstSeenAt])
+  @@index([isRevoked])
+  @@map("key_hashes")
+}
+
+model FileScan {
+  id              String             @id @default(cuid())
+  sessionId       String
+  absolutePath    String
+  relativePath    String
+  fileName        String
+  fileExtension   String?
+  fileSize        BigInt
+  fileHash        String
+  lastModified    DateTime
+  permissions     String
+  isGitTracked    Boolean            @default(false)
+  gitCommitHash   String?
+  gitBranch       String?
+  gitLastCommit   DateTime?
+  gitAuthor       String?
+  linesScanned    Int                @default(0)
+  findingsCount   Int                @default(0)
+  hasFindings     Boolean            @default(false)
+  scanStartedAt   DateTime           @default(now())
+  scanCompletedAt DateTime?
+  scanDuration    Int?
+  processingError String?
+  isEnvFile       Boolean            @default(false)
+  isConfigFile    Boolean            @default(false)
+  isCodeFile      Boolean            @default(false)
+  encoding        String             @default("utf-8")
+  userId          String
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+  discoveredKeys  DiscoveredKey[]
+  session         ScanSession        @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  user            User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  findings        LocalScanFinding[]
+
+  @@unique([sessionId, absolutePath])
+  @@index([sessionId])
+  @@index([userId])
+  @@index([fileHash])
+  @@index([hasFindings])
+  @@index([isEnvFile, isConfigFile])
+  @@index([lastModified])
+  @@index([userId, hasFindings])
+  @@map("file_scans")
+}
+
+model AuditLog {
+  id            String    @id @default(cuid())
+  eventType     String
+  eventCategory String
+  severity      String
+  description   String
+  details       String?
+  resourceType  String?
+  resourceId    String?
+  userId        String
+  sessionToken  String?
+  ipAddress     String?
+  userAgent     String?
+  wasSuccessful Boolean   @default(true)
+  errorMessage  String?
+  securityFlags String[]
+  retainUntil   DateTime?
+  isArchived    Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, eventType])
+  @@index([eventCategory, severity])
+  @@index([createdAt])
+  @@index([resourceType, resourceId])
+  @@index([securityFlags])
+  @@index([userId, createdAt])
+  @@map("audit_logs")
+}
+
+model Waitlist {
+  id                   String             @id @default(cuid())
+  email                String             @unique
+  reason               String?
+  referralSource       String?
+  companyName          String?
+  jobTitle             String?
+  useCase              String?
+  status               String             @default("pending")
+  priority             String             @default("normal")
+  inviteSentAt         DateTime?
+  inviteToken          String?            @unique
+  convertedAt          DateTime?
+  convertedUserId      String?
+  allowMarketing       Boolean            @default(false)
+  notificationsEnabled Boolean            @default(true)
+  signupLocation       String?
+  userAgent            String?
+  ipAddressHash        String?
+  utmSource            String?
+  utmMedium            String?
+  utmCampaign          String?
+  adminNotes           String?
+  tags                 String[]
+  dataRetentionConsent Boolean            @default(true)
+  retainUntil          DateTime?
+  isArchived           Boolean            @default(false)
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+  convertedUser        User?              @relation(fields: [convertedUserId], references: [id])
+  activities           WaitlistActivity[]
+
+  @@index([email])
+  @@index([status, priority])
+  @@index([createdAt])
+  @@index([status, createdAt])
+  @@index([referralSource])
+  @@index([priority, createdAt])
+  @@index([inviteSentAt])
+  @@index([convertedAt])
+  @@index([tags])
+  @@index([allowMarketing, notificationsEnabled])
+  @@map("waitlist")
+}
+
+model WaitlistActivity {
+  id            String   @id @default(cuid())
+  waitlistId    String
+  activityType  String
+  description   String
+  details       String?
+  emailType     String?
+  emailSubject  String?
+  wasSuccessful Boolean  @default(true)
+  errorMessage  String?
+  source        String?
+  campaign      String?
+  createdAt     DateTime @default(now())
+  waitlistEntry Waitlist @relation(fields: [waitlistId], references: [id], onDelete: Cascade)
+
+  @@index([waitlistId])
+  @@index([activityType])
+  @@index([createdAt])
+  @@index([activityType, createdAt])
+  @@index([emailType, wasSuccessful])
+  @@index([waitlistId, activityType])
+  @@map("waitlist_activities")
+}
+
+model RotationTemplate {
+  id               String   @id @default(cuid())
+  name             String
+  platform         String   @unique
+  keyType          String
+  description      String
+  version          String   @default("1.0")
+  isActive         Boolean  @default(true)
+  difficulty       String   @default("medium")
+  estimatedTime    Int
+  steps            Json
+  requirements     Json?
+  automation       Json?
+  securityLevel    String   @default("standard")
+  complianceReqs   String[]
+  instructions     String?
+  videoUrl         String?
+  docsUrl          String?
+  usageCount       Int      @default(0)
+  successRate      Float    @default(0.0)
+  avgDuration      Int?
+  createdBy        String   @default("system")
+  lastModifiedBy   String   @default("system")
+  isSystemTemplate Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([platform])
+  @@index([keyType])
+  @@index([isActive])
+  @@index([platform, isActive])
+  @@index([difficulty])
+  @@index([estimatedTime])
+  @@map("rotation_templates")
+}
+
+model WorkflowAuditLog {
+  id              String   @id @default(cuid())
+  workflowId      String?
+  templateId      String?
+  stepNumber      Int?
+  eventType       String
+  eventCategory   String
+  action          String
+  description     String
+  oldValues       Json?
+  newValues       Json?
+  metadata        Json?
+  userId          String
+  sessionToken    String?
+  ipAddress       String?
+  userAgent       String?
+  wasSuccessful   Boolean  @default(true)
+  errorMessage    String?
+  duration        Int?
+  securityLevel   String   @default("standard")
+  complianceFlags String[]
+  parentEventId   String?
+  correlationId   String?
+  createdAt       DateTime @default(now())
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([workflowId])
+  @@index([templateId])
+  @@index([userId, eventType])
+  @@index([eventCategory, eventType])
+  @@index([createdAt])
+  @@index([correlationId])
+  @@index([workflowId, createdAt])
+  @@index([userId, createdAt])
+  @@index([wasSuccessful])
+  @@map("workflow_audit_log")
+}
+
+// Fixed-window rate limiting. One row per (action + subject) key, e.g.
+// "magiclink:user@example.com" or "waitlist:ip:1.2.3.4". `count` is the number
+// of hits in the current window; `windowStart` marks when that window opened.
+// Reads/writes go through lib/rate-limit.ts. `expiresAt` lets a periodic job
+// (or a manual sweep) prune stale rows.
+model RateLimit {
+  key         String   @id
+  count       Int      @default(0)
+  windowStart DateTime @default(now())
+  expiresAt   DateTime
+  updatedAt   DateTime @updatedAt
+
+  @@index([expiresAt])
+  @@map("rate_limits")
+}

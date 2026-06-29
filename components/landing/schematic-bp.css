@@ -1,0 +1,125 @@
+/* Direction C — SCHEMATIC, breakpoint-tailored layouts.
+ * Not "the desktop page, stacked": each variant gets its own composition.
+ *   .sch--md  (~834)  input rail + 3-stage pipeline · module spec-STRIPS
+ *   .sch--sm  (~390)  vertical schematic flow · stacked modules · condensed bar
+ */
+
+/* ═══════════ MD — tablet ═══════════ */
+.sch--md .wrap { max-width: none; padding: 0 36px; }
+
+.sch--md .sch-bar .cell { padding: 0 20px; }
+
+.sch--md .sch-hero .wrap { padding-top: 72px; padding-bottom: 56px; }
+.sch--md .sch-hero h1 { font-size: 58px; }
+.sch--md .sch-hero .row { flex-direction: column; align-items: flex-start; gap: 28px; }
+
+/* input rail above the 3-stage pipeline */
+.sch--md .sch-inputrail {
+  display: flex; align-items: center; gap: 18px;
+  margin: 28px 28px 0; padding: 13px 18px;
+  border: 1px dashed var(--line-dot); background: var(--bg);
+}
+.sch--md .sch-inputrail .ann { display: inline-flex; align-items: center; gap: 8px; flex: 0 0 auto; }
+.sch--md .sch-inputrail .rail-desc { font-size: 12.5px; color: var(--tx-mut); }
+.sch--md .sch-pipe-md {
+  display: grid; grid-template-columns: 1fr 40px 1fr 40px 1fr;
+  align-items: center; padding: 32px 28px 40px;
+}
+
+/* modules as horizontal spec strips */
+.sch--md .sch-mods--strip { grid-template-columns: 1fr; gap: 16px; }
+.sch--md .sch-mods--strip .sch-mod {
+  display: grid;
+  grid-template-columns: 210px 1fr 280px;
+  grid-template-rows: auto 1fr;
+  grid-template-areas:
+    "head desc specs"
+    "name desc specs";
+}
+.sch--md .sch-mods--strip .m-head { grid-area: head; border-bottom: none; padding: 18px 22px 0; }
+.sch--md .sch-mods--strip .m-head .ann { display: none; }
+.sch--md .sch-mods--strip .m-name { grid-area: name; padding: 6px 22px 18px; align-items: flex-start; }
+.sch--md .sch-mods--strip .m-desc { grid-area: desc; padding: 18px 22px; border-left: 1px dashed var(--line-dot); display: flex; align-items: center; }
+.sch--md .sch-mods--strip .m-specs { grid-area: specs; border-top: none; border-left: 1px dashed var(--line-dot); padding: 8px 22px 18px; }
+
+.sch--md .sch-cred { padding: 40px 28px; }
+.sch--md .sch-sec .wrap { padding-top: 64px; padding-bottom: 64px; }
+.sch--md .sch-sec h2 { font-size: 28px; }
+
+.sch--md .sch-sheet { grid-template-columns: 1fr; gap: 36px; }
+.sch--md .sch-sheet .body { max-width: 62ch; }
+
+.sch--md .sch-cta .wrap { padding-top: 72px; padding-bottom: 72px; gap: 32px; }
+.sch--md .sch-cta h2 { font-size: 40px; }
+
+/* ═══════════ SM — phone ═══════════ */
+.sch--sm { font-size: 14px; }
+.sch--sm .wrap { max-width: none; padding: 0 20px; }
+
+/* condensed doc bar */
+.sch--sm .sch-bar .wrap { height: 48px; }
+.sch--sm .sch-bar .cell { padding: 0 14px; font-size: 10.5px; }
+.sch--sm .sch-bar .cell:first-child { padding-left: 0; }
+
+/* hero */
+.sch--sm .sch-hero .wrap { padding-top: 52px; padding-bottom: 44px; }
+.sch--sm .sch-hero h1 { font-size: 40px; letter-spacing: -0.02em; margin-bottom: 24px; max-width: none; }
+.sch--sm .sch-hero .row { flex-direction: column; align-items: stretch; gap: 26px; }
+.sch--sm .sch-hero .sub { font-size: 15px; }
+.sch--sm .sch-hero .actions { flex-direction: column; width: 100%; }
+.sch--sm .btn { justify-content: center; }
+
+/* vertical schematic flow */
+.sch--sm .sch-pipe-sm { display: flex; flex-direction: column; padding: 24px 16px; }
+.sch--sm .sch-varrow { width: 1px; height: 38px; background: var(--ink); opacity: 0.65; margin: 0 auto; position: relative; }
+.sch--sm .sch-varrow::after {
+  content: ""; position: absolute; bottom: 0; left: -3.5px;
+  border-top: 7px solid var(--ink); border-left: 4px solid transparent; border-right: 4px solid transparent;
+}
+.sch--sm .sch-node .nname { font-size: 16px; }
+
+/* figures */
+.sch--sm .sch-sec .wrap { padding-top: 52px; padding-bottom: 52px; }
+.sch--sm .sec-head { gap: 14px; margin-bottom: 30px; flex-wrap: wrap; }
+.sch--sm .sec-head[data-ink]::after { bottom: -10px; }
+.sch--sm .sch-sec h2 { font-size: 21px; }
+.sch--sm .fig-head { padding: 11px 16px; }
+.sch--sm .fig-head .fig { font-size: 10.5px; }
+.sch--sm .fig-foot { padding: 10px 16px; }
+.sch--sm .sch-run { margin-left: 10px; }
+
+/* modules stacked */
+.sch--sm .sch-mods { grid-template-columns: 1fr; gap: 16px; }
+.sch--sm .sch-mod .m-name { font-size: 19px; padding-top: 18px; }
+.sch--sm .sch-mod .m-desc { font-size: 13px; }
+
+/* bill of materials */
+.sch--sm .sch-sheet { grid-template-columns: 1fr; gap: 28px; }
+.sch--sm .sch-sheet .lede { font-size: 19px; }
+.sch--sm .sch-spec-table .row { grid-template-columns: 128px 1fr; }
+.sch--sm .sch-spec-table .k { font-size: 10px; padding: 13px 14px; }
+.sch--sm .sch-spec-table .v { font-size: 11.5px; padding: 13px 14px; }
+
+/* CTA + footer */
+.sch--sm .sch-cta .wrap { flex-direction: column; align-items: stretch; padding-top: 60px; padding-bottom: 60px; gap: 30px; }
+.sch--sm .sch-cta h2 { font-size: 30px; max-width: none; }
+.sch--sm .sch-cta .cmd { font-size: 11.5px; margin-top: 14px; }
+.sch--sm .sch-foot .wrap { flex-direction: column; gap: 10px; padding-top: 20px; padding-bottom: 20px; }
+
+/* sticky install bar (live page, phone only) */
+.sch-sticky {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 40;
+  display: flex; align-items: center; gap: 12px;
+  background: rgba(12, 15, 20, 0.92); backdrop-filter: blur(8px);
+  border-top: 1px solid var(--line, #232a35); padding: 12px 16px;
+}
+.sch-sticky .cmd {
+  font-family: var(--font-plex-mono), monospace; font-size: 11px; color: #8d97a8;
+  flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.sch-sticky .cmd .p { color: var(--ks-accent, #34d399); }
+.sch-sticky .go {
+  font-family: var(--font-plex-mono), monospace; font-size: 12px; font-weight: 600;
+  background: var(--ks-accent, #34d399); color: #0a0e08; border: none;
+  padding: 10px 18px; cursor: pointer; flex: 0 0 auto; text-decoration: none;
+}

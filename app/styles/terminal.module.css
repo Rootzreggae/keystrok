@@ -1,0 +1,795 @@
+/**
+ * Keystrok Terminal Design System - Complete Foundation
+ * 
+ * A comprehensive terminal aesthetic CSS module that provides consistent
+ * styling for the entire Keystrok security platform. Based on analysis of
+ * existing components and design patterns.
+ * 
+ * Features:
+ * - Terminal window chrome (title bars, controls, borders)
+ * - Monospace typography system
+ * - Color schemes (dark backgrounds, green/amber/red accents)
+ * - Interactive element styling
+ * - Animations and effects
+ * - Responsive design patterns
+ * - Accessibility compliance
+ */
+
+/* ===================================================================
+   CSS CUSTOM PROPERTIES - COLOR PALETTE & VARIABLES
+   =================================================================== */
+
+.terminal-theme {
+  /* Terminal Background Colors */
+  --terminal-bg-primary: rgba(30, 30, 30, 0.95);
+  --terminal-bg-secondary: rgba(45, 45, 48, 0.95);
+  --terminal-bg-header: rgba(35, 35, 38, 0.95);
+  --terminal-bg-overlay: rgba(0, 0, 0, 0.2);
+  
+  /* Terminal Border & Outline Colors */
+  --terminal-border-primary: rgba(255, 255, 255, 0.1);
+  --terminal-border-secondary: rgba(255, 255, 255, 0.05);
+  --terminal-border-accent: rgba(74, 222, 128, 0.3);
+  
+  /* Terminal Text Colors */
+  --terminal-text-primary: #ffffff;
+  --terminal-text-secondary: #e5e5e5;
+  --terminal-text-muted: #d4d4d4;
+  --terminal-text-subtle: #a0a0a0;
+  --terminal-text-disabled: #6b7280;
+  
+  /* Terminal Accent Colors (Status) */
+  --terminal-accent-success: #4ade80;
+  --terminal-accent-warning: #f59e0b;
+  --terminal-accent-critical: #ef4444;
+  --terminal-accent-info: #0066ff;
+  --terminal-accent-neutral: #6b7280;
+  
+  /* Terminal Window Control Colors */
+  --terminal-control-close: #ef4444;
+  --terminal-control-minimize: #f59e0b;
+  --terminal-control-maximize: #22c55e;
+  
+  /* Typography Variables */
+  --terminal-font-mono: 'JetBrains Mono', 'Monaco', 'Consolas', 'Courier New', monospace;
+  --terminal-font-size-xs: 0.75rem;   /* 12px */
+  --terminal-font-size-sm: 0.875rem;  /* 14px */
+  --terminal-font-size-md: 1rem;      /* 16px */
+  --terminal-font-size-lg: 1.125rem;  /* 18px */
+  --terminal-font-size-xl: 1.5rem;    /* 24px */
+  
+  /* Spacing & Layout */
+  --terminal-padding-sm: 0.5rem;   /* 8px */
+  --terminal-padding-md: 1rem;     /* 16px */
+  --terminal-padding-lg: 1.5rem;   /* 24px */
+  --terminal-radius: 0.5rem;       /* 8px */
+  --terminal-header-height: 2rem;  /* 32px */
+  
+  /* Animation Durations */
+  --terminal-transition-fast: 0.15s;
+  --terminal-transition-normal: 0.3s;
+  --terminal-transition-slow: 0.5s;
+}
+
+/* ===================================================================
+   TERMINAL WINDOW STRUCTURE - CORE COMPONENTS
+   =================================================================== */
+
+/* Main Terminal Window Container */
+.terminalWindow {
+  background: var(--terminal-bg-secondary);
+  border: 1px solid var(--terminal-border-primary);
+  border-radius: var(--terminal-radius);
+  box-shadow: 0 10px 25px -3px rgba(0, 0, 0, 0.3), 
+              0 4px 6px -2px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(4px);
+  overflow: hidden;
+  font-family: var(--terminal-font-mono);
+  color: var(--terminal-text-secondary);
+  transition: all var(--terminal-transition-normal) ease;
+}
+
+.terminalWindow:hover {
+  border-color: var(--terminal-border-accent);
+  box-shadow: 0 20px 35px -5px rgba(0, 0, 0, 0.4),
+              0 10px 20px -5px rgba(0, 0, 0, 0.3);
+}
+
+/* Terminal Window Header with Controls */
+.terminalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: var(--terminal-header-height);
+  padding: 0 var(--terminal-padding-md);
+  background: var(--terminal-bg-header);
+  border-bottom: 1px solid var(--terminal-border-primary);
+  position: relative;
+}
+
+/* Window Control Buttons (Traffic Light Pattern) */
+.terminalControls {
+  display: flex;
+  gap: var(--terminal-padding-sm);
+  align-items: center;
+}
+
+.terminalControl {
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  transition: all var(--terminal-transition-fast) ease;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+.terminalControl:hover {
+  transform: scale(1.1);
+  box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.1);
+}
+
+.terminalControlClose {
+  background: var(--terminal-control-close);
+}
+
+.terminalControlMinimize {
+  background: var(--terminal-control-minimize);
+}
+
+.terminalControlMaximize {
+  background: var(--terminal-control-maximize);
+}
+
+/* Terminal Window Title */
+.terminalTitle {
+  font-family: var(--terminal-font-mono);
+  font-size: var(--terminal-font-size-xs);
+  font-weight: 500;
+  color: var(--terminal-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-left: var(--terminal-padding-sm);
+  flex: 1;
+  text-align: left;
+}
+
+/* Terminal Content Area */
+.terminalContent {
+  padding: var(--terminal-padding-md);
+  font-family: var(--terminal-font-mono);
+  font-size: var(--terminal-font-size-sm);
+  line-height: 1.625;
+  color: var(--terminal-text-secondary);
+  white-space: pre-wrap;
+  min-height: 100px;
+  position: relative;
+}
+
+/* ===================================================================
+   TYPOGRAPHY SYSTEM - TERMINAL TEXT STYLES
+   =================================================================== */
+
+/* Terminal Headings */
+.terminalHeadingXl {
+  font-family: var(--terminal-font-mono);
+  font-size: var(--terminal-font-size-xl);
+  font-weight: 700;
+  color: var(--terminal-text-primary);
+  line-height: 1;
+  margin: 0;
+}
+
+.terminalHeadingLg {
+  font-family: var(--terminal-font-mono);
+  font-size: var(--terminal-font-size-lg);
+  font-weight: 600;
+  color: var(--terminal-text-primary);
+  line-height: 1.2;
+  margin: 0;
+}
+
+.terminalHeadingMd {
+  font-family: var(--terminal-font-mono);
+  font-size: var(--terminal-font-size-md);
+  font-weight: 600;
+  color: var(--terminal-text-primary);
+  line-height: 1.3;
+  margin: 0;
+}
+
+.terminalHeadingSm {
+  font-family: var(--terminal-font-mono);
+  font-size: var(--terminal-font-size-sm);
+  font-weight: 500;
+  color: var(--terminal-text-secondary);
+  line-height: 1.3;
+  margin: 0;
+}
+
+/* Terminal Body Text */
+.terminalText {
+  font-family: var(--terminal-font-mono);
+  font-size: var(--terminal-font-size-sm);
+  font-weight: 400;
+  color: var(--terminal-text-muted);
+  line-height: 1.625;
+}
+
+.terminalTextSm {
+  font-family: var(--terminal-font-mono);
+  font-size: var(--terminal-font-size-xs);
+  font-weight: 400;
+  color: var(--terminal-text-muted);
+  line-height: 1.4;
+}
+
+/* Terminal Labels and Meta Text */
+.terminalLabel {
+  font-family: var(--terminal-font-mono);
+  font-size: var(--terminal-font-size-xs);
+  font-weight: 500;
+  color: var(--terminal-text-subtle);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  line-height: 1.4;
+}
+
+.terminalMeta {
+  font-family: var(--terminal-font-mono);
+  font-size: var(--terminal-font-size-xs);
+  font-weight: 400;
+  color: var(--terminal-text-disabled);
+  line-height: 1.4;
+}
+
+/* Terminal Code and Command Line */
+.terminalCode {
+  font-family: var(--terminal-font-mono);
+  font-size: var(--terminal-font-size-sm);
+  font-weight: 400;
+  color: var(--terminal-accent-success);
+  background: var(--terminal-bg-overlay);
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  border: 1px solid rgba(74, 222, 128, 0.2);
+  display: inline-block;
+}
+
+/* ===================================================================
+   INTERACTIVE ELEMENTS - BUTTONS, INPUTS, BADGES
+   =================================================================== */
+
+/* Terminal Buttons */
+.terminalButton {
+  font-family: var(--terminal-font-mono);
+  font-size: var(--terminal-font-size-sm);
+  font-weight: 500;
+  padding: var(--terminal-padding-sm) var(--terminal-padding-md);
+  border-radius: 0.25rem;
+  border: 1px solid var(--terminal-border-primary);
+  background: var(--terminal-bg-primary);
+  color: var(--terminal-text-muted);
+  cursor: pointer;
+  transition: all var(--terminal-transition-fast) ease;
+  text-transform: none;
+  letter-spacing: normal;
+  outline: none;
+}
+
+.terminalButton:hover {
+  border-color: var(--terminal-accent-success);
+  background: rgba(74, 222, 128, 0.1);
+  color: var(--terminal-accent-success);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.terminalButton:focus {
+  border-color: var(--terminal-accent-success);
+  box-shadow: 0 0 0 2px rgba(74, 222, 128, 0.3);
+  color: var(--terminal-accent-success);
+}
+
+.terminalButton:active {
+  transform: translateY(0);
+  background: rgba(74, 222, 128, 0.2);
+}
+
+/* Terminal Button Variants */
+.terminalButtonPrimary {
+  background: rgba(74, 222, 128, 0.15);
+  border-color: var(--terminal-accent-success);
+  color: var(--terminal-accent-success);
+}
+
+.terminalButtonPrimary:hover {
+  background: rgba(74, 222, 128, 0.25);
+  border-color: var(--terminal-accent-success);
+}
+
+.terminalButtonWarning {
+  background: rgba(245, 158, 11, 0.15);
+  border-color: var(--terminal-accent-warning);
+  color: var(--terminal-accent-warning);
+}
+
+.terminalButtonCritical {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: var(--terminal-accent-critical);
+  color: var(--terminal-accent-critical);
+}
+
+/* Terminal Input Fields */
+.terminalInput {
+  font-family: var(--terminal-font-mono);
+  font-size: var(--terminal-font-size-sm);
+  font-weight: 400;
+  padding: var(--terminal-padding-sm) var(--terminal-padding-md);
+  border-radius: 0.25rem;
+  border: 1px solid var(--terminal-border-primary);
+  background: var(--terminal-bg-primary);
+  color: var(--terminal-text-muted);
+  outline: none;
+  transition: all var(--terminal-transition-fast) ease;
+  width: 100%;
+}
+
+.terminalInput::placeholder {
+  color: var(--terminal-text-disabled);
+  font-style: italic;
+}
+
+.terminalInput:focus {
+  border-color: var(--terminal-accent-success);
+  box-shadow: 0 0 0 2px rgba(74, 222, 128, 0.3);
+  background: var(--terminal-bg-secondary);
+}
+
+.terminalInput:hover {
+  border-color: var(--terminal-border-accent);
+}
+
+/* Terminal Badges and Status Indicators */
+.terminalBadge {
+  font-family: var(--terminal-font-mono);
+  font-size: var(--terminal-font-size-xs);
+  font-weight: 600;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  border: 1px solid var(--terminal-border-primary);
+  background: var(--terminal-bg-overlay);
+  color: var(--terminal-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  display: inline-block;
+  line-height: 1.2;
+}
+
+.terminalBadgeSuccess {
+  background: rgba(74, 222, 128, 0.1);
+  border-color: rgba(74, 222, 128, 0.3);
+  color: var(--terminal-accent-success);
+}
+
+.terminalBadgeWarning {
+  background: rgba(245, 158, 11, 0.1);
+  border-color: rgba(245, 158, 11, 0.3);
+  color: var(--terminal-accent-warning);
+}
+
+.terminalBadgeCritical {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.3);
+  color: var(--terminal-accent-critical);
+}
+
+.terminalBadgeInfo {
+  background: rgba(0, 102, 255, 0.1);
+  border-color: rgba(0, 102, 255, 0.3);
+  color: var(--terminal-accent-info);
+}
+
+/* ===================================================================
+   TERMINAL TABLE STYLING
+   =================================================================== */
+
+.terminalTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--terminal-font-mono);
+  font-size: var(--terminal-font-size-sm);
+  background: var(--terminal-bg-primary);
+  border-radius: var(--terminal-radius);
+  overflow: hidden;
+}
+
+.terminalTable th {
+  padding: var(--terminal-padding-md);
+  text-align: left;
+  font-weight: 500;
+  color: var(--terminal-text-subtle);
+  background: var(--terminal-bg-header);
+  border-bottom: 1px solid var(--terminal-border-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: var(--terminal-font-size-xs);
+}
+
+.terminalTable td {
+  padding: var(--terminal-padding-md);
+  color: var(--terminal-text-muted);
+  border-bottom: 1px solid var(--terminal-border-secondary);
+  transition: background-color var(--terminal-transition-fast) ease;
+}
+
+.terminalTable tr:hover td {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.terminalTable tr:last-child td {
+  border-bottom: none;
+}
+
+/* ===================================================================
+   ANIMATIONS & EFFECTS
+   =================================================================== */
+
+/* Terminal Cursor Animation */
+.terminalCursor {
+  display: inline-block;
+  background-color: var(--terminal-accent-success);
+  margin-left: 0.1em;
+  animation: terminalBlink 1s infinite;
+}
+
+.terminalCursor::after {
+  content: "_";
+  color: transparent;
+}
+
+@keyframes terminalBlink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+
+/* Typing Animation */
+.terminalTyping {
+  overflow: hidden;
+  border-right: 2px solid var(--terminal-accent-success);
+  white-space: nowrap;
+  animation: terminalTypewriter 3s steps(40, end),
+             terminalBlink 1s infinite step-end;
+}
+
+@keyframes terminalTypewriter {
+  from { 
+    width: 0; 
+  }
+  to { 
+    width: 100%; 
+  }
+}
+
+/* Terminal Window Appear Animation */
+.terminalWindowAppear {
+  animation: terminalAppear var(--terminal-transition-normal) ease-out;
+}
+
+@keyframes terminalAppear {
+  0% {
+    opacity: 0;
+    transform: scale(0.95) translateY(-10px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* Floating Elements Animation */
+.terminalFloatSlow {
+  animation: terminalFloat 6s ease-in-out infinite;
+}
+
+.terminalFloatMedium {
+  animation: terminalFloat 4s ease-in-out infinite;
+  animation-delay: -2s;
+}
+
+.terminalFloatFast {
+  animation: terminalFloat 3s ease-in-out infinite;
+  animation-delay: -1s;
+}
+
+@keyframes terminalFloat {
+  0%, 100% { 
+    transform: translateY(0px) rotate(0deg); 
+  }
+  50% { 
+    transform: translateY(-20px) rotate(5deg); 
+  }
+}
+
+/* Terminal Glow Effect */
+.terminalGlow {
+  box-shadow: 0 0 20px rgba(74, 222, 128, 0.3),
+              0 0 40px rgba(74, 222, 128, 0.2),
+              0 0 60px rgba(74, 222, 128, 0.1);
+}
+
+/* Progress Bar Animation */
+.terminalProgress {
+  width: 100%;
+  height: 4px;
+  background: var(--terminal-bg-overlay);
+  border-radius: 2px;
+  overflow: hidden;
+  position: relative;
+}
+
+.terminalProgressBar {
+  height: 100%;
+  background: var(--terminal-accent-success);
+  border-radius: 2px;
+  transition: width var(--terminal-transition-normal) ease;
+  position: relative;
+}
+
+.terminalProgressBar::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  background: linear-gradient(90deg, 
+    transparent, 
+    rgba(255, 255, 255, 0.4), 
+    transparent);
+  animation: terminalProgressShine 2s infinite;
+}
+
+@keyframes terminalProgressShine {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* ===================================================================
+   UTILITY CLASSES & HELPERS
+   =================================================================== */
+
+/* Terminal Scrollbar Styling */
+.terminalScrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: var(--terminal-accent-success) var(--terminal-bg-primary);
+}
+
+.terminalScrollbar::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.terminalScrollbar::-webkit-scrollbar-track {
+  background: var(--terminal-bg-primary);
+  border-radius: 4px;
+}
+
+.terminalScrollbar::-webkit-scrollbar-thumb {
+  background: var(--terminal-accent-success);
+  border-radius: 4px;
+  border: 2px solid var(--terminal-bg-primary);
+}
+
+.terminalScrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(74, 222, 128, 0.8);
+}
+
+/* Terminal Background Patterns */
+.terminalPatternGrid {
+  background-image: 
+    repeating-linear-gradient(0deg, transparent, transparent 50px, var(--terminal-border-secondary) 50px, var(--terminal-border-secondary) 51px),
+    repeating-linear-gradient(90deg, transparent, transparent 50px, var(--terminal-border-secondary) 50px, var(--terminal-border-secondary) 51px);
+  opacity: 0.02;
+}
+
+/* Terminal Status Colors for Data Display */
+.terminalStatusHealthy { color: var(--terminal-accent-success); }
+.terminalStatusWarning { color: var(--terminal-accent-warning); }
+.terminalStatusCritical { color: var(--terminal-accent-critical); }
+.terminalStatusInfo { color: var(--terminal-accent-info); }
+.terminalStatusNeutral { color: var(--terminal-accent-neutral); }
+
+/* Terminal Focus Management */
+.terminalFocusRing {
+  outline: 2px solid var(--terminal-accent-success);
+  outline-offset: 2px;
+  border-radius: 0.25rem;
+}
+
+/* Screen Reader Only (Accessibility) */
+.terminalSrOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ===================================================================
+   RESPONSIVE DESIGN - MOBILE ADAPTATIONS
+   =================================================================== */
+
+@media (max-width: 768px) {
+  .terminalWindow {
+    margin: 0 0.5rem;
+    border-radius: 0.375rem;
+  }
+  
+  .terminalContent {
+    padding: var(--terminal-padding-sm);
+    font-size: var(--terminal-font-size-xs);
+  }
+  
+  .terminalTitle {
+    font-size: 0.625rem;
+    letter-spacing: 0.05em;
+  }
+  
+  .terminalControl {
+    width: 0.625rem;
+    height: 0.625rem;
+  }
+  
+  .terminalButton {
+    font-size: var(--terminal-font-size-xs);
+    padding: 0.375rem 0.5rem;
+  }
+  
+  .terminalInput {
+    font-size: var(--terminal-font-size-md); /* 16px minimum for iOS */
+  }
+  
+  .terminalTable th,
+  .terminalTable td {
+    padding: var(--terminal-padding-sm);
+    font-size: var(--terminal-font-size-xs);
+  }
+}
+
+@media (max-width: 480px) {
+  .terminalHeader {
+    padding: 0 var(--terminal-padding-sm);
+  }
+  
+  .terminalContent {
+    min-height: 80px;
+  }
+  
+  .terminalControls {
+    gap: 0.25rem;
+  }
+}
+
+/* ===================================================================
+   ACCESSIBILITY & HIGH CONTRAST SUPPORT
+   =================================================================== */
+
+@media (prefers-contrast: high) {
+  .terminal-theme {
+    --terminal-bg-primary: rgba(0, 0, 0, 0.98);
+    --terminal-bg-secondary: rgba(0, 0, 0, 0.95);
+    --terminal-border-primary: rgba(255, 255, 255, 0.3);
+    --terminal-text-primary: #ffffff;
+    --terminal-text-secondary: #ffffff;
+    --terminal-text-muted: #ffffff;
+  }
+  
+  .terminalWindow {
+    border-width: 2px;
+  }
+  
+  .terminalButton {
+    border-width: 2px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .terminalWindow {
+    transition: none;
+  }
+  
+  .terminalButton {
+    transition: none;
+  }
+  
+  .terminalWindowAppear,
+  .terminalTyping,
+  .terminalCursor,
+  .terminalFloatSlow,
+  .terminalFloatMedium,
+  .terminalFloatFast {
+    animation: none;
+  }
+  
+  .terminalProgressBar::after {
+    animation: none;
+  }
+}
+
+/* Focus visible for keyboard navigation */
+@media (prefers-reduced-motion: no-preference) {
+  .terminalButton:focus-visible,
+  .terminalInput:focus-visible {
+    outline: 2px solid var(--terminal-accent-success);
+    outline-offset: 2px;
+  }
+}
+
+/* ===================================================================
+   DARK MODE SUPPORT (Additional)
+   =================================================================== */
+
+@media (prefers-color-scheme: dark) {
+  /* Already optimized for dark mode, but can add overrides here if needed */
+}
+
+/* ===================================================================
+   COMPONENT-SPECIFIC OVERRIDES
+   =================================================================== */
+
+/* For integration with existing Keystrok components */
+.terminal-card {
+  /* Inherits terminal window styling */
+  @apply rounded-lg shadow-lg overflow-hidden;
+  background: var(--terminal-bg-secondary);
+  border: 1px solid var(--terminal-border-primary);
+  backdrop-filter: blur(4px);
+}
+
+.terminal-aesthetic {
+  font-family: var(--terminal-font-mono);
+  color: var(--terminal-text-muted);
+}
+
+/* Terminal text utilities for integration */
+.terminal-text {
+  font-family: var(--terminal-font-mono);
+  color: var(--terminal-text-muted);
+}
+
+.terminal-accent {
+  color: var(--terminal-accent-success);
+}
+
+/* ===================================================================
+   PRINT STYLES
+   =================================================================== */
+
+@media print {
+  .terminalWindow {
+    background: white;
+    border: 1px solid #000;
+    color: #000;
+    box-shadow: none;
+    backdrop-filter: none;
+  }
+  
+  .terminalHeader {
+    background: #f5f5f5;
+    border-bottom: 1px solid #000;
+  }
+  
+  .terminalControls {
+    display: none;
+  }
+  
+  .terminalText,
+  .terminalContent {
+    color: #000;
+  }
+}
