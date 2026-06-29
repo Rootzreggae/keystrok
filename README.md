@@ -33,7 +33,7 @@ docker compose up --build
 # App: http://localhost:3001   Magic-link inbox: http://localhost:8025
 ```
 
-See [`DEPLOYMENT.md`](DEPLOYMENT.md) for the bring-your-own-infra path (managed Postgres + SMTP).
+Prefer a prebuilt image? `docker compose pull && docker compose up` uses the published `ghcr.io/rootzreggae/keystrok` instead of building. See [`DEPLOYMENT.md`](DEPLOYMENT.md) for the bring-your-own-infra path (managed Postgres + SMTP).
 
 ## Local development
 
@@ -62,6 +62,12 @@ npm run dev -- -p 3001    # http://localhost:3001
 - `components/` — the UI component system
 - `prisma/schema.prisma` — database schema (source of truth)
 - `docs/` — design & API references
+
+## On how this is made
+
+I'm a designer, and I build Keystrok with AI as my engineering partner. The product — what it does, what it deliberately *won't* do (it never rotates a key on its own), how it should feel to use — is mine. The implementation is a collaboration, written and reviewed with AI in the loop.
+
+I'm saying this plainly because "made with AI" sometimes gets waved off as slop. Fair instinct — so judge the work, not the method: the self-host path is verified end to end, secrets are encrypted at rest, rotation is advisory and operator-gated, and the AI assistant only ever sees key *metadata*. If you find a bug or a bad decision, open an issue. I read them, and I'd rather fix it than defend it.
 
 ## License
 

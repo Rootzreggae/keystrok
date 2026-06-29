@@ -43,6 +43,18 @@ schema, so the database is ready on first start.
 > — the maintained, multi-arch, MailHog-compatible inbox (SMTP on `:1025`, web
 > UI on `:8025`). It works natively on Apple Silicon. No mail leaves your machine.
 
+### Use the prebuilt image (skip the build)
+
+CI publishes a multi-stage image to `ghcr.io/rootzreggae/keystrok`. To pull it
+instead of building locally:
+
+```bash
+docker compose pull && docker compose up
+```
+
+The compose file points `app` at that image, with `build:` kept as a fallback,
+so `docker compose up --build` still builds from source when you want to.
+
 To stop and wipe the database volume: `docker compose down -v`.
 
 ---

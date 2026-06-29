@@ -37,6 +37,9 @@ services:
       - "1025:1025" # SMTP (also reachable in-network as mailpit:1025)
 
   app:
+    # Prebuilt image, published to GHCR by CI. `build:` stays as a local
+    # fallback; run `docker compose pull` to use the published image instead.
+    image: ghcr.io/rootzreggae/keystrok:latest
     build:
       context: .
       dockerfile: Dockerfile
