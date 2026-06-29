@@ -7,7 +7,7 @@
 #   2. docker compose up --build
 #   3. App:  http://localhost:3001   Mail UI:  http://localhost:8025
 #
-# Mail catcher is Mailpit — the maintained, multi-arch, MailHog-compatible
+# Mail catcher is Mailpit, the maintained, multi-arch, MailHog-compatible
 # inbox (same SMTP-on-1025 + web UI idea; works natively on Apple Silicon).
 # All sign-in / waitlist email lands in its web UI; nothing leaves your machine.
 

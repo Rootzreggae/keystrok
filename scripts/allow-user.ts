@@ -5,7 +5,7 @@
  * Usage:  node --env-file=.env.local scripts/allow-user.ts someone@example.com
  *
  * Alternatively, add the address to ALLOWED_EMAILS (or its domain to
- * ALLOWED_EMAIL_DOMAINS) in the environment — no DB write needed.
+ * ALLOWED_EMAIL_DOMAINS) in the environment. No DB write needed.
  */
 import { PrismaClient } from '@prisma/client'
 
@@ -26,7 +26,7 @@ async function main() {
     select: { email: true, status: true },
   })
 
-  console.log(`✓ ${entry.email} is now ${entry.status} — they can sign in.`)
+  console.log(`✓ ${entry.email} is now ${entry.status}. They can sign in.`)
 }
 
 main()

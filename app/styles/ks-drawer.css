@@ -1,4 +1,4 @@
-/* Key detail drawer — right slide-in. Vendored from handoff app.css, scoped .kb.
+/* Key detail drawer: right slide-in. Vendored from handoff app.css, scoped .kb.
  * position:fixed (not absolute) so it overlays the viewport from inside any page. */
 
 .kb .ks-drawer-scrim { position: fixed; inset: 0; background: rgba(8, 10, 14, 0.5); backdrop-filter: blur(2px); z-index: 60; animation: ksfade .15s ease; }
@@ -22,7 +22,7 @@
 .kb .ks-code .ln { color: var(--tx-dim); margin-right: 12px; user-select: none; }
 .kb .ks-code .hit { color: var(--crit); }
 
-/* "if you promote" explainer — bordered inset box, matches the render */
+/* "if you promote" explainer: bordered inset box, matches the render */
 .kb .ks-drawer__promote { display: flex; gap: 10px; align-items: flex-start; padding: 13px 14px; background: var(--inset); border: 1px solid var(--div-2); font-size: 12.5px; line-height: 1.55; color: var(--tx-mut); }
 .kb .ks-drawer__promote b { color: var(--tx); font-weight: 600; }
 

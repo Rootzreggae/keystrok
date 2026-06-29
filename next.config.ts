@@ -6,7 +6,7 @@ const isDev = process.env.NODE_ENV !== "production";
  * Content-Security-Policy.
  *
  * `script-src` keeps 'unsafe-inline' because Next.js injects inline hydration
- * scripts and we are not (yet) wiring nonces through middleware — that is the
+ * scripts and we are not (yet) wiring nonces through middleware. That is the
  * next CSP hardening step. 'unsafe-eval' is dev-only (HMR / React refresh).
  * `style-src` allows 'unsafe-inline' for Tailwind's injected styles.
  * `connect-src` permits same-origin plus the dev websocket for HMR.
@@ -42,7 +42,7 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
-  // ESLint and TypeScript strict checking both enforced — real errors block
+  // ESLint and TypeScript strict checking both enforced. Real errors block
   // builds. (The strict-TS backlog was drained; the `ignoreBuildErrors` escape
   // hatch is intentionally gone.)
   turbopack: {

@@ -1,4 +1,4 @@
-/* Direction C — SCHEMATIC. Spec-sheet departure: blueprint annotations,
+/* Direction C: SCHEMATIC. Spec-sheet departure: blueprint annotations,
  * dotted rules, corner ticks, figure numbers. Archivo display + Plex Mono ink. */
 
 .sch {
@@ -135,7 +135,7 @@
 .sch-cta .cmd .p { color: var(--a); }
 .sch-cta .actions { display: flex; flex-direction: column; gap: 12px; align-items: stretch; flex: 0 0 auto; }
 
-/* ════ MOTION — functional instrumentation only ════ */
+/* ════ MOTION: functional instrumentation only ════ */
 
 /* run/replay button in figure heads */
 .sch-run {
@@ -161,7 +161,7 @@
   .sch .sch-inputrail[data-step] { transition: opacity .45s ease; }
 }
 
-/* status blip — a live-state signal, not decoration */
+/* status blip: a live-state signal, not decoration */
 .sch .blip { display: inline-flex; align-items: center; gap: 7px; }
 .sch .blip::before {
   content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--a);
@@ -190,7 +190,7 @@
   .sch .sec-head[data-ink].is-in::after { transform: scaleX(1); }
 }
 
-/* module card hover — measurement emphasis */
+/* module card hover: measurement emphasis */
 .sch-mod { position: relative; transition: border-color .2s ease; }
 .sch-mod:hover { border-color: var(--ink); }
 .sch-mod::before, .sch-mod::after {

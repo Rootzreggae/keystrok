@@ -1,4 +1,4 @@
-/* Discovery — findings triage + scan instrument. Vendored from handoff, scoped .kb. */
+/* Discovery: findings triage + scan instrument. Vendored from handoff, scoped .kb. */
 
 .kb .ks-disc { display: grid; grid-template-columns: minmax(0, 1fr) 312px; gap: 24px; align-items: start; }
 
@@ -14,7 +14,7 @@
 .kb .ks-finding__src { font-family: var(--font-mono); font-size: 11px; color: var(--tx-dim); margin-top: 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .kb .ks-finding__cta { display: flex; flex-direction: column; gap: 8px; flex: none; justify-content: center; }
 
-/* the "N new" count pill — rounded count badge, pushed to the far right */
+/* the "N new" count pill: rounded count badge, pushed to the far right */
 .kb .ks-disc__count { border-radius: 99px; margin-left: auto; }
 
 /* recently triaged */
@@ -27,7 +27,7 @@
 .kb .ks-triaged__path { color: var(--tx-dim); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .kb .ks-triaged__when { color: var(--tx-dim); flex: none; }
 
-/* connected repositories — each re-scannable any time */
+/* connected repositories: each re-scannable any time */
 .kb .ks-scanrepos { padding: 13px 18px; border-bottom: 1px solid var(--div); }
 .kb .ks-scanrepos__l { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--tx-dim); margin-bottom: 10px; }
 .kb .ks-scanrepo { display: flex; align-items: center; gap: 9px; padding: 5px 0; }

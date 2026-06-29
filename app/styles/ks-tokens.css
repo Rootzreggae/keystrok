@@ -1,18 +1,18 @@
-/* Keystrok app design tokens — from the Claude Design handoff.
+/* Keystrok app design tokens: from the Claude Design handoff.
  * Source of truth: design/app-refinements/design_handoff_keystrok_app/DESIGN_SYSTEM.md
  *
- * Scoped to `.kb` so it only styles the redesigned app screens — the landing
+ * Scoped to `.kb` so it only styles the redesigned app screens; the landing
  * page and not-yet-migrated screens are untouched. The app shell root carries
  * `class="kb ksapp"`; tokens cascade from there.
  *
  * Colour is reserved for security state. Chrome is neutral charcoal.
  * Square: radius 0 panels, 2px controls, 50% dots. Mono for data, sans for prose. */
 
-/* Fonts (Archivo + IBM Plex Mono) are imported at the top of app/globals.css —
+/* Fonts (Archivo + IBM Plex Mono) are imported at the top of app/globals.css.
  * CSS requires @import rules before all others, and Tailwind expands inline. */
 
 .kb {
-  /* surfaces — charcoal, not near-black. --bg-0 is the deepest (the content
+  /* surfaces: charcoal, not near-black. --bg-0 is the deepest (the content
    * canvas); the sidebar sits on the lighter --bg for depth/contrast. */
   --bg-0: #131519;
   --bg: #181b22;
@@ -32,7 +32,7 @@
   --tx-mut: #8b94a3;
   --tx-dim: #626c7c;
 
-  /* state — the only place colour is allowed */
+  /* state: the only place colour is allowed */
   --a: #34d399;        /* accent: proceed / healthy / active / primary action */
   --a-2: #5fe0b0;
   --a-dim: rgba(52, 211, 153, 0.13);
@@ -47,12 +47,12 @@
   --low: #8fa1bd;      /* low */
   --ok: #34d399;       /* success = accent */
 
-  /* radii — square. 0 panels, 2px controls, 50% dots */
+  /* radii: square. 0 panels, 2px controls, 50% dots */
   --r-panel: 0px;
   --r-ctl: 2px;
   --r-dot: 50%;
 
-  /* type — mono for data, sans for prose */
+  /* type: mono for data, sans for prose */
   --font-sans: 'Archivo', system-ui, -apple-system, sans-serif;
   --font-mono: 'IBM Plex Mono', 'JetBrains Mono', monospace;
 

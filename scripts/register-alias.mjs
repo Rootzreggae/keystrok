@@ -19,7 +19,7 @@ register(
           return next(pathToFileURL(p).href, ctx)
         }
         // Extensionless relative import (e.g. "./mailer") that maps to a .ts/.tsx
-        // file — Turbopack resolves these; plain Node does not.
+        // file. Turbopack resolves these; plain Node does not.
         if ((spec.startsWith('./') || spec.startsWith('../')) && ctx.parentURL) {
           const base = dirname(fileURLToPath(ctx.parentURL))
           let p = resolvePath(base, spec)

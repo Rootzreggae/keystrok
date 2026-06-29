@@ -1,4 +1,4 @@
-/* Rotations — queue + guided stepper. Vendored from handoff app.css, scoped .kb. */
+/* Rotations: queue + guided stepper. Vendored from handoff app.css, scoped .kb. */
 
 .kb .ks-page--wide { max-width: none; padding: 0; height: 100%; display: flex; flex-direction: column; }
 

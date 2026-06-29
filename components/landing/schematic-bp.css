@@ -1,10 +1,10 @@
-/* Direction C — SCHEMATIC, breakpoint-tailored layouts.
+/* Direction C: SCHEMATIC, breakpoint-tailored layouts.
  * Not "the desktop page, stacked": each variant gets its own composition.
  *   .sch--md  (~834)  input rail + 3-stage pipeline · module spec-STRIPS
  *   .sch--sm  (~390)  vertical schematic flow · stacked modules · condensed bar
  */
 
-/* ═══════════ MD — tablet ═══════════ */
+/* ═══════════ MD: tablet ═══════════ */
 .sch--md .wrap { max-width: none; padding: 0 36px; }
 
 .sch--md .sch-bar .cell { padding: 0 20px; }
@@ -52,7 +52,7 @@
 .sch--md .sch-cta .wrap { padding-top: 72px; padding-bottom: 72px; gap: 32px; }
 .sch--md .sch-cta h2 { font-size: 40px; }
 
-/* ═══════════ SM — phone ═══════════ */
+/* ═══════════ SM: phone ═══════════ */
 .sch--sm { font-size: 14px; }
 .sch--sm .wrap { max-width: none; padding: 0 20px; }
 

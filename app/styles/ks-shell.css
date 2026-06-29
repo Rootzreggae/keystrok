@@ -1,4 +1,4 @@
-/* Keystrok app shell — sidebar + top bar. Built on .kb tokens. Responsive:
+/* Keystrok app shell: sidebar + top bar. Built on .kb tokens. Responsive:
  * full sidebar on desktop, off-canvas drawer under 768px, icon-rail when collapsed. */
 
 .kb.ksapp { display: flex; flex-direction: row; height: 100vh; width: 100%; overflow: hidden; }
@@ -11,7 +11,7 @@
 .ks-side__logo b i { color: var(--a); font-style: normal; }
 
 .ks-side__nav { flex: 1; overflow-y: auto; padding: 12px 10px; display: flex; flex-direction: column; gap: 0; }
-/* divider between each nav group — quick visual grouping */
+/* divider between each nav group: quick visual grouping */
 .ks-navgroup + .ks-navgroup { border-top: 1px solid var(--div); margin-top: 14px; padding-top: 14px; }
 .ks-navgroup__l { font-family: var(--font-mono); font-size: 9.5px; letter-spacing: 0.13em; text-transform: uppercase; color: var(--tx-dim); padding: 4px 12px 6px; }
 .ks-nav { display: flex; align-items: center; gap: 11px; padding: 11px 12px; border-radius: 0; color: var(--tx-mut); font-family: var(--font-sans); font-size: 13px; text-decoration: none; cursor: pointer; transition: color .12s; }
@@ -70,7 +70,7 @@
 .ks-top__menu { display: none; background: none; border: none; color: var(--tx-mut); cursor: pointer; padding: 4px; }
 .ks-top__menu:hover { color: var(--tx); }
 .ks-top__title { font-family: var(--font-sans); font-weight: 700; font-size: 16px; color: var(--tx); }
-/* canonical, always-visible "find more keys" action — present on every screen */
+/* canonical, always-visible "find more keys" action: present on every screen */
 .ks-top__find { margin-left: auto; flex: none; }
 @media (max-width: 640px) { .ks-top__find span { display: none; } }
 

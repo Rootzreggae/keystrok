@@ -4,7 +4,7 @@
  *
  * Run:  node --env-file=.env.local scripts/encrypt-existing-platform-keys.ts
  *
- * Safe to run repeatedly — already-encrypted and empty rows are skipped.
+ * Safe to run repeatedly. Already-encrypted and empty rows are skipped.
  */
 import { PrismaClient } from '@prisma/client'
 import { encryptSecret, isEncrypted } from '../lib/crypto.ts'

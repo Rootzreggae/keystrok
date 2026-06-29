@@ -1,15 +1,15 @@
 # Deploying Keystrok
 
 Keystrok is a standard Next.js 15 app backed by PostgreSQL and SMTP email.
-There is no Vercel lock-in — it runs anywhere you can run Node 20+ and reach a
+There is no Vercel lock-in. It runs anywhere you can run Node 20+ and reach a
 Postgres database.
 
 Two paths are described below:
 
-- **A. Bundled stack (`docker compose`)** — app + Postgres + a MailHog-style
+- **A. Bundled stack (`docker compose`)**: app + Postgres + a MailHog-style
   mail catcher, fully self-contained. Best for trying it out or single-box
   self-hosting.
-- **B. Bring-your-own infra** — managed Postgres + real SMTP (or Resend),
+- **B. Bring-your-own infra**: managed Postgres + real SMTP (or Resend),
   deploying the container (or a plain `next build`) however you like.
 
 ---
@@ -39,8 +39,8 @@ Sign in at `/auth/signin` with the email you allowlisted, open the Mailpit UI,
 and click the magic link. On boot the app runs `prisma db push` to create the
 schema, so the database is ready on first start.
 
-> **Mail catcher.** The compose file uses [Mailpit](https://mailpit.axllent.org/)
-> — the maintained, multi-arch, MailHog-compatible inbox (SMTP on `:1025`, web
+> **Mail catcher.** The compose file uses [Mailpit](https://mailpit.axllent.org/),
+> the maintained, multi-arch, MailHog-compatible inbox (SMTP on `:1025`, web
 > UI on `:8025`). It works natively on Apple Silicon. No mail leaves your machine.
 
 ### Use the prebuilt image (skip the build)
@@ -61,11 +61,11 @@ To stop and wipe the database volume: `docker compose down -v`.
 
 ## B. Bring-your-own infra (production)
 
-1. **Database** — provision PostgreSQL (Neon, RDS, Cloud SQL, your own…) and set
+1. **Database**: provision PostgreSQL (Neon, RDS, Cloud SQL, your own…) and set
    `DATABASE_URL`. Apply the schema once with `npx prisma db push` (or wire it
    into your release step). The container does this automatically on boot.
 
-2. **Email** — pick one:
+2. **Email**: pick one:
    - **SMTP**: set `EMAIL_TRANSPORT=smtp` and the `EMAIL_SERVER_*` vars. Leave
      `EMAIL_SERVER_USER` empty for unauthenticated relays.
    - **Resend**: set `EMAIL_TRANSPORT=resend` and `RESEND_API_KEY`. `EMAIL_FROM`
@@ -74,7 +74,7 @@ To stop and wipe the database volume: `docker compose down -v`.
    Both magic-link sign-in and the waitlist confirmation go through the same
    mailer (`lib/mailer.ts`).
 
-3. **Run it** — either deploy the image built from the `Dockerfile`, or build on
+3. **Run it**: either deploy the image built from the `Dockerfile`, or build on
    the host:
 
    ```bash
@@ -98,15 +98,15 @@ To stop and wipe the database volume: `docker compose down -v`.
 | `NEXTAUTH_URL` | ✅ | Public origin, e.g. `https://keystrok.example.com`. |
 | `NEXTAUTH_SECRET` | ✅ | `openssl rand -base64 32`. |
 | `ENCRYPTION_KEY` | ✅ | Encrypts platform API keys at rest (AES-256-GCM). Must decode to **32 bytes**: `openssl rand -base64 32`. See rotation note below. |
-| `EMAIL_TRANSPORT` | — | `smtp` \| `resend`. Auto-detected if unset. |
+| `EMAIL_TRANSPORT` | - | `smtp` \| `resend`. Auto-detected if unset. |
 | `EMAIL_SERVER_HOST` / `_PORT` / `_USER` / `_PASSWORD` | for SMTP | `_USER` empty ⇒ no SMTP auth (e.g. Mailpit). |
 | `RESEND_API_KEY` | for Resend | Hosted email API key. |
 | `EMAIL_FROM` | ✅ | From address/name for outbound mail. |
-| `ALLOWED_EMAILS` | — | Comma-separated allowlist (invite-only gate). |
-| `ALLOWED_EMAIL_DOMAINS` | — | Comma-separated domain allowlist. |
-| `AUTH_OPEN_REGISTRATION` | — | `true` lets anyone sign up on your instance. |
-| `ALLOW_PRIVATE_PLATFORM_URLS` | — | `true` permits connection-tests to private/internal IPs (SSRF guard opt-out). |
-| `PORT` | — | Listen port (default `3000`). |
+| `ALLOWED_EMAILS` | - | Comma-separated allowlist (invite-only gate). |
+| `ALLOWED_EMAIL_DOMAINS` | - | Comma-separated domain allowlist. |
+| `AUTH_OPEN_REGISTRATION` | - | `true` lets anyone sign up on your instance. |
+| `ALLOW_PRIVATE_PLATFORM_URLS` | - | `true` permits connection-tests to private/internal IPs (SSRF guard opt-out). |
+| `PORT` | - | Listen port (default `3000`). |
 
 See `.env.example` for the annotated template.
 
@@ -133,7 +133,7 @@ it on boot; to run manually: `npx prisma db push`. For visual inspection:
 
 ## Security notes
 
-- **Never commit `.env` / `.env.local`** — only `.env.example` is tracked.
+- **Never commit `.env` / `.env.local`**: only `.env.example` is tracked.
 - **`ENCRYPTION_KEY` rotation** re-keys stored secrets: existing `Platform.apiKey`
   rows are encrypted under the current key. Rotating it requires decrypting with
   the old key and re-encrypting with the new one (see `scripts/`). Don't rotate

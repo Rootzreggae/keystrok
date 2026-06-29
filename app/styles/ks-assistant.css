@@ -1,4 +1,4 @@
-/* BYO AI assistant — connect drawer + chat drawer. Uses the .ks-drawer shell. */
+/* BYO AI assistant: connect drawer + chat drawer. Uses the .ks-drawer shell. */
 
 .kb .ks-as-connect { width: 460px; }
 .kb .ks-as-chat { width: 460px; }
@@ -9,7 +9,7 @@
 .kb .ks-as__grouplbl { font-family: var(--font-mono); font-size: 9.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--tx-dim); margin: 16px 0 10px; }
 .kb .ks-as__grouplbl:first-of-type { margin-top: 4px; }
 
-/* connect — config form */
+/* connect: config form */
 .kb .ks-as__back { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-mono); font-size: 11px; color: var(--tx-dim); background: none; border: none; cursor: pointer; padding: 0; margin-bottom: 18px; }
 .kb .ks-as__back:hover { color: var(--tx-mut); }
 .kb .ks-as__field { display: block; margin-bottom: 14px; }

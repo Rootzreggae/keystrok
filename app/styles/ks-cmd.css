@@ -1,6 +1,6 @@
 /* ⌘K launcher + Search page. Vendored/adapted from handoff, scoped .kb. */
 
-/* anchored launcher — NOT a modal; drops from the top-bar search field, page stays live */
+/* anchored launcher: NOT a modal; drops from the top-bar search field, page stays live */
 .kb .ks-cmd-scrim { position: fixed; inset: 0; z-index: 80; display: flex; align-items: flex-start; justify-content: flex-end; padding: 60px 24px 0 0; }
 .kb .ks-cmd { width: 500px; max-width: 92vw; max-height: 640px; background: var(--elev); border: 1px solid var(--div-3); border-radius: 2px; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 0 0 0 1px var(--div-2); display: flex; flex-direction: column; overflow: hidden; }
 

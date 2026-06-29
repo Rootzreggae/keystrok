@@ -1,4 +1,4 @@
-/* Keys ledger — vendored from the handoff prototype (app.css ks-keys/ks-tbl),
+/* Keys ledger: vendored from the handoff prototype (app.css ks-keys/ks-tbl),
  * scoped to .kb. The dense table is the default lens. */
 
 .kb .ks-keys { display: flex; flex-direction: column; min-height: 0; height: 100%; }
@@ -30,11 +30,11 @@
 /* severity tick (shared atom) */
 .kb .ks-aqrow__sev { width: 3px; flex: none; border-radius: 0; }
 
-/* timeline lens — rotation horizon */
+/* timeline lens: rotation horizon */
 .kb .ks-tl { flex: 1; min-height: 0; overflow-y: auto; padding: 18px 22px 40px; }
 .kb .ks-tl__hdrow { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
 .kb .ks-tl__hd { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--tx-dim); }
-/* horizon zoom presets — snap to the rotation bands */
+/* horizon zoom presets: snap to the rotation bands */
 .kb .ks-tl__zoom { display: inline-flex; border: 1px solid var(--div-2); border-radius: 2px; overflow: hidden; }
 .kb .ks-tl__zoomb { font-family: var(--font-mono); font-size: 11px; color: var(--tx-dim); background: var(--bg-2); border: none; border-right: 1px solid var(--div-2); padding: 4px 11px; cursor: pointer; transition: color .1s, background .1s; }
 .kb .ks-tl__zoomb:last-child { border-right: none; }
