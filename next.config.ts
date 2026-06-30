@@ -21,7 +21,8 @@ const csp = [
   `connect-src 'self'${isDev ? " ws: wss:" : ""}`,
   "object-src 'none'",
   "base-uri 'self'",
-  "form-action 'self'",
+  // github.com is allowed so the GitHub App Manifest setup form can POST there.
+  "form-action 'self' https://github.com",
   "frame-ancestors 'none'",
   ...(isDev ? [] : ["upgrade-insecure-requests"]),
 ].join("; ");
