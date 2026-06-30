@@ -11,7 +11,10 @@ const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replac
 // gets a correctly-scoped App with no manual env editing.
 export async function GET(request: NextRequest) {
   const session = await auth()
-  const origin = new URL(request.url).origin
+  // Public origin. Behind a reverse proxy request.url is the internal address
+  // (e.g. localhost:3000), so prefer the configured NEXTAUTH_URL for the App's
+  // name/url/redirect_url. Matches what the install + setup routes use.
+  const origin = process.env.NEXTAUTH_URL ?? new URL(request.url).origin
   if (!session?.user?.id) return NextResponse.redirect(new URL('/auth/signin', origin))
   if (!(await isOperator(session.user.id))) {
     return NextResponse.redirect(new URL('/discovery-scanner?github_app=not_operator', origin))

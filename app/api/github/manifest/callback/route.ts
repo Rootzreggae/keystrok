@@ -7,7 +7,8 @@ import { isOperator, saveAppConfig } from '@/lib/github'
 // store them encrypted, then continue straight to installation.
 export async function GET(request: NextRequest) {
   const session = await auth()
-  const origin = new URL(request.url).origin
+  // Public origin (proxy-safe), same as the start route.
+  const origin = process.env.NEXTAUTH_URL ?? new URL(request.url).origin
   const back = (status: string) => NextResponse.redirect(new URL(`/discovery-scanner?github_app=${status}`, origin))
 
   if (!session?.user?.id) return NextResponse.redirect(new URL('/auth/signin', origin))
