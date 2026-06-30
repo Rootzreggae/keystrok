@@ -1,0 +1,29 @@
+name: Mirror to Codeberg
+
+# Keeps the Codeberg mirror in sync with GitHub (GitHub stays primary). Codeberg
+# does not offer pull-mirrors here, so we push on every commit to main.
+# Requires a CODEBERG_TOKEN secret (a Codeberg access token with repo write).
+# Until that secret is set, the job runs green and skips, so it is never noisy.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  mirror:
+    if: github.repository == 'Rootzreggae/keystrok'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Push to Codeberg
+        env:
+          CODEBERG_TOKEN: ${{ secrets.CODEBERG_TOKEN }}
+        run: |
+          if [ -z "$CODEBERG_TOKEN" ]; then
+            echo "CODEBERG_TOKEN secret not set; skipping mirror."
+            echo "Add it in repo Settings > Secrets and variables > Actions to enable."
+            exit 0
+          fi
+          git push --force "https://windgodfist:${CODEBERG_TOKEN}@codeberg.org/windgodfist/keystrok.git" HEAD:main
