@@ -55,7 +55,7 @@ model AssistantProvider {
 }
 
 // A connected code source (GitHub App installation, later GitLab/Bitbucket).
-// We store the installationId, never a token — installation tokens are minted
+// We store the installationId, never a token, installation tokens are minted
 // on demand from the App's private key.
 model SourceConnection {
   id             String   @id @default(cuid())
@@ -73,6 +73,22 @@ model SourceConnection {
   @@unique([provider, installationId])
   @@index([userId])
   @@map("source_connections")
+}
+
+// Self-host GitHub App credentials, captured via the App Manifest flow so each
+// instance owns its own App (no shared secret). Env vars are the fallback for
+// single-tenant deploys. Singleton row (id = "default").
+model GithubAppConfig {
+  id            String   @id @default("default")
+  appId         String
+  slug          String
+  privateKeyEnc String // encrypted PEM
+  webhookSecret String? // encrypted; reserved (no webhooks today)
+  clientId      String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("github_app_config")
 }
 
 model Session {
@@ -398,7 +414,7 @@ model RotationStep {
   result          String?
   output          String?
   errorMessage    String?
-  // User-provided note for this step — a completion note or a skip reason.
+  // User-provided note for this step, a completion note or a skip reason.
   // The terminal timestamp for both completed and skipped steps is completedAt;
   // `status` distinguishes which.
   notes           String?

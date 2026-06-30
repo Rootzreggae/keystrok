@@ -90,6 +90,21 @@ To stop and wipe the database volume: `docker compose down -v`.
 
 ---
 
+## Connecting GitHub (optional)
+
+Scanning GitHub repos needs a GitHub App, but you don't create one by hand or
+set any env vars. The instance operator (the first user to sign in) opens
+**Discovery, Connect a source, GitHub** and Keystrok creates a private,
+read-only App on their GitHub account via GitHub's App Manifest flow, then
+stores its credentials (private key encrypted) in the database. Local-folder
+scanning needs no setup at all.
+
+Advanced: to supply a pre-made App instead, set `GITHUB_APP_ID`,
+`GITHUB_APP_SLUG`, and `GITHUB_APP_PRIVATE_KEY_BASE64`. These are the fallback
+used only when no App has been set up in-app.
+
+---
+
 ## Required environment variables
 
 | Variable | Required | Notes |

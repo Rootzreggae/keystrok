@@ -6,11 +6,14 @@ import { githubConfigured, installUrl } from '@/lib/github'
 // After they install, GitHub redirects back to /api/github/setup.
 export async function GET() {
   const session = await auth()
+  const base = process.env.NEXTAUTH_URL ?? 'http://localhost:3001'
   if (!session?.user?.id) {
-    return NextResponse.redirect(new URL('/auth/signin', process.env.NEXTAUTH_URL ?? 'http://localhost:3001'))
+    return NextResponse.redirect(new URL('/auth/signin', base))
   }
-  if (!githubConfigured()) {
-    return NextResponse.json({ error: 'GitHub App is not configured on this server.' }, { status: 503 })
+  if (!(await githubConfigured())) {
+    // Not set up on this instance yet. The wizard guides operators to the
+    // manifest flow; this is the defensive fallback for a direct hit.
+    return NextResponse.redirect(new URL('/discovery-scanner?github_app=needed', base))
   }
-  return NextResponse.redirect(installUrl())
+  return NextResponse.redirect(await installUrl())
 }

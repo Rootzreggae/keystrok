@@ -44,6 +44,13 @@ export function SourceConnect({
     enabled: open && step >= 3,
     queryFn: async () => { const r = await fetch('/api/github/repos'); if (!r.ok) throw new Error('repos'); return r.json() },
   })
+  // Is a GitHub App configured on this instance, and is the caller the operator
+  // who may set one up? Drives whether step 2 installs or runs the manifest flow.
+  const { data: ghStatus } = useQuery<{ configured: boolean; isOperator: boolean }>({
+    queryKey: ['github-status'],
+    enabled: open && step === 2,
+    queryFn: async () => { const r = await fetch('/api/github/status'); return r.ok ? r.json() : { configured: false, isOperator: false } },
+  })
   const source = reposResp?.sources?.[0]
   const repos = source?.repos ?? []
   const connectionId = source?.connectionId
@@ -121,6 +128,9 @@ export function SourceConnect({
               <div className="ks-perm"><span className="ks-perm__icon"><FileText size={16} /></span><div className="ks-perm__main"><div className="ks-perm__name">Repository metadata <span className="ks-perm__tag">read-only</span></div><div className="ks-perm__desc">Repo names, branches, visibility, required by every GitHub App.</div></div></div>
               <div className="ks-perm-neg"><span><X size={11} /> No write access</span><span><X size={11} /> No admin / settings</span><span><X size={11} /> No issues or PRs</span></div>
               <div className="ks-wiz__note"><Github size={14} style={{ flex: 'none', marginTop: 1 }} /><span>Next, <b>on github.com</b>, you grant <b>all repositories</b> or a <b>selected set</b>. Not an org owner? GitHub sends the request to one to approve.</span></div>
+              {ghStatus && !ghStatus.configured && ghStatus.isOperator && (
+                <div className="ks-wiz__note"><Github size={14} style={{ flex: 'none', marginTop: 1 }} /><span>This instance has no GitHub App yet. We&apos;ll create one on <b>your</b> GitHub account in two clicks (read-only), then return here to pick repositories.</span></div>
+              )}
             </div>
           )}
 
@@ -161,9 +171,15 @@ export function SourceConnect({
 
         <div className="ks-drawer__foot">
           {step === 2 && (
-            <button className="ks-btn ks-btn--primary" style={{ flex: 1, justifyContent: 'center' }} onClick={() => { window.location.href = '/api/github/install' }}>
-              <Github size={14} /> Continue on GitHub
-            </button>
+            !ghStatus ? (
+              <button className="ks-btn ks-btn--primary" style={{ flex: 1, justifyContent: 'center' }} disabled>Checking instance…</button>
+            ) : !ghStatus.configured && !ghStatus.isOperator ? (
+              <div style={{ flex: 1, fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--tx-dim)', textAlign: 'center', lineHeight: 1.5 }}>GitHub isn&apos;t connected on this instance yet. Ask your admin to set it up.</div>
+            ) : (
+              <button className="ks-btn ks-btn--primary" style={{ flex: 1, justifyContent: 'center' }} onClick={() => { window.location.href = ghStatus.configured ? '/api/github/install' : '/api/github/manifest/start' }}>
+                <Github size={14} /> {ghStatus.configured ? 'Continue on GitHub' : 'Set up the GitHub App'}
+              </button>
+            )
           )}
           {step === 3 && (
             <button className="ks-btn ks-btn--primary" style={{ flex: 1, justifyContent: 'center' }} disabled={picked.size === 0} onClick={() => setStep(4)}>

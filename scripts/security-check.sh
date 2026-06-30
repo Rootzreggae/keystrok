@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Keystrok security battery — fast, repeatable checks that the core guarantees hold.
+# Keystrok security battery, fast, repeatable checks that the core guarantees hold.
 # Usage:  bash scripts/security-check.sh   (dev server must be running on :3001)
 #
 # Checks:
@@ -45,7 +45,7 @@ else
 fi
 
 echo "== 2. Auth gate (unauthenticated must NOT get 200) =="
-# /api/test-email sends real mail — must be authenticated-only.
+# /api/test-email sends real mail, must be authenticated-only.
 code=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$BASE/api/test-email" -H 'Content-Type: application/json' -d '{"email":"x@y.com","testType":"send"}')
 if [ "$code" = "401" ]; then pass "/api/test-email (POST) -> 401"; else bad "/api/test-email returned $code (expected 401)"; fi
 PROTECTED=(
@@ -65,7 +65,7 @@ done
 
 echo "== 3. Secret scan (gitleaks) =="
 if command -v gitleaks >/dev/null 2>&1; then
-  # test-scanner/ holds intentional detector fixtures — scope them out.
+  # test-scanner/ holds intentional detector fixtures, scope them out.
   if gitleaks detect --no-banner --redact \
       --report-path /tmp/keystrok-gitleaks.json 2>/dev/null; then
     pass "gitleaks found no secrets"

@@ -41,9 +41,9 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# Design handoff — large binaries/bundle, keep local, do not commit
+# Design handoff, large binaries/bundle, keep local, do not commit
 design/*.zip
 design/app-refinements/
 
-# Synthetic secret fixtures for scanner testing — never commit
+# Synthetic secret fixtures for scanner testing, never commit
 test-fixtures/

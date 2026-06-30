@@ -3,7 +3,7 @@ node_modules
 .next
 out
 
-# Local env / secrets — NEVER bake into an image
+# Local env / secrets, NEVER bake into an image
 .env
 .env.*
 !.env.example
