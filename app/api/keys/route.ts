@@ -11,12 +11,9 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const userId = session.user.id
-
-    // Get all discovered keys for the user (excluding false positives)
+    // Get all discovered keys for the instance (shared workspace, excluding false positives)
     const keys = await prisma.discoveredKey.findMany({
       where: {
-        userId: userId,
         status: { not: 'false_positive' }
       },
       include: {

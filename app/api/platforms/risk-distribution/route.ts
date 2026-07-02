@@ -10,13 +10,9 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const userId = session.user.id
-
-    // Get all platforms for the user
+    // Get all platforms for the instance (shared workspace)
     const platforms = await prisma.platform.findMany({
-      where: {
-        userId: userId
-      }
+      where: {}
     })
 
     // If no platforms, return empty result (no more mock data!)
@@ -34,7 +30,6 @@ export async function GET(request: NextRequest) {
         const [high, medium, low] = await Promise.all([
           prisma.discoveredKey.count({
             where: {
-              userId: userId,
               platformId: platform.id,
               severity: 'high',
               status: 'active'
@@ -42,7 +37,6 @@ export async function GET(request: NextRequest) {
           }),
           prisma.discoveredKey.count({
             where: {
-              userId: userId,
               platformId: platform.id,
               severity: 'medium',
               status: 'active'
@@ -50,7 +44,6 @@ export async function GET(request: NextRequest) {
           }),
           prisma.discoveredKey.count({
             where: {
-              userId: userId,
               platformId: platform.id,
               severity: 'low',
               status: 'active'
@@ -60,7 +53,6 @@ export async function GET(request: NextRequest) {
 
         const critical = await prisma.discoveredKey.count({
           where: {
-            userId: userId,
             platformId: platform.id,
             severity: 'critical',
             status: 'active'

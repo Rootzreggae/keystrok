@@ -10,27 +10,21 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const userId = session.user.id
-
-    // Get total keys discovered
+    // Get total keys discovered (shared workspace)
     const totalKeysDiscovered = await prisma.discoveredKey.count({
       where: {
-        userId: userId,
         status: { not: 'false_positive' } // Exclude false positives
       }
     })
 
     // Get platforms configured
     const platformsConfigured = await prisma.platform.count({
-      where: {
-        userId: userId
-      }
+      where: {}
     })
 
     // Get critical alerts (high and critical severity keys that are active)
     const criticalAlerts = await prisma.discoveredKey.count({
       where: {
-        userId: userId,
         severity: { in: ['critical', 'high'] },
         status: 'active'
       }
@@ -39,7 +33,6 @@ export async function GET(request: NextRequest) {
     // Calculate security score based on various factors
     const activeHighRiskKeys = await prisma.discoveredKey.count({
       where: {
-        userId: userId,
         severity: { in: ['critical', 'high'] },
         status: 'active'
       }
@@ -47,14 +40,12 @@ export async function GET(request: NextRequest) {
 
     const rotatedKeys = await prisma.discoveredKey.count({
       where: {
-        userId: userId,
         status: 'rotated'
       }
     })
 
     const ignoredKeys = await prisma.discoveredKey.count({
       where: {
-        userId: userId,
         status: 'ignored'
       }
     })
@@ -66,7 +57,6 @@ export async function GET(request: NextRequest) {
     // Subtract 20 points for each active critical key
     const criticalKeys = await prisma.discoveredKey.count({
       where: {
-        userId: userId,
         severity: 'critical',
         status: 'active'
       }
@@ -76,7 +66,6 @@ export async function GET(request: NextRequest) {
     // Subtract 10 points for each active high severity key
     const highSeverityKeys = await prisma.discoveredKey.count({
       where: {
-        userId: userId,
         severity: 'high',
         status: 'active'
       }
@@ -86,7 +75,6 @@ export async function GET(request: NextRequest) {
     // Subtract 5 points for each active medium severity key
     const mediumSeverityKeys = await prisma.discoveredKey.count({
       where: {
-        userId: userId,
         severity: 'medium',
         status: 'active'
       }

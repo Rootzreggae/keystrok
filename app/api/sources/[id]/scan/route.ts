@@ -22,7 +22,8 @@ export async function POST(request: NextRequest, ctx: { params: Promise<{ id: st
     return NextResponse.json({ error: 'A valid repo "owner/name" is required' }, { status: 400 })
   }
 
-  const conn = await prisma.sourceConnection.findFirst({ where: { id, userId, provider: 'github' } })
+  // Shared workspace: look up by id only
+  const conn = await prisma.sourceConnection.findFirst({ where: { id, provider: 'github' } })
   if (!conn) return NextResponse.json({ error: 'Source connection not found' }, { status: 404 })
 
   // Clone target lives under ~/.keystrok/clones (inside home → passes scan-path checks).

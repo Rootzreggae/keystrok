@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
+import { requireAdmin } from '@/lib/roles'
 import { prisma } from '@/lib/prisma'
 
 // POST /api/keys/[id]/rotate - Rotate a specific key
+// ponytail: appears unused (UI drives rotation via /api/workflows); admin-gated
+// as defense-in-depth since it flips key state. Candidate for removal.
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -12,15 +15,16 @@ export async function POST(
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+    const denied = await requireAdmin(session.user.id)
+    if (denied) return denied
 
     const userId = session.user.id
     const { id: keyId } = await params
 
-    // Verify the key belongs to the user
+    // Shared workspace: look up by id only
     const key = await prisma.discoveredKey.findFirst({
       where: {
-        id: keyId,
-        userId: userId
+        id: keyId
       }
     })
 

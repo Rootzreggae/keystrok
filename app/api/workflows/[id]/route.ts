@@ -19,7 +19,6 @@ export async function GET(request: NextRequest, context: { params: Params }) {
     const workflow = await prisma.rotationWorkflow.findFirst({
       where: {
         id,
-        userId: session.user.id,
       },
       include: {
         steps: {
@@ -83,11 +82,10 @@ export async function PATCH(request: NextRequest, context: { params: Params }) {
     const { id } = await context.params
     const body = await request.json()
 
-    // Validate workflow exists and belongs to user
+    // Validate workflow exists (shared workspace: look up by id only)
     const existingWorkflow = await prisma.rotationWorkflow.findFirst({
       where: {
         id,
-        userId: session.user.id,
       },
     })
 
@@ -265,11 +263,10 @@ export async function DELETE(request: NextRequest, context: { params: Params }) 
 
     const { id } = await context.params
 
-    // Validate workflow exists and belongs to user
+    // Validate workflow exists (shared workspace: look up by id only)
     const workflow = await prisma.rotationWorkflow.findFirst({
       where: {
         id,
-        userId: session.user.id,
       },
     })
 

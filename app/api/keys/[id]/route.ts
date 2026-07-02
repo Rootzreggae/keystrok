@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { requireAdmin } from '@/lib/roles';
 
 /**
  * DELETE /api/keys/[id]
@@ -25,6 +26,9 @@ export async function DELETE(
       );
     }
 
+    const denied = await requireAdmin(session.user.id);
+    if (denied) return denied;
+
     // Validate key ID format
     if (!keyId || typeof keyId !== 'string') {
       return NextResponse.json(
@@ -33,7 +37,8 @@ export async function DELETE(
       );
     }
 
-    // Fetch the discovered key and verify ownership
+    // Fetch the discovered key (shared workspace: visible/lookup by id only,
+    // access is enforced by the admin gate above, not per-user ownership)
     const discoveredKey = await prisma.discoveredKey.findUnique({
       where: { id: keyId },
       include: {
@@ -50,14 +55,6 @@ export async function DELETE(
       return NextResponse.json(
         { error: 'Key not found' },
         { status: 404 }
-      );
-    }
-
-    // Verify user owns this key
-    if (discoveredKey.userId !== session.user.id) {
-      return NextResponse.json(
-        { error: 'Forbidden: You do not own this key' },
-        { status: 403 }
       );
     }
 

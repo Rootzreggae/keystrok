@@ -39,15 +39,18 @@ export async function isAllowedEmail(emailRaw: string): Promise<boolean> {
     return true
   }
 
-  // Approved via the waitlist ("invite"). Fail closed if the lookup errors.
+  // Invited to the team (admin added them in the Members tab), or approved via
+  // the waitlist. Fail closed if the lookup errors.
   try {
+    const invite = await prisma.invite.findUnique({ where: { email }, select: { id: true } })
+    if (invite) return true
     const entry = await prisma.waitlist.findUnique({
       where: { email },
       select: { status: true },
     })
     if (entry?.status === 'approved') return true
   } catch (err) {
-    console.error('[allowlist] waitlist lookup failed:', err)
+    console.error('[allowlist] allow lookup failed:', err)
   }
 
   return false

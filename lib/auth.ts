@@ -97,6 +97,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       // verification), and redirects the user to the AccessDenied error page.
       const email = user?.email
       if (!email) return false
+      // A removed member cannot sign back in, even if still allowlisted.
+      const existing = await prisma.user.findUnique({ where: { email: email.toLowerCase() }, select: { removedAt: true } })
+      if (existing?.removedAt) {
+        console.warn(`[auth] sign-in denied (removed member): ${email}`)
+        return false
+      }
       const allowed = await isAllowedEmail(email)
       if (!allowed) {
         console.warn(`[auth] sign-in denied (not on allowlist): ${email}`)
@@ -104,9 +110,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       return allowed
     },
     async session({ session, user }) {
-      // Include user ID in session
+      // Include user ID + role in session
       if (session.user && user) {
         session.user.id = user.id
+        session.user.role = (user as { role?: string }).role === 'admin' ? 'admin' : 'member'
       }
       return session
     },
@@ -138,6 +145,24 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     signIn: '/auth/signin',
     verifyRequest: '/auth/verify-request',
     error: '/auth/error',
+  },
+  events: {
+    // Assign a new user's role: the very first user is the admin; anyone else
+    // inherits the role from their team invite (default member). Consume the
+    // invite so the Members tab's pending list only shows not-yet-joined emails.
+    async createUser({ user }) {
+      const email = user.email?.toLowerCase()
+      const totalUsers = await prisma.user.count()
+      let role = 'member'
+      if (totalUsers <= 1) {
+        role = 'admin'
+      } else if (email) {
+        const invite = await prisma.invite.findUnique({ where: { email }, select: { role: true } })
+        if (invite?.role === 'admin') role = 'admin'
+      }
+      if (role === 'admin') await prisma.user.update({ where: { id: user.id }, data: { role } })
+      if (email) await prisma.invite.deleteMany({ where: { email } })
+    },
   },
   debug: process.env.NODE_ENV === 'development',
   secret: process.env.NEXTAUTH_SECRET,

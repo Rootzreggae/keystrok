@@ -12,7 +12,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     }
     const userId = session.user.id
 
-    const finding = await prisma.localScanFinding.findFirst({ where: { id, userId } })
+    const finding = await prisma.localScanFinding.findFirst({ where: { id } })
     if (!finding) {
       return NextResponse.json({ success: false, error: 'Finding not found' }, { status: 404 })
     }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
-import { isOperator, saveAppConfig } from '@/lib/github'
+import { saveAppConfig } from '@/lib/github'
+import { isAdmin } from '@/lib/roles'
 
 // GitHub redirects here after the operator creates the App from our manifest.
 // Exchange the one-time code for the App's credentials (incl. the private key),
@@ -12,7 +13,7 @@ export async function GET(request: NextRequest) {
   const back = (status: string) => NextResponse.redirect(new URL(`/discovery-scanner?github_app=${status}`, origin))
 
   if (!session?.user?.id) return NextResponse.redirect(new URL('/auth/signin', origin))
-  if (!(await isOperator(session.user.id))) return back('not_operator')
+  if (!(await isAdmin(session.user.id))) return back('not_operator')
 
   const code = request.nextUrl.searchParams.get('code')
   const state = request.nextUrl.searchParams.get('state')

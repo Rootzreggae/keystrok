@@ -15,6 +15,13 @@ model User {
   updatedAt           DateTime           @updatedAt
   image               String?
   name                String?
+  // Self-host = one instance = one team. Two roles: 'admin' | 'member'.
+  // The first user to register is promoted to admin; there is always >=1 admin.
+  role                String             @default("member")
+  // Soft-remove: kept (not deleted) so their contributions stay attributed and
+  // the shared workspace data they created is preserved. A removed user can't
+  // sign in and doesn't appear in the members list.
+  removedAt           DateTime?
   accounts            Account[]
   activities          Activity[]
   auditLogs           AuditLog[]
@@ -73,6 +80,20 @@ model SourceConnection {
   @@unique([provider, installationId])
   @@index([userId])
   @@map("source_connections")
+}
+
+// A pending team invite. Inviting an email creates this row (which grants
+// sign-in access) and emails them to join. When they first sign in, the new
+// User inherits `role`; the invite is "pending" until a User with that email
+// exists. Self-host = one instance = one team, so no org scoping.
+model Invite {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  role      String   @default("member")
+  invitedBy String?
+  createdAt DateTime @default(now())
+
+  @@map("invites")
 }
 
 // Self-host GitHub App credentials, captured via the App Manifest flow so each

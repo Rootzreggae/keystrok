@@ -18,10 +18,8 @@ export async function GET(request: NextRequest) {
     const limit = searchParams.get('limit')
     const offset = searchParams.get('offset')
 
-    // Build where clause
-    const where: any = {
-      userId: session.user.id,
-    }
+    // Build where clause (shared workspace: no userId filter)
+    const where: any = {}
 
     if (status) {
       where.status = status
@@ -79,7 +77,7 @@ export async function GET(request: NextRequest) {
     // Get summary statistics
     const stats = await prisma.rotationWorkflow.groupBy({
       by: ['status'],
-      where: { userId: session.user.id },
+      where: {},
       _count: { status: true },
     })
 
@@ -139,10 +137,10 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Validate platform and discovered key if provided
+    // Validate platform and discovered key if provided (shared workspace: look up by id only)
     if (platformId) {
       const platform = await prisma.platform.findFirst({
-        where: { id: platformId, userId: session.user.id },
+        where: { id: platformId },
       })
       if (!platform) {
         return NextResponse.json(
@@ -154,7 +152,7 @@ export async function POST(request: NextRequest) {
 
     if (discoveredKeyId) {
       const discoveredKey = await prisma.discoveredKey.findFirst({
-        where: { id: discoveredKeyId, userId: session.user.id },
+        where: { id: discoveredKeyId },
       })
       if (!discoveredKey) {
         return NextResponse.json(

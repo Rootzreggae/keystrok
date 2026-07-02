@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
-import { githubConfigured, isOperator } from '@/lib/github'
+import { githubConfigured } from '@/lib/github'
+import { isAdmin } from '@/lib/roles'
 import { randomBytes } from 'crypto'
 
 const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/'/g, '&#39;')
@@ -16,7 +17,7 @@ export async function GET(request: NextRequest) {
   // name/url/redirect_url. Matches what the install + setup routes use.
   const origin = process.env.NEXTAUTH_URL ?? new URL(request.url).origin
   if (!session?.user?.id) return NextResponse.redirect(new URL('/auth/signin', origin))
-  if (!(await isOperator(session.user.id))) {
+  if (!(await isAdmin(session.user.id))) {
     return NextResponse.redirect(new URL('/discovery-scanner?github_app=not_operator', origin))
   }
   if (await githubConfigured()) {

@@ -42,8 +42,7 @@ export async function POST(
 
       const finding = await prisma.localScanFinding.findFirst({
         where: {
-          id: id,
-          userId: userId
+          id: id
         },
         select: {
           id: true,

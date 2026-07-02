@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { encryptSecret, decryptSecret, maskApiKey, isMaskedSecret } from '@/lib/crypto'
+import { requireAdmin } from '@/lib/roles'
 
 // GET /api/platforms - Returns all platforms for the user
 export async function GET(request: NextRequest) {
@@ -11,13 +12,9 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const userId = session.user.id
-
-    // Get all platforms for the user
+    // Get all platforms for the instance (shared workspace)
     const platforms = await prisma.platform.findMany({
-      where: {
-        userId: userId
-      },
+      where: {},
       include: {
         _count: {
           select: {
@@ -84,6 +81,9 @@ export async function POST(request: NextRequest) {
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+
+    const denied = await requireAdmin(session.user.id)
+    if (denied) return denied
 
     const userId = session.user.id
     const body = await request.json()

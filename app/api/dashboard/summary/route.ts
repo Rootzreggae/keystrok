@@ -10,12 +10,9 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const userId = session.user.id
-
-    // Get all keys for detailed analysis
+    // Get all keys for detailed analysis (shared workspace)
     const discoveredKeys = await prisma.discoveredKey.findMany({
       where: {
-        userId: userId,
         status: { not: 'false_positive' }
       },
       include: {
@@ -29,9 +26,7 @@ export async function GET(request: NextRequest) {
 
     // Get platforms
     const platforms = await prisma.platform.findMany({
-      where: {
-        userId: userId
-      }
+      where: {}
     })
 
     // Calculate key status distribution
@@ -64,9 +59,9 @@ export async function GET(request: NextRequest) {
       }
     }).filter(p => p.total > 0)
 
-    // Recent activity summary
+    // Recent activity summary (shared workspace)
     const recentActivity = await prisma.activity.findMany({
-      where: { userId: userId },
+      where: {},
       orderBy: { createdAt: 'desc' },
       take: 10
     })
@@ -114,7 +109,7 @@ export async function GET(request: NextRequest) {
       },
       activity: {
         recentCount: recentActivity.length,
-        totalActivity: await prisma.activity.count({ where: { userId } })
+        totalActivity: await prisma.activity.count({ where: {} })
       }
     }
 

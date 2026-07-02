@@ -53,6 +53,20 @@ export function daysUntilDue(foundAt: Date, severity: string, now: Date = new Da
   return Math.ceil((rotationDueAt(foundAt, severity).getTime() - now.getTime()) / DAY_MS)
 }
 
+/**
+ * The single irreversible step in a rotation: revoking / disabling / removing
+ * the OLD key. Every template types this step as `stepType: 'cleanup'`; we also
+ * match a legacy 'revoke' type and the step names as a backstop. This is the
+ * one step gated to admins, and the one the UI marks "irreversible", so both
+ * must agree. Do NOT loosen the /revoke/i-only check: templates name it
+ * "Disable Old Keys" / "Remove Old Keys" too, which that regex misses.
+ */
+export function isDestructiveStep(step: { stepType?: string | null; name?: string | null }): boolean {
+  const t = step.stepType ?? ''
+  if (t === 'cleanup' || t === 'revoke') return true
+  return /revoke|disable old|remove old|delete old/i.test(step.name ?? '')
+}
+
 export type RotationStatus = 'rotated' | 'overdue' | 'due-soon' | 'ok'
 
 /**

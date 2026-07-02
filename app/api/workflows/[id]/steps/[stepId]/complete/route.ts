@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { requireAdmin } from '@/lib/roles'
+import { isDestructiveStep } from '@/lib/rotation-policy'
 
 type Params = Promise<{
   id: string
@@ -19,11 +21,10 @@ export async function POST(request: NextRequest, context: { params: Params }) {
     const body = await request.json()
     const { userNotes } = body
 
-    // Validate workflow exists and belongs to user
+    // Validate workflow exists (shared workspace: look up by id only)
     const workflow = await prisma.rotationWorkflow.findFirst({
       where: {
         id: workflowId,
-        userId: session.user.id,
       },
       include: {
         steps: {
@@ -46,6 +47,13 @@ export async function POST(request: NextRequest, context: { params: Params }) {
         { success: false, error: 'Step not found' },
         { status: 404 }
       )
+    }
+
+    // The irreversible step (revoke/disable/remove the old key) is admin-only;
+    // any other step stays open to any signed-in member.
+    if (isDestructiveStep(step)) {
+      const denied = await requireAdmin(session.user.id)
+      if (denied) return denied
     }
 
     // Validate step can be completed

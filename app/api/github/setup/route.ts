@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { getInstallation } from '@/lib/github'
+import { requireAdmin } from '@/lib/roles'
 
 // GitHub redirects here after the user installs/updates the App. We capture the
 // installation id and associate it with the signed-in user.
@@ -11,6 +12,9 @@ export async function GET(request: NextRequest) {
   if (!session?.user?.id) {
     return NextResponse.redirect(new URL('/auth/signin', base))
   }
+
+  const denied = await requireAdmin(session.user.id)
+  if (denied) return denied
 
   const installationId = request.nextUrl.searchParams.get('installation_id')
   if (!installationId) {

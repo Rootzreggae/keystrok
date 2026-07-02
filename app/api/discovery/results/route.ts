@@ -10,7 +10,6 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const userId = session.user.id
     const { searchParams } = new URL(request.url)
 
     // Extract and validate query parameters
@@ -65,12 +64,11 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Validate sessionId if provided
+    // Validate sessionId if provided (shared workspace: look up by id only)
     if (sessionId) {
       const sessionExists = await prisma.scanSession.findFirst({
         where: {
-          id: sessionId,
-          userId: userId
+          id: sessionId
         }
       })
 
@@ -82,10 +80,8 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Build the where clause for filtering
-    const whereClause: any = {
-      userId: userId
-    }
+    // Build the where clause for filtering (shared workspace: no userId filter)
+    const whereClause: any = {}
 
     if (sessionId) whereClause.sessionId = sessionId
     if (severity) whereClause.severity = severity

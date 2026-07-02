@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { encryptSecret, isMaskedSecret } from '@/lib/crypto'
+import { requireAdmin } from '@/lib/roles'
 
 // DELETE /api/platforms/[id] - Remove a platform
 export async function DELETE(
@@ -14,14 +15,16 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    const denied = await requireAdmin(session.user.id)
+    if (denied) return denied
+
     const userId = session.user.id
     const { id: platformId } = await params
 
-    // Verify the platform belongs to the user
+    // Shared workspace: look up by id only
     const platform = await prisma.platform.findFirst({
       where: {
-        id: platformId,
-        userId: userId
+        id: platformId
       }
     })
 
@@ -70,16 +73,18 @@ export async function PUT(
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+    // PUT can change the stored platform credential, so it's admin-only like DELETE.
+    const denied = await requireAdmin(session.user.id)
+    if (denied) return denied
 
     const userId = session.user.id
     const { id: platformId } = await params
     const body = await request.json()
 
-    // Verify the platform belongs to the user
+    // Shared workspace: look up by id only
     const existingPlatform = await prisma.platform.findFirst({
       where: {
-        id: platformId,
-        userId: userId
+        id: platformId
       }
     })
 
