@@ -57,8 +57,13 @@ export function AppShell({ email, children }: { email?: string | null; children:
   const [srcStep, setSrcStep] = useState<1 | 3>(1)
   const openConnect = (step: 1 | 3 = 1) => { setSrcStep(step); setSrcOpen(true) }
   const [asstView, setAsstView] = useState<'chat' | 'connect' | null>(null) // assistant drawer (global)
+  const [asstSeed, setAsstSeed] = useState<string | undefined>() // optional prefilled question
   const { data: asst } = useAssistantProvider()
-  const openAssistant = () => setAsstView(asst?.connected ? 'chat' : 'connect')
+  // seed may be a click event when used as an onClick; only accept real strings.
+  const openAssistant = (seed?: string) => {
+    setAsstSeed(typeof seed === 'string' ? seed : undefined)
+    setAsstView(asst?.connected ? 'chat' : 'connect')
+  }
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -126,7 +131,7 @@ export function AppShell({ email, children }: { email?: string | null; children:
 
         <div className="ks-side__foot">
           {/* Assistant entry: opens chat when a model is connected, else the connect flow. */}
-          <button className="ks-side__copilot" type="button" title="Assistant" onClick={openAssistant}>
+          <button className="ks-side__copilot" type="button" title="Assistant" onClick={() => openAssistant()}>
             <Zap className="ks-side__copilot-ico" strokeWidth={2} />
             <div>
               <div className="t">Assistant</div>
@@ -201,6 +206,7 @@ export function AppShell({ email, children }: { email?: string | null; children:
           onManage={() => setAsstView('connect')}
           provider={asst.provider}
           keyCount={keys.length}
+          seed={asstSeed}
         />
       )}
     </div>

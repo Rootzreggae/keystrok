@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useQueryClient } from '@tanstack/react-query'
+import { useAssistant } from '@/components/ks/Assistant'
 import { X, RotateCw, Sparkles } from 'lucide-react'
 import { Pill, Dot } from '@/components/ks'
 import { slaDays, foundAgoDays } from '@/lib/rotation-policy'
@@ -12,6 +13,7 @@ import { type ApiKey, SEVL, displayName, urgency, cleanLocation } from '@/lib/ke
 export function KeyDrawer({ keyData, onClose }: { keyData: ApiKey | null; onClose: () => void }) {
   const router = useRouter()
   const qc = useQueryClient()
+  const { open: openAssistant } = useAssistant()
   const [starting, setStarting] = useState(false)
   const [startError, setStartError] = useState<string | null>(null)
 
@@ -96,7 +98,14 @@ export function KeyDrawer({ keyData, onClose }: { keyData: ApiKey | null; onClos
           <button className="ks-btn ks-btn--primary" style={{ flex: 1, justifyContent: 'center' }} onClick={startRotation} disabled={starting}>
             <RotateCw size={14} /> {starting ? 'Starting…' : k.status === 'rotated' ? 'Rotate again' : 'Start rotation'}
           </button>
-          <button className="ks-btn" title="Assistant: coming soon" onClick={() => {}}>
+          <button
+            className="ks-btn"
+            title="Ask the assistant about this key"
+            onClick={() => {
+              onClose()
+              openAssistant(`What should I do about the ${displayName(k.name)} key? It's ${SEVL[k.severity] ?? k.severity} severity and ${u.txt}.`)
+            }}
+          >
             <Sparkles size={14} /> Ask Assistant
           </button>
         </div>

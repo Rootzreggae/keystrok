@@ -7,7 +7,7 @@ import { X, Zap, Terminal, Shield, ArrowLeft, Check, CornerDownLeft, Settings2 }
 export interface AssistantProvider { type: string; label: string; model: string; baseUrl?: string | null; hasKey?: boolean }
 interface Msg { role: 'user' | 'assistant'; content: string }
 
-export const AssistantContext = createContext<{ open: () => void }>({ open: () => {} })
+export const AssistantContext = createContext<{ open: (seed?: string) => void }>({ open: () => {} })
 export const useAssistant = () => useContext(AssistantContext)
 
 const PROVIDERS = [
@@ -142,7 +142,7 @@ export function AssistantConnect({ open, onClose, onConnected }: { open: boolean
 // ---- Chat drawer -----------------------------------------------------------
 const SUGGESTIONS = ['What needs rotating first?', 'Anything overdue?', 'What did the last scan find?']
 
-export function AssistantChat({ open, onClose, onManage, provider, keyCount }: { open: boolean; onClose: () => void; onManage: () => void; provider: AssistantProvider; keyCount: number }) {
+export function AssistantChat({ open, onClose, onManage, provider, keyCount, seed }: { open: boolean; onClose: () => void; onManage: () => void; provider: AssistantProvider; keyCount: number; seed?: string }) {
   const [messages, setMessages] = useState<Msg[]>([])
   const [input, setInput] = useState('')
   const [streaming, setStreaming] = useState(false)
@@ -154,6 +154,8 @@ export function AssistantChat({ open, onClose, onManage, provider, keyCount }: {
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [open, onClose])
+  // Prefill the input when opened with a seed (e.g. "Ask Assistant" on a key).
+  useEffect(() => { if (open && seed) setInput(seed) }, [open, seed])
   useEffect(() => { bodyRef.current?.scrollTo({ top: bodyRef.current.scrollHeight }) }, [messages])
   if (!open) return null
 

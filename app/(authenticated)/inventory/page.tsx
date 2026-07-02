@@ -142,8 +142,11 @@ export default function KeysScreen() {
                       <td><span className="ks-tbl__u" style={{ color: 'var(--tx-mut)' }}>{foundAgo}d ago</span></td>
                       <td><span className="ks-tbl__u" style={{ color: u.color }}>{u.txt}</span></td>
                       <td>
-                        <div className="ks-tbl__bar">
-                          <div className="ks-tbl__barfill" style={{ width: pct + '%', background: u.overdue ? 'var(--crit)' : pct > 80 ? 'var(--high)' : 'var(--tx-mut)' }} />
+                        <div className="ks-tbl__sla">
+                          <div className="ks-tbl__bar">
+                            <div className="ks-tbl__barfill" style={{ width: Math.max(pct, 4) + '%', background: u.overdue ? 'var(--crit)' : sevColor(k.severity) }} />
+                          </div>
+                          <span className="ks-tbl__slapct">{u.overdue ? 'over' : pct + '%'}</span>
                         </div>
                       </td>
                     </tr>

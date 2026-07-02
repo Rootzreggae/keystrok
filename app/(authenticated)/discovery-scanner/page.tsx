@@ -7,7 +7,7 @@ import { Mark, Dot, Pill } from '@/components/ks'
 import { FindingDrawer } from '@/components/ks/FindingDrawer'
 import { useSourceConnect } from '@/components/ks/SourceConnect'
 import { pickAndScanFolder } from '@/lib/folder-scan'
-import { platOf, sevColor, ago } from '@/lib/keys-display'
+import { platOf, sevColor, ago, cleanLocation } from '@/lib/keys-display'
 
 interface Finding {
   id: string
@@ -147,12 +147,16 @@ export default function DiscoveryScreen() {
             {inbox.length === 0 ? (
               <div className="ks-empty" style={{ padding: '48px 24px' }}>
                 <span className="ks-empty__ico"><Search size={26} strokeWidth={1.75} /></span>
-                <div className="ks-empty__t">{scanning ? 'Scanning…' : 'Nothing to triage yet'}</div>
+                <div className="ks-empty__t">{scanning ? 'Scanning…' : triaged.length > 0 ? 'Inbox clear' : 'Nothing to triage yet'}</div>
                 <div className="ks-empty__s">
-                  Keystrok finds exposed keys by scanning your code. Connect a Git source or point it at a
-                  local folder to run the first scan. Read-only, nothing is ever written.
+                  {triaged.length > 0 ? (
+                    <>You have triaged everything from your last scan. New findings appear here after your next scan. Read-only, nothing is ever written.</>
+                  ) : (
+                    <>Keystrok finds exposed keys by scanning your code. Connect a Git source or point it at a
+                    local folder to run the first scan. Read-only, nothing is ever written.</>
+                  )}
                 </div>
-                {!scanning && (
+                {!scanning && triaged.length === 0 && (
                   <button className="ks-btn ks-btn--primary" style={{ marginTop: 18 }} onClick={() => openConnect(1)}>
                     <Github size={14} /> Connect a source
                   </button>
@@ -167,7 +171,7 @@ export default function DiscoveryScreen() {
                     <div className="ks-finding__main">
                       <div className="ks-finding__name"><Mark>{plat.code}</Mark> {f.patternName || f.keyType} <Dot sev={f.severity as 'critical'} /></div>
                       <div className="ks-finding__line">detected in {f.fileName || f.filePath.split('/').pop()}</div>
-                      <div className="ks-finding__src">{f.filePath}:{f.lineNumber ?? '?'} · <span style={{ color: 'var(--tx-mut)' }}>{f.keyPreview}</span></div>
+                      <div className="ks-finding__src">{cleanLocation(f.filePath)}:{f.lineNumber ?? '?'} · <span style={{ color: 'var(--tx-mut)' }}>{f.keyPreview}</span></div>
                     </div>
                     <div className="ks-finding__cta" onClick={(e) => e.stopPropagation()}>
                       <button className="ks-btn ks-btn--primary ks-btn--sm" disabled={promote.isPending} onClick={() => promote.mutate(f.id)}><Check size={13} /> Promote</button>
@@ -192,7 +196,7 @@ export default function DiscoveryScreen() {
                     {t.status === 'resolved' ? 'promoted' : 'dismissed'}
                   </span>
                   <span className="ks-triaged__name">{t.patternName || t.keyType}</span>
-                  <span className="ks-triaged__path">{t.filePath}</span>
+                  <span className="ks-triaged__path">{cleanLocation(t.filePath)}</span>
                   <span className="ks-triaged__when">{hhmmss(t.createdAt)}</span>
                 </div>
               ))}
