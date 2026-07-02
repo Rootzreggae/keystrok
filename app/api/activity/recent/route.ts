@@ -30,18 +30,14 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const userId = session.user.id
-
     // Get query parameters
     const { searchParams } = new URL(request.url)
     const limit = parseInt(searchParams.get('limit') || '10')
     const offset = parseInt(searchParams.get('offset') || '0')
     const actionFilter = searchParams.get('action')
 
-    // Build where clause
-    const whereClause: any = {
-      userId: userId
-    }
+    // Build where clause (shared workspace: no userId filter)
+    const whereClause: any = {}
 
     if (actionFilter) {
       whereClause.action = actionFilter
@@ -61,10 +57,9 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    // Also get recent audit logs for additional activity data
+    // Also get recent audit logs for additional activity data (shared workspace)
     const auditLogs = await prisma.auditLog.findMany({
       where: {
-        userId: userId,
         eventCategory: { in: ['security', 'user_action'] } // Focus on relevant categories
       },
       orderBy: { createdAt: 'desc' },
@@ -117,14 +112,13 @@ export async function GET(request: NextRequest) {
       emoji: activity.emoji
     }))
 
-    // Get activity summary stats
+    // Get activity summary stats (shared workspace)
     const totalActivities = await prisma.activity.count({
-      where: { userId: userId }
+      where: {}
     })
 
     const totalAuditLogs = await prisma.auditLog.count({
-      where: { 
-        userId: userId,
+      where: {
         eventCategory: { in: ['security', 'user_action'] }
       }
     })
@@ -136,7 +130,6 @@ export async function GET(request: NextRequest) {
     const weeklyActivityBreakdown = await prisma.activity.groupBy({
       by: ['action'],
       where: {
-        userId: userId,
         createdAt: { gte: weekAgo }
       },
       _count: {

@@ -10,8 +10,9 @@ export async function GET() {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
+  // Shared workspace: all connected GitHub sources are visible to any member.
   const connections = await prisma.sourceConnection.findMany({
-    where: { userId: session.user.id, provider: 'github', status: 'active' },
+    where: { provider: 'github', status: 'active' },
   })
 
   const sources = await Promise.all(

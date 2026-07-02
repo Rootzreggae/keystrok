@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
-import { isOperator } from '@/lib/github'
+import { requireAdmin } from '@/lib/roles'
 import { prisma } from '@/lib/prisma'
 import { SecurityScanner } from '@/lib/scanner/core'
 import { convertFindingToLocalScanFindingData, SCANNER_PRESETS } from '@/lib/scanner/index'
@@ -408,7 +408,6 @@ async function processScanFindings(sessionId: string, userId: string, findings: 
       // only relink it to this scan and refresh the surrounding context.
       const existing = await prisma.localScanFinding.findFirst({
         where: {
-          userId,
           filePath: finding.filePath,
           lineNumber: finding.lineNumber,
           detectionRule: finding.detectionRule,
@@ -448,12 +447,11 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const userId = session.user.id
     const { searchParams } = new URL(request.url)
     const status = searchParams.get('status')
 
-    // Build query conditions
-    const where: any = { userId }
+    // Build query conditions (shared workspace: no userId filter)
+    const where: any = {}
     if (status && ['pending', 'running', 'completed', 'failed'].includes(status)) {
       where.status = status
     }
@@ -505,15 +503,11 @@ export async function POST(request: NextRequest): Promise<NextResponse<ScanRespo
 
     const userId = session.user.id
 
-    // This scans the SERVER's filesystem (home dir), so it's operator-only.
-    // A non-owner allowlisted user must not enumerate the host's files. The
+    // This scans the SERVER's filesystem (home dir), so it's admin-only.
+    // A non-admin member must not enumerate the host's files. The
     // per-user, client-supplied paths (scan-files) and GitHub clones stay open.
-    if (!(await isOperator(userId))) {
-      return NextResponse.json(
-        { success: false, message: 'Forbidden', error: 'Only the instance operator can scan the server filesystem' },
-        { status: 403 }
-      )
-    }
+    const denied = await requireAdmin(userId)
+    if (denied) return denied as NextResponse<ScanResponse>
 
     // Parse and validate request body
     const body = await request.json()

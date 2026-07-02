@@ -18,11 +18,10 @@ export async function POST(request: NextRequest, context: { params: Params }) {
     const body = await request.json()
     const { action, ...actionData } = body
 
-    // Validate workflow exists and belongs to user
+    // Validate workflow exists (shared workspace: look up by id only)
     const workflow = await prisma.rotationWorkflow.findFirst({
       where: {
         id,
-        userId: session.user.id,
       },
     })
 

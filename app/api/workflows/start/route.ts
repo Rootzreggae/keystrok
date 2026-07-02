@@ -41,11 +41,10 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 4. Fetch the discovered key and verify ownership
+    // 4. Fetch the discovered key (shared workspace: look up by id only)
     const discoveredKey = await prisma.discoveredKey.findFirst({
       where: {
-        id: discoveredKeyId,
-        userId: session.user.id
+        id: discoveredKeyId
       },
       include: {
         platformRef: {
@@ -61,12 +60,11 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 5. Check if there's already an active workflow for this key
+    // 5. Check if there's already an active workflow for this key (shared workspace)
     const existingWorkflow = await prisma.rotationWorkflow.findFirst({
       where: {
         discoveredKeyId,
         status: { in: ['pending', 'in_progress', 'paused'] },
-        userId: session.user.id,
       },
     })
 

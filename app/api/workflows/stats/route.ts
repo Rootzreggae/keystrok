@@ -34,8 +34,8 @@ export async function GET(request: NextRequest) {
         dateFilter = { createdAt: { gte: new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000) } }
     }
 
+    // Shared workspace: no userId filter
     const whereClause = {
-      userId: session.user.id,
       ...dateFilter,
     }
 
@@ -133,7 +133,6 @@ export async function GET(request: NextRequest) {
     // Get recent activity (last 10 completed workflows)
     const recentCompletions = await prisma.rotationWorkflow.findMany({
       where: {
-        userId: session.user.id,
         status: 'completed',
         completedAt: { not: null },
       },
@@ -155,7 +154,6 @@ export async function GET(request: NextRequest) {
       by: ['stepType', 'status'],
       where: {
         workflow: {
-          userId: session.user.id,
           ...dateFilter,
         },
       },

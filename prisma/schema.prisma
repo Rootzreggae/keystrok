@@ -15,6 +15,9 @@ model User {
   updatedAt           DateTime           @updatedAt
   image               String?
   name                String?
+  // Self-host = one instance = one team. Two roles: 'admin' | 'member'.
+  // The first user to register is promoted to admin; there is always >=1 admin.
+  role                String             @default("member")
   accounts            Account[]
   activities          Activity[]
   auditLogs           AuditLog[]

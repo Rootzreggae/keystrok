@@ -6,6 +6,7 @@ import { useSearchParams } from 'next/navigation'
 import { Check, Lock, RotateCw, ShieldAlert, KeyRound } from 'lucide-react'
 import { Mark, Dot, Pill } from '@/components/ks'
 import { platOf, SEVL, displayName, needsAction, urgency, type ApiKey } from '@/lib/keys-display'
+import { isDestructiveStep } from '@/lib/rotation-policy'
 
 interface WfStep {
   id: string
@@ -35,7 +36,7 @@ interface WorkflowDetail {
 
 const hhmm =(iso?: string | null) => (iso ? new Date(iso).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : '')
 const isDoneStep = (s: string) => s === 'completed' || s === 'skipped'
-const isRevoke = (s: WfStep) => s.stepType === 'revoke' || /revoke|revok/i.test(s.name)
+const isRevoke = (s: WfStep) => isDestructiveStep(s)
 
 function Stepper({ workflowId, steps }: { workflowId: string; steps: WfStep[] }) {
   const qc = useQueryClient()

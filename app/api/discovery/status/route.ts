@@ -86,16 +86,14 @@ export async function GET(request: NextRequest): Promise<NextResponse<ScanStatus
       )
     }
 
-    const userId = session.user.id
     const { searchParams } = new URL(request.url)
     const query = parseQueryParams(searchParams)
 
-    // Handle specific session ID query
+    // Handle specific session ID query (shared workspace: look up by id only)
     if (query.sessionId) {
       const scanSession = await prisma.scanSession.findFirst({
         where: {
-          id: query.sessionId,
-          userId // Ensure user can only access their own scans
+          id: query.sessionId
         },
         select: {
           id: true,
@@ -150,10 +148,9 @@ export async function GET(request: NextRequest): Promise<NextResponse<ScanStatus
 
     // Handle active/recent scans query
     if (query.active) {
-      // Get current active scan (most recent running or pending scan)
+      // Get current active scan (most recent running or pending scan; shared workspace)
       const activeScan = await prisma.scanSession.findFirst({
         where: {
-          userId,
           status: {
             in: ['pending', 'running']
           }
@@ -196,10 +193,9 @@ export async function GET(request: NextRequest): Promise<NextResponse<ScanStatus
         }
       }
 
-      // Get recent completed scans for context
+      // Get recent completed scans for context (shared workspace)
       const recentScans = await prisma.scanSession.findMany({
         where: {
-          userId,
           status: {
             in: ['completed', 'failed', 'cancelled']
           }
@@ -230,9 +226,9 @@ export async function GET(request: NextRequest): Promise<NextResponse<ScanStatus
       })
     }
 
-    // Default: return all recent scans (both active and completed)
+    // Default: return all recent scans (both active and completed; shared workspace)
     const allRecentScans = await prisma.scanSession.findMany({
-      where: { userId },
+      where: {},
       orderBy: { createdAt: 'desc' },
       take: 10,
       select: {
@@ -321,7 +317,6 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       )
     }
 
-    const userId = session.user.id
     const body = await request.json()
     const { sessionId, action } = body
 
@@ -339,11 +334,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       )
     }
 
-    // Verify user owns the scan session
+    // Shared workspace: look up by id only
     const scanSession = await prisma.scanSession.findFirst({
       where: {
-        id: sessionId,
-        userId
+        id: sessionId
       }
     })
 
