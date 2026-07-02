@@ -3,6 +3,7 @@
 // never secret values, and is instructed to stay advisory (never claim to act).
 import { prisma } from '@/lib/prisma'
 import { daysUntilDue, slaDays } from '@/lib/rotation-policy'
+import { assertSafePlatformUrl } from '@/lib/ssrf'
 
 export type ProviderType = 'local' | 'anthropic' | 'openai' | 'openai_compat'
 export interface ProviderConfig { type: ProviderType; baseUrl?: string | null; model: string; apiKey?: string | null }
@@ -16,6 +17,15 @@ function baseUrlFor(c: ProviderConfig): string {
   return (c.baseUrl || 'http://localhost:11434').replace(/\/$/, '') // local default (Ollama-compatible)
 }
 const isAnthropic = (c: ProviderConfig) => c.type === 'anthropic'
+
+// The base URL is user-supplied (BYO endpoint), so it goes through the same
+// SSRF guard as platform tests before any fetch. Honors ALLOW_PRIVATE_PLATFORM_URLS
+// so a self-hoster can still point at a local Ollama on a private IP.
+async function safeBase(c: ProviderConfig): Promise<string> {
+  const base = baseUrlFor(c)
+  await assertSafePlatformUrl(base)
+  return base
+}
 
 // ---- SSE line reader -------------------------------------------------------
 async function* sseData(res: Response): AsyncGenerator<string> {
@@ -38,8 +48,9 @@ async function* sseData(res: Response): AsyncGenerator<string> {
 
 // ---- Streaming chat: yields plain text deltas ------------------------------
 export async function* streamChat(c: ProviderConfig, system: string, messages: ChatMessage[]): AsyncGenerator<string> {
+  const base = await safeBase(c)
   if (isAnthropic(c)) {
-    const res = await fetch(`${baseUrlFor(c)}/v1/messages`, {
+    const res = await fetch(`${base}/v1/messages`, {
       method: 'POST',
       headers: { 'content-type': 'application/json', 'x-api-key': c.apiKey || '', 'anthropic-version': ANTHROPIC_VERSION },
       body: JSON.stringify({ model: c.model, max_tokens: 1024, system, stream: true, messages: messages.map((m) => ({ role: m.role, content: m.content })) }),
@@ -57,7 +68,7 @@ export async function* streamChat(c: ProviderConfig, system: string, messages: C
   // OpenAI-compatible (OpenAI, local Ollama/LM-Studio, any compatible base URL)
   const headers: Record<string, string> = { 'content-type': 'application/json' }
   if (c.apiKey) headers['authorization'] = `Bearer ${c.apiKey}`
-  const res = await fetch(`${baseUrlFor(c)}/v1/chat/completions`, {
+  const res = await fetch(`${base}/v1/chat/completions`, {
     method: 'POST', headers,
     body: JSON.stringify({ model: c.model, stream: true, messages: [{ role: 'system', content: system }, ...messages] }),
   })
@@ -75,8 +86,9 @@ export async function* streamChat(c: ProviderConfig, system: string, messages: C
 // ---- Test a provider config (cheap, validates creds + model + endpoint) -----
 export async function testProvider(c: ProviderConfig): Promise<{ ok: boolean; error?: string }> {
   try {
+    const base = await safeBase(c)
     if (isAnthropic(c)) {
-      const res = await fetch(`${baseUrlFor(c)}/v1/messages`, {
+      const res = await fetch(`${base}/v1/messages`, {
         method: 'POST',
         headers: { 'content-type': 'application/json', 'x-api-key': c.apiKey || '', 'anthropic-version': ANTHROPIC_VERSION },
         body: JSON.stringify({ model: c.model, max_tokens: 1, messages: [{ role: 'user', content: 'ping' }] }),
@@ -86,7 +98,7 @@ export async function testProvider(c: ProviderConfig): Promise<{ ok: boolean; er
     }
     const headers: Record<string, string> = { 'content-type': 'application/json' }
     if (c.apiKey) headers['authorization'] = `Bearer ${c.apiKey}`
-    const res = await fetch(`${baseUrlFor(c)}/v1/chat/completions`, {
+    const res = await fetch(`${base}/v1/chat/completions`, {
       method: 'POST', headers,
       body: JSON.stringify({ model: c.model, max_tokens: 1, messages: [{ role: 'user', content: 'ping' }] }),
     })

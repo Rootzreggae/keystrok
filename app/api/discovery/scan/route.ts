@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
+import { isOperator } from '@/lib/github'
 import { prisma } from '@/lib/prisma'
 import { SecurityScanner } from '@/lib/scanner/core'
 import { convertFindingToLocalScanFindingData, SCANNER_PRESETS } from '@/lib/scanner/index'
@@ -503,6 +504,16 @@ export async function POST(request: NextRequest): Promise<NextResponse<ScanRespo
     }
 
     const userId = session.user.id
+
+    // This scans the SERVER's filesystem (home dir), so it's operator-only.
+    // A non-owner allowlisted user must not enumerate the host's files. The
+    // per-user, client-supplied paths (scan-files) and GitHub clones stay open.
+    if (!(await isOperator(userId))) {
+      return NextResponse.json(
+        { success: false, message: 'Forbidden', error: 'Only the instance operator can scan the server filesystem' },
+        { status: 403 }
+      )
+    }
 
     // Parse and validate request body
     const body = await request.json()
