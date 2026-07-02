@@ -17,10 +17,15 @@ export type Role = 'admin' | 'member'
  * ponytail: cheap count on every role check; fine at self-host scale.
  */
 async function ensureBootstrapAdmin(): Promise<void> {
-  const admins = await prisma.user.count({ where: { role: 'admin' } })
+  const admins = await prisma.user.count({ where: { role: 'admin', removedAt: null } })
   if (admins > 0) return
-  const first = await prisma.user.findFirst({ orderBy: { createdAt: 'asc' }, select: { id: true } })
+  const first = await prisma.user.findFirst({ where: { removedAt: null }, orderBy: { createdAt: 'asc' }, select: { id: true } })
   if (first) await prisma.user.update({ where: { id: first.id }, data: { role: 'admin' } })
+}
+
+/** Active (non-removed) admins. Used to guard the "always >=1 admin" invariant. */
+export async function activeAdminCount(): Promise<number> {
+  return prisma.user.count({ where: { role: 'admin', removedAt: null } })
 }
 
 export async function getRole(userId: string): Promise<Role> {

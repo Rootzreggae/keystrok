@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import { auth } from '@/lib/auth'
+import { isAdmin } from '@/lib/roles'
 
 import { AppShell } from '@/components/ks/AppShell'
 
@@ -14,5 +15,8 @@ export default async function AuthenticatedLayout({ children }: AuthenticatedLay
     redirect('/auth/signin')
   }
 
-  return <AppShell email={session.user?.email}>{children}</AppShell>
+  // isAdmin also self-heals the bootstrap (earliest user becomes admin).
+  const admin = session.user?.id ? await isAdmin(session.user.id) : false
+
+  return <AppShell email={session.user?.email} isAdmin={admin}>{children}</AppShell>
 }

@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { signOut } from 'next-auth/react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Home, Key, RefreshCw, Search, ScanSearch, Server, Activity, Zap, LogOut, Clock, Menu, X, ChevronLeft, ChevronRight, ChevronUp } from 'lucide-react'
+import { Home, Key, RefreshCw, Search, ScanSearch, Server, Activity, Zap, LogOut, Clock, Menu, X, ChevronLeft, ChevronRight, ChevronUp, Users } from 'lucide-react'
 import { BrandMark } from '@/components/ks'
 import { CommandPalette } from '@/components/ks/CommandPalette'
 import { SourceConnect, SourceConnectContext } from '@/components/ks/SourceConnect'
@@ -28,14 +28,21 @@ const GROUPS = [
 const TITLES: Record<string, string> = {
   ...Object.fromEntries(GROUPS.flatMap((g) => g.items.map((i) => [i.href, i.name]))),
   '/search': 'Search',
+  '/team': 'Team',
 }
 
 
-export function AppShell({ email, children }: { email?: string | null; children: React.ReactNode }) {
+export function AppShell({ email, isAdmin, children }: { email?: string | null; isAdmin?: boolean; children: React.ReactNode }) {
   const pathname = usePathname()
   const router = useRouter()
   const qc = useQueryClient()
   const title = TITLES[pathname] ?? 'Keystrok'
+  // Team management is admin-only; add it to the System group for admins.
+  const groups = isAdmin
+    ? GROUPS.map((g) => g.label === 'System'
+        ? { label: g.label, items: [...g.items, { name: 'Team', href: '/team', icon: Users, badge: null }] }
+        : { label: g.label, items: [...g.items] })
+    : GROUPS
   const initial = (email?.[0] ?? 'K').toUpperCase()
   const name = (email?.split('@')[0] ?? 'signed in').replace(/[._-]+/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
   const [cmdOpen, setCmdOpen] = useState(false)
@@ -99,7 +106,7 @@ export function AppShell({ email, children }: { email?: string | null; children:
         <div className="ks-side__brand"><BrandMark /></div>
 
         <nav className="ks-side__nav">
-          {GROUPS.map((group) => (
+          {groups.map((group) => (
             <div className="ks-navgroup" key={group.label}>
               <div className="ks-navgroup__l">{group.label}</div>
               {group.items.map((item) => {
