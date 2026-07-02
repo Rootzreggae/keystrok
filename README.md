@@ -6,6 +6,8 @@ Find exposed API keys in your code, track them, and rotate them safely. Keystrok
 
 **Advisory, never automated.** Keystrok ranks what actually needs attention and walks you through each rotation step, but it never rotates or revokes a key on its own. The irreversible actions stay in your hands. It also never claims to know a key's real age: every deadline is anchored to when a key was *discovered*, not a guessed creation date.
 
+![Keystrok home: what needs attention, ranked by urgency](docs/screenshots/home.png)
+
 ## What it does
 
 - **Discovery**: scan a GitHub repo (via a GitHub App) or a local folder for exposed secrets (AWS, Stripe, GitHub, observability platforms, and more). Findings are stored hashed/masked, never as plaintext.
@@ -13,6 +15,15 @@ Find exposed API keys in your code, track them, and rotate them safely. Keystrok
 - **Guided rotation**: step-by-step, operator-gated walkthroughs. The revoke step is irreversible by confirmation.
 - **Platform validation**: connect a platform (Datadog, Grafana, Stripe, GitHub, …) to check whether a leaked key is still live. A dead key is far less urgent than a working one.
 - **Bring-your-own AI assistant** *(optional)*: a chat that reasons over your key *metadata* (never the secret values) to answer "what should I rotate first?". Works with Anthropic, any OpenAI-compatible endpoint, or a local model via Ollama.
+- **Teams**: self-hosted, so one instance is one team. Invite members, gate the irreversible actions to admins, and keep a shared, attributed workspace.
+
+## Screenshots
+
+| | |
+| --- | --- |
+| ![The key ledger, ranked by SLA used](docs/screenshots/keys.png) **The ledger** — every tracked key, ranked by how much of its rotation window is spent. | ![Key detail: where it was found, masked preview, provenance](docs/screenshots/key-detail.png) **Key detail** — where it was found, a masked preview, and honest provenance (never a guessed age). |
+| ![Guided, step-by-step rotation with an irreversible revoke step](docs/screenshots/rotation.png) **Guided rotation** — run each step yourself; the revoke step is admin-gated and irreversible. | ![Discovery: scan a source and triage findings](docs/screenshots/discovery.png) **Discovery** — scan a Git source or local folder, then triage findings into the ledger. |
+| ![The admin-only Members tab: invite, roles, remove](docs/screenshots/team.png) **Team** — invite members, set roles, and manage access from an admin-only tab. | |
 
 ## Stack
 
