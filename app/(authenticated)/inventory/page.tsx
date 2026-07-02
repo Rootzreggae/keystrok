@@ -39,8 +39,8 @@ export default function KeysScreen() {
   if (!isLoading && keys.length === 0) {
     return (
       <div className="ks-keys">
-        <div style={{ flex: 1, minHeight: 0, padding: '24px 28px', display: 'flex' }}>
-          <div className="ks-panel" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ padding: '24px 28px' }}>
+          <div className="ks-panel" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 520 }}>
           <div className="ks-empty">
             <span className="ks-empty__ico"><Key size={26} strokeWidth={1.75} /></span>
             <div className="ks-empty__t">No keys tracked yet</div>
