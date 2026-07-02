@@ -1,4 +1,4 @@
-/* Team / Members settings (mockup styles; promote to real when Phase C ships). */
+/* Team / Members settings (admin-only). */
 .kb .ks-page__hd { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
 
 .kb .ks-invite { margin-bottom: 18px; }
