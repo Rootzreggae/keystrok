@@ -1,0 +1,14 @@
+# GitGuardian scan config.
+#
+# The bundled docker-compose stack ships a default Postgres password of
+# "keystrok" for its own local, loopback-only database (see docker-compose.yml:
+# ports are bound to 127.0.0.1). It is a documented default, printed in the
+# README quickstart, and a credential to nothing real. The scanner flags it as
+# a "Generic Password"; these two template files are the only place it lives,
+# and real secrets belong in the gitignored .env, never here. So we ignore
+# these paths rather than the app's own security defaults becoming noise.
+version: 2
+secret:
+  ignored-paths:
+    - docker-compose.yml
+    - .env.example
