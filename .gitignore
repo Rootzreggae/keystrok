@@ -41,9 +41,16 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# Design handoff, large binaries/bundle, keep local, do not commit
-design/*.zip
-design/app-refinements/
+# Local-only working artifacts. This repo is now the public "home"; these dirs
+# and docs stay on disk for reference but are never published. Their full
+# history lives in the private archive-private remote if you ever need it.
+/design/
+/archive/
+/test-scanner/
+/SECURITY_AUDIT_REPORT.md
+/SECURITY_REVIEW_COMPLETE.md
+/SECURITY_SCHEMA_DESIGN.md
+/SERVER_HEALTH_REPORT.txt
 
 # Synthetic secret fixtures for scanner testing, never commit
 test-fixtures/
