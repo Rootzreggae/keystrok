@@ -1,0 +1,25 @@
+/* Team / Members settings (mockup styles; promote to real when Phase C ships). */
+.kb .ks-page__hd { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+
+.kb .ks-invite { margin-bottom: 18px; }
+.kb .ks-invite__body { padding: 16px 18px; }
+.kb .ks-invite__row { display: flex; gap: 12px; align-items: flex-end; }
+.kb .ks-invite__lbl { display: block; font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--tx-dim); margin-bottom: 7px; }
+.kb .ks-invite__note { margin-top: 13px; font-size: 12px; color: var(--tx-mut); line-height: 1.55; }
+
+.kb .ks-mbr__tbl tbody tr { cursor: default; }
+.kb .ks-mbr__tbl tbody tr:hover { background: transparent; }
+.kb .ks-mbr__id { display: flex; align-items: center; gap: 11px; }
+.kb .ks-mbr__av { width: 26px; height: 26px; border-radius: 50%; flex: none; display: inline-flex; align-items: center; justify-content: center; font-family: var(--font-mono); font-size: 11px; font-weight: 600; color: var(--tx); background: var(--elev); border: 1px solid var(--div-2); }
+.kb .ks-mbr__av--pending { background: transparent; color: var(--tx-dim); border-style: dashed; }
+.kb .ks-mbr__email { font-family: var(--font-mono); font-size: 12.5px; color: var(--tx); }
+.kb .ks-mbr__meta { font-family: var(--font-mono); font-size: 11.5px; color: var(--tx-dim); }
+.kb .ks-mbr__role { height: 28px; width: 100%; font-size: 12px; }
+.kb .ks-mbr__role:disabled { opacity: 0.55; cursor: not-allowed; }
+.kb .ks-mbr__rm:not(:disabled):hover { color: var(--crit); border-color: var(--crit-line); background: var(--crit-dim); }
+.kb .ks-mbr__rm:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.kb .ks-mbr__inviterow { display: flex; align-items: center; gap: 11px; padding: 12px 18px; border-bottom: 1px solid var(--div); }
+.kb .ks-mbr__inviterow:last-child { border-bottom: none; }
+
+.kb .ks-mbr__foot { display: flex; align-items: center; gap: 8px; margin-top: 18px; font-family: var(--font-mono); font-size: 11px; color: var(--tx-dim); }
