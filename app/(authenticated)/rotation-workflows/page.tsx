@@ -5,7 +5,7 @@ import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query'
 import { useSearchParams } from 'next/navigation'
 import { Check, Lock, RotateCw, ShieldAlert, KeyRound } from 'lucide-react'
 import { Mark, Dot, Pill } from '@/components/ks'
-import { platOf, SEVL, displayName } from '@/lib/keys-display'
+import { platOf, SEVL, displayName, needsAction, urgency, type ApiKey } from '@/lib/keys-display'
 
 interface WfStep {
   id: string
@@ -21,6 +21,7 @@ interface WfKey { keyName?: string; platform?: string; severity?: string; locati
 interface Workflow {
   id: string
   status: string
+  discoveredKeyId?: string
   discoveredKey?: WfKey
   steps?: { stepNumber: number; status: string }[]
 }
@@ -32,12 +33,9 @@ interface WorkflowDetail {
   steps?: WfStep[]
 }
 
-const isRunning = (s: string) => s === 'in_progress' || s === 'running' || s === 'active'
-const hhmm = (iso?: string | null) => (iso ? new Date(iso).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : '')
+const hhmm =(iso?: string | null) => (iso ? new Date(iso).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : '')
 const isDoneStep = (s: string) => s === 'completed' || s === 'skipped'
 const isRevoke = (s: WfStep) => s.stepType === 'revoke' || /revoke|revok/i.test(s.name)
-const queueState = (w: Workflow) => (w.status === 'completed' ? 'done' : isRunning(w.status) ? 'active' : 'ready')
-const STATE_LABEL: Record<string, string> = { active: 'Running', ready: 'Recommended', done: 'Completed' }
 
 function Stepper({ workflowId, steps }: { workflowId: string; steps: WfStep[] }) {
   const qc = useQueryClient()
@@ -122,6 +120,8 @@ function Stepper({ workflowId, steps }: { workflowId: string; steps: WfStep[] })
 function RotationsInner() {
   const focus = useSearchParams().get('workflow')
   const [selId, setSelId] = useState<string | null>(null)
+  const [startErr, setStartErr] = useState<string | null>(null)
+  const qc = useQueryClient()
 
   const { data: workflows = [] } = useQuery<Workflow[]>({
     queryKey: ['workflows'],
@@ -133,8 +133,38 @@ function RotationsInner() {
     },
   })
 
-  const open = workflows.filter((w) => w.status !== 'completed')
-  const activeId = selId ?? focus ?? open[0]?.id ?? workflows[0]?.id ?? null
+  const { data: keys = [] } = useQuery<ApiKey[]>({
+    queryKey: ['keys'],
+    queryFn: async () => {
+      const r = await fetch('/api/keys')
+      if (!r.ok) throw new Error('keys')
+      const j = await r.json()
+      return Array.isArray(j) ? j : (j.data ?? j.keys ?? [])
+    },
+  })
+
+  // A rotation exists for these keys already; everything else that needs action
+  // is "due, not started" and auto-appears in the queue (no workflow row yet).
+  const startedKeyIds = new Set(workflows.map((w) => w.discoveredKeyId).filter(Boolean))
+  const dueKeys = keys.filter((k) => needsAction(k) && !startedKeyIds.has(k.id))
+  const inProgress = workflows.filter((w) => w.status !== 'completed')
+  const done = workflows.filter((w) => w.status === 'completed')
+
+  const start = useMutation({
+    mutationFn: async (keyId: string) => {
+      const r = await fetch('/api/workflows/start', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ discoveredKeyId: keyId }),
+      })
+      const j = await r.json().catch(() => null)
+      const id = j?.data?.workflow?.id ?? j?.workflow?.id
+      if (!r.ok || !id) throw new Error(j?.error || 'Could not start rotation')
+      return id as string
+    },
+    onSuccess: (id) => { setStartErr(null); qc.invalidateQueries({ queryKey: ['workflows'] }); setSelId(id) },
+    onError: (e: Error) => setStartErr(e.message),
+  })
+
+  const activeId = selId ?? focus ?? inProgress[0]?.id ?? done[0]?.id ?? null
 
   const { data: detail } = useQuery<WorkflowDetail>({
     queryKey: ['workflow', activeId],
@@ -147,7 +177,7 @@ function RotationsInner() {
     },
   })
 
-  if (workflows.length === 0) {
+  if (dueKeys.length === 0 && workflows.length === 0) {
     return (
       <div className="ks-home">
         <div className="ks-panel" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 520 }}>
@@ -184,21 +214,48 @@ function RotationsInner() {
           <div className="ks-rot__qhd">
             <div className="ks-h">
               <span className="ks-h__t">Rotation queue</span>
-              <span className="ks-h__n">· {open.length} open</span>
+              <span className="ks-h__n">· {dueKeys.length + inProgress.length} open</span>
             </div>
           </div>
           <div className="ks-rot__qlist">
-            {workflows.map((w) => {
-              const st = queueState(w)
+            {dueKeys.length > 0 && <div className="ks-rot__qsec">Due now · {dueKeys.length}</div>}
+            {dueKeys.map((k) => (
+              <div key={k.id} className="ks-qitem">
+                <span className="ks-qitem__state ready" />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div className="ks-qitem__name">{displayName(k.name)}</div>
+                  <div className="ks-qitem__meta">{platOf(k.platform).label} · {urgency(k).txt} · not started</div>
+                </div>
+                <button className="ks-btn ks-btn--sm" style={{ alignSelf: 'center' }} disabled={start.isPending} onClick={() => start.mutate(k.id)}>
+                  <RotateCw size={12} /> {start.isPending && start.variables === k.id ? 'Starting…' : 'Start'}
+                </button>
+              </div>
+            ))}
+
+            {inProgress.length > 0 && <div className="ks-rot__qsec">In progress · {inProgress.length}</div>}
+            {inProgress.map((w) => {
               const total = w.steps?.length ?? 0
-              const done = w.steps?.filter((s) => isDoneStep(s.status)).length ?? 0
+              const doneN = w.steps?.filter((s) => isDoneStep(s.status)).length ?? 0
               return (
                 <div key={w.id} className={'ks-qitem' + (activeId === w.id ? ' sel' : '')} onClick={() => setSelId(w.id)}>
-                  <span className={'ks-qitem__state ' + st} />
+                  <span className="ks-qitem__state active" />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div className="ks-qitem__name">{displayName(w.discoveredKey?.keyName ?? 'Rotation')}</div>
-                    <div className="ks-qitem__meta">{platOf(w.discoveredKey?.platform ?? '').label} · {STATE_LABEL[st]}</div>
-                    <div className="ks-qitem__meta">{done}/{total} steps</div>
+                    <div className="ks-qitem__meta">{platOf(w.discoveredKey?.platform ?? '').label} · {doneN}/{total} steps</div>
+                  </div>
+                </div>
+              )
+            })}
+
+            {done.length > 0 && <div className="ks-rot__qsec">Done · {done.length}</div>}
+            {done.map((w) => {
+              const total = w.steps?.length ?? 0
+              return (
+                <div key={w.id} className={'ks-qitem' + (activeId === w.id ? ' sel' : '')} onClick={() => setSelId(w.id)}>
+                  <span className="ks-qitem__state done" />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div className="ks-qitem__name">{displayName(w.discoveredKey?.keyName ?? 'Rotation')}</div>
+                    <div className="ks-qitem__meta">{platOf(w.discoveredKey?.platform ?? '').label} · {total}/{total} steps</div>
                   </div>
                 </div>
               )
@@ -207,6 +264,14 @@ function RotationsInner() {
         </div>
 
         <div className="ks-rotmain">
+          {startErr && <div className="ks-drawer__err" style={{ margin: '0 0 18px' }} role="alert">{startErr}</div>}
+          {!sel && (
+            <div className="ks-empty" style={{ margin: 'auto', paddingTop: 80 }}>
+              <span className="ks-empty__ico"><RotateCw size={26} strokeWidth={1.75} /></span>
+              <div className="ks-empty__t">{dueKeys.length} {dueKeys.length === 1 ? 'key is' : 'keys are'} due</div>
+              <div className="ks-empty__s">Pick a key on the left and press Start to begin its guided, step-by-step rotation. Keystrok never rotates a key on its own.</div>
+            </div>
+          )}
           {sel && (
             <>
               <div className="ks-rotmain__hd">
