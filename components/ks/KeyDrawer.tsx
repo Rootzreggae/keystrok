@@ -1,7 +1,8 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useQueryClient } from '@tanstack/react-query'
 import { X, RotateCw, Sparkles } from 'lucide-react'
 import { Pill, Dot } from '@/components/ks'
 import { slaDays, foundAgoDays } from '@/lib/rotation-policy'
@@ -10,6 +11,9 @@ import { type ApiKey, SEVL, displayName, urgency } from '@/lib/keys-display'
 // Reusable key detail drawer. Pass the selected key (or null) and an onClose.
 export function KeyDrawer({ keyData, onClose }: { keyData: ApiKey | null; onClose: () => void }) {
   const router = useRouter()
+  const qc = useQueryClient()
+  const [starting, setStarting] = useState(false)
+  const [startError, setStartError] = useState<string | null>(null)
 
   // Close on Escape.
   useEffect(() => {
@@ -29,15 +33,22 @@ export function KeyDrawer({ keyData, onClose }: { keyData: ApiKey | null; onClos
   const ln = loc.match(/:(\d+)$/)?.[1] ?? '1'
 
   const startRotation = async () => {
+    setStarting(true)
+    setStartError(null)
     try {
       const res = await fetch('/api/workflows/start', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ keyId: k.id }),
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ discoveredKeyId: k.id }),
       })
       const data = await res.json().catch(() => null)
       const wfId = data?.data?.workflow?.id ?? data?.workflow?.id
-      router.push(wfId ? `/rotation-workflows?workflow=${wfId}` : '/rotation-workflows')
-    } catch {
-      router.push('/rotation-workflows')
+      // Only navigate once we actually have a workflow; never fake success.
+      if (!res.ok || !wfId) throw new Error(data?.error || `Could not start rotation (${res.status})`)
+      // The workflows list is cached (1min staleTime); refetch so the queue shows the new one.
+      await qc.invalidateQueries({ queryKey: ['workflows'] })
+      router.push(`/rotation-workflows?workflow=${wfId}`)
+    } catch (e) {
+      setStartError(e instanceof Error ? e.message : 'Could not start rotation')
+      setStarting(false)
     }
   }
 
@@ -78,9 +89,12 @@ export function KeyDrawer({ keyData, onClose }: { keyData: ApiKey | null; onClos
           </div>
         </div>
 
+        {startError && (
+          <div className="ks-drawer__err" role="alert">{startError}</div>
+        )}
         <div className="ks-drawer__foot">
-          <button className="ks-btn ks-btn--primary" style={{ flex: 1, justifyContent: 'center' }} onClick={startRotation}>
-            <RotateCw size={14} /> {k.status === 'rotated' ? 'Rotate again' : 'Start rotation'}
+          <button className="ks-btn ks-btn--primary" style={{ flex: 1, justifyContent: 'center' }} onClick={startRotation} disabled={starting}>
+            <RotateCw size={14} /> {starting ? 'Starting…' : k.status === 'rotated' ? 'Rotate again' : 'Start rotation'}
           </button>
           <button className="ks-btn" title="Assistant: coming soon" onClick={() => {}}>
             <Sparkles size={14} /> Ask Assistant

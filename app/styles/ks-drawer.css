@@ -26,4 +26,5 @@
 .kb .ks-drawer__promote { display: flex; gap: 10px; align-items: flex-start; padding: 13px 14px; background: var(--inset); border: 1px solid var(--div-2); font-size: 12.5px; line-height: 1.55; color: var(--tx-mut); }
 .kb .ks-drawer__promote b { color: var(--tx); font-weight: 600; }
 
+.kb .ks-drawer__err { flex: none; margin: 0 22px; padding: 9px 12px; font-size: 12px; color: var(--crit); background: var(--crit-dim); border: 1px solid var(--crit-line); border-radius: 6px; }
 .kb .ks-drawer__foot { flex: none; display: flex; gap: 10px; padding: 14px 22px; border-top: 1px solid var(--div); }
