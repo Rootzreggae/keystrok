@@ -2,78 +2,72 @@
 
 import { useState } from 'react'
 import { signIn } from 'next-auth/react'
+import { BrandMark } from '@/components/ks'
 
 export default function SignIn() {
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
-  const [message, setMessage] = useState('')
+  const [sent, setSent] = useState(false)
+  const [error, setError] = useState('')
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
-    setMessage('')
-
+    setError('')
     try {
-      const result = await signIn('email', {
-        email,
-        redirect: false,
-      })
-      
-      if (result?.error) {
-        setMessage('Error sending email. Please try again.')
-      } else {
-        setMessage('Check your email for the magic link!')
-      }
+      const result = await signIn('email', { email, redirect: false })
+      if (result?.error) setError('Could not send the link. Check the address and try again.')
+      else setSent(true)
     } catch {
-      setMessage('Error sending email. Please try again.')
+      setError('Could not send the link. Check the address and try again.')
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center">
-      <div className="max-w-md w-full space-y-8 p-8">
-        <div className="text-center">
-          <h2 className="text-3xl font-bold">Sign in to Keystrok</h2>
-          <p className="mt-2 text-gray-600">
-            Enter your email address and we&apos;ll send you a magic link
-          </p>
-        </div>
-        
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-              Email address
-            </label>
-            <input
-              id="email"
-              name="email"
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-              placeholder="your@email.com"
-            />
-          </div>
-          
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {loading ? 'Sending...' : 'Send Magic Link'}
-          </button>
-        </form>
-        
-        {message && (
-          <div className={`text-center text-sm ${
-            message.includes('Error') ? 'text-red-600' : 'text-green-600'
-          }`}>
-            {message}
-          </div>
+    <div className="kb ks-auth">
+      <div className="ks-auth__card">
+        <div className="ks-auth__brand"><BrandMark /></div>
+
+        {sent ? (
+          <>
+            <div className="ks-auth__h">Check your inbox</div>
+            <div className="ks-auth__s">
+              We sent a one-time sign-in link to <b>{email}</b>. Open it on this device; it expires shortly.
+            </div>
+            <button className="ks-btn ks-auth__btn" style={{ marginTop: 22 }} onClick={() => setSent(false)}>
+              Use a different email
+            </button>
+          </>
+        ) : (
+          <>
+            <div className="ks-auth__h">Sign in</div>
+            <div className="ks-auth__s">Enter your email and we&apos;ll send a one-time magic link. No passwords to manage.</div>
+            <form className="ks-auth__form" onSubmit={handleSubmit}>
+              <div>
+                <label className="ks-auth__lbl" htmlFor="email">Email address</label>
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  required
+                  autoFocus
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="ks-input"
+                  placeholder="you@company.com"
+                />
+              </div>
+              <button type="submit" disabled={loading} className="ks-btn ks-btn--primary ks-auth__btn">
+                {loading ? 'Sending…' : 'Send magic link'}
+              </button>
+            </form>
+            {error && <div className="ks-auth__msg fail">{error}</div>}
+          </>
         )}
+
+        <div className="ks-auth__foot">Read-only · Keystrok never rotates a key on its own</div>
       </div>
     </div>
   )

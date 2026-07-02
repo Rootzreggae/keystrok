@@ -12,6 +12,7 @@
 @import "./styles/ks-cmd.css";
 @import "./styles/ks-source.css";
 @import "./styles/ks-assistant.css";
+@import "./styles/ks-auth.css";
 
 :root {
   --background: #1a1b1b;

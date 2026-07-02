@@ -1,0 +1,13 @@
+/* Auth screens (sign-in / verify / error): the app's front door, in the ks system. */
+.kb.ks-auth { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: var(--bg-0); padding: 24px; }
+.kb .ks-auth__card { width: 100%; max-width: 372px; background: var(--panel); border: 1px solid var(--div-2); padding: 32px 30px; }
+.kb .ks-auth__brand { margin-bottom: 24px; }
+.kb .ks-auth__h { font-size: 19px; font-weight: 700; color: var(--tx); letter-spacing: -0.01em; }
+.kb .ks-auth__s { font-size: 12.5px; color: var(--tx-mut); margin-top: 8px; line-height: 1.55; }
+.kb .ks-auth__s b { color: var(--tx-2); font-weight: 600; word-break: break-word; }
+.kb .ks-auth__form { margin-top: 22px; display: flex; flex-direction: column; gap: 16px; }
+.kb .ks-auth__lbl { display: block; font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--tx-dim); margin-bottom: 8px; }
+.kb .ks-auth__btn { height: 38px; width: 100%; justify-content: center; }
+.kb .ks-auth__msg { margin-top: 14px; font-size: 12px; }
+.kb .ks-auth__msg.fail { color: var(--crit); }
+.kb .ks-auth__foot { margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--div); font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.04em; color: var(--tx-dim); text-align: center; }

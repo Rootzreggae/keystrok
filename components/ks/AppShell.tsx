@@ -6,6 +6,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { signOut } from 'next-auth/react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Home, Key, RefreshCw, Search, ScanSearch, Server, Activity, Zap, LogOut, Clock, Menu, X, ChevronLeft, ChevronRight, ChevronUp } from 'lucide-react'
+import { BrandMark } from '@/components/ks'
 import { CommandPalette } from '@/components/ks/CommandPalette'
 import { SourceConnect, SourceConnectContext } from '@/components/ks/SourceConnect'
 import { AssistantChat, AssistantConnect, AssistantContext, useAssistantProvider } from '@/components/ks/Assistant'
@@ -29,18 +30,6 @@ const TITLES: Record<string, string> = {
   '/search': 'Search',
 }
 
-// Keystrok mark: a green key glyph (from the brand asset).
-function Logo() {
-  return (
-    <span className="ks-side__logo">
-      <svg width="17" height="24" viewBox="20 8 56 80" fill="none" aria-hidden>
-        <mask id="ksm"><rect x="20" y="8" width="56" height="80" fill="#fff" /><circle cx="48" cy="35" r="9" fill="#000" /><rect x="34" y="58" width="8" height="26" fill="#000" /><rect x="50" y="68" width="13" height="16" fill="#000" /></mask>
-        <rect x="26" y="14" width="44" height="68" rx="4" fill="#34d399" mask="url(#ksm)" />
-      </svg>
-      <b>keystrok<i>_</i></b>
-    </span>
-  )
-}
 
 export function AppShell({ email, children }: { email?: string | null; children: React.ReactNode }) {
   const pathname = usePathname()
@@ -107,7 +96,7 @@ export function AppShell({ email, children }: { email?: string | null; children:
     <div className="kb ksapp">
       {navOpen && <div className="ks-side-scrim" onClick={() => setNavOpen(false)} />}
       <aside className={'ks-side' + (navOpen ? ' ks-side--open' : '') + (collapsed ? ' is-collapsed' : '')}>
-        <div className="ks-side__brand"><Logo /></div>
+        <div className="ks-side__brand"><BrandMark /></div>
 
         <nav className="ks-side__nav">
           {GROUPS.map((group) => (
