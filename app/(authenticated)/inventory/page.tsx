@@ -7,7 +7,7 @@ import { Mark, Dot } from '@/components/ks'
 import { KeyDrawer } from '@/components/ks/KeyDrawer'
 import { KeysTimeline } from '@/components/ks/KeysTimeline'
 import { foundAgoDays, slaUsedPct } from '@/lib/rotation-policy'
-import { type ApiKey, platOf, SEVL, sevColor, displayName, urgency } from '@/lib/keys-display'
+import { type ApiKey, platOf, SEVL, sevColor, displayName, urgency, cleanLocation } from '@/lib/keys-display'
 
 const SEVS = ['critical', 'high', 'medium', 'low'] as const
 
@@ -135,7 +135,7 @@ export default function KeysScreen() {
                           <span className="ks-aqrow__sev" style={{ background: sevColor(k.severity), height: 16 }} />
                           {displayName(k.name)}
                         </div>
-                        <div className="ks-tbl__src" style={{ marginTop: 4, paddingLeft: 13 }}>{k.location || k.source || '-'}</div>
+                        <div className="ks-tbl__src" style={{ marginTop: 4, paddingLeft: 13 }}>{cleanLocation(k.location || k.source)}</div>
                       </td>
                       <td><span className="ks-tbl__sev"><Mark>{plat.code}</Mark> {plat.label}</span></td>
                       <td><span className="ks-tbl__sev"><Dot sev={k.severity as 'critical'} />{SEVL[k.severity] ?? k.severity}</span></td>

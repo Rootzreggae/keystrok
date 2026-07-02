@@ -41,6 +41,15 @@ export const sevColor = (s: string) =>
 /** Promoted key names are verbose ("STRIPE_SECRET_LIVE Key - Found in …"); show the bare name. */
 export const displayName = (name: string) => name.split(/ Key | - /)[0]
 
+/**
+ * Findings from a GitHub clone carry the internal temp path
+ * (/Users/…/.keystrok/clones/<sessionId>/…). Strip that prefix so a location
+ * reads as the repo-relative path instead of leaking clone-dir plumbing. Works
+ * on a bare path or inside an activity message; leaves normal paths untouched.
+ */
+export const cleanLocation = (loc?: string | null) =>
+  (loc ?? '-').replace(/\/?\S*\.keystrok\/clones\/[^/\s]+\//g, '')
+
 /** Discovery-anchored urgency text, never a fake date. Mirrors the handoff urg(). */
 export function urgency(k: ApiKey) {
   if (k.status === 'rotated') {

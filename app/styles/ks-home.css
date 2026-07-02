@@ -12,6 +12,7 @@
 .kb .ks-stat__n.warn { color: var(--high); }
 .kb .ks-stat__n.active { color: var(--a); }
 .kb .ks-stat__n.zero { color: var(--tx-dim); }
+.kb .ks-stat__n.muted { color: var(--tx-2); }
 .kb .ks-stat__l { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--tx-dim); margin-top: 8px; }
 
 .kb .ks-home__grid { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 24px; align-items: start; }

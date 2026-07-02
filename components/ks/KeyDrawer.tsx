@@ -6,7 +6,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { X, RotateCw, Sparkles } from 'lucide-react'
 import { Pill, Dot } from '@/components/ks'
 import { slaDays, foundAgoDays } from '@/lib/rotation-policy'
-import { type ApiKey, SEVL, displayName, urgency } from '@/lib/keys-display'
+import { type ApiKey, SEVL, displayName, urgency, cleanLocation } from '@/lib/keys-display'
 
 // Reusable key detail drawer. Pass the selected key (or null) and an onClose.
 export function KeyDrawer({ keyData, onClose }: { keyData: ApiKey | null; onClose: () => void }) {
@@ -29,7 +29,7 @@ export function KeyDrawer({ keyData, onClose }: { keyData: ApiKey | null; onClos
   const u = urgency(k)
   const sla = slaDays(k.severity)
   const foundAgo = foundAgoDays(new Date(k.created_at))
-  const loc = k.location || k.source || '-'
+  const loc = cleanLocation(k.location || k.source)
   const ln = loc.match(/:(\d+)$/)?.[1] ?? '1'
 
   const startRotation = async () => {

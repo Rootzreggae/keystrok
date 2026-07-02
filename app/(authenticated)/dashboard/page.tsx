@@ -7,7 +7,7 @@ import { ArrowRight, RotateCw, Shield, Github, Search, CheckCircle2, RefreshCw, 
 import { Mark } from '@/components/ks'
 import { KeyDrawer } from '@/components/ks/KeyDrawer'
 import { useSourceConnect } from '@/components/ks/SourceConnect'
-import { type ApiKey, platOf, SEVL, sevColor, displayName, urgency, needsAction, ago } from '@/lib/keys-display'
+import { type ApiKey, platOf, SEVL, sevColor, displayName, urgency, needsAction, ago, cleanLocation } from '@/lib/keys-display'
 
 interface Activity { id: string; action?: string; description?: string; emoji?: string; createdAt: string }
 
@@ -137,10 +137,10 @@ export default function HomeScreen() {
   return (
     <div className="ks-home">
       <div className="ks-home__statbar">
-        <div className="ks-home__statcell"><div className="ks-stat__n">{counts.total}</div><div className="ks-stat__l">Tracked</div></div>
-        <div className="ks-home__statcell"><div className={'ks-stat__n' + (counts.overdue ? ' crit' : ' zero')}>{counts.overdue}</div><div className="ks-stat__l">Overdue</div></div>
         <div className="ks-home__statcell"><div className={'ks-stat__n' + (counts.needAction ? ' warn' : ' zero')}>{counts.needAction}</div><div className="ks-stat__l">Need action</div></div>
+        <div className="ks-home__statcell"><div className={'ks-stat__n' + (counts.overdue ? ' crit' : ' zero')}>{counts.overdue}</div><div className="ks-stat__l">Overdue</div></div>
         <div className="ks-home__statcell"><div className={'ks-stat__n' + (counts.rotating ? ' active' : ' zero')}>{counts.rotating}</div><div className="ks-stat__l">Rotating</div></div>
+        <div className="ks-home__statcell"><div className="ks-stat__n muted">{counts.total}</div><div className="ks-stat__l">Tracked</div></div>
       </div>
 
       <div className="ks-home__grid">
@@ -236,7 +236,7 @@ export default function HomeScreen() {
                 return (
                   <div className="ks-minirow" key={e.id}>
                     <span className="ks-minirow__dot"><Icon size={13} strokeWidth={1.75} /></span>
-                    <span className="ks-minirow__txt">{e.description ?? 'Activity'}</span>
+                    <span className="ks-minirow__txt">{cleanLocation(e.description ?? 'Activity')}</span>
                     <span className="ks-minirow__when">{ago(e.createdAt)}</span>
                   </div>
                 )
