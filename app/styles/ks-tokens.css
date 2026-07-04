@@ -58,7 +58,7 @@
 
   /* layout */
   --side-w: 248px;
-  --side-w-collapsed: 64px;
+  --side-w-collapsed: 78px;
 
   background: var(--bg);
   color: var(--tx-2);

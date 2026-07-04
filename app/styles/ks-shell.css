@@ -53,15 +53,16 @@
 .ks-side.is-collapsed { width: var(--side-w-collapsed); }
 .ks-side.is-collapsed .ks-side__logo b,
 .ks-side.is-collapsed .ks-navgroup__l,
-.ks-side.is-collapsed .ks-nav__lbl,
 .ks-side.is-collapsed .ks-nav__badge,
 .ks-side.is-collapsed .ks-side__copilot > div,
 .ks-side.is-collapsed .ks-side__acctinfo,
 .ks-side.is-collapsed .ks-side__acctchev { display: none; }
 .ks-side.is-collapsed .ks-side__brand,
-.ks-side.is-collapsed .ks-nav,
 .ks-side.is-collapsed .ks-side__copilot,
 .ks-side.is-collapsed .ks-side__acct { justify-content: center; padding-left: 0; padding-right: 0; }
+/* Collapsed nav keeps labels, stacked under the icon at a small font. */
+.ks-side.is-collapsed .ks-nav { flex-direction: column; gap: 5px; padding: 9px 4px; }
+.ks-side.is-collapsed .ks-nav__lbl { flex: none; font-size: 9.5px; line-height: 1.1; text-align: center; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ks-side.is-collapsed .ks-side__collapse { width: 100%; height: 36px; }
 
 /* Main column */
