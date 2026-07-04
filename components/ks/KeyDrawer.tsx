@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useQueryClient } from '@tanstack/react-query'
 import { useAssistant } from '@/components/ks/Assistant'
 import { X, RotateCw, Sparkles } from 'lucide-react'
-import { Pill, Dot } from '@/components/ks'
+import { Pill, Dot, LiveBadge } from '@/components/ks'
 import { slaDays, foundAgoDays, riskStart, daysUntilDue } from '@/lib/rotation-policy'
 import { type ApiKey, SEVL, displayName, urgency, cleanLocation } from '@/lib/keys-display'
 
@@ -118,6 +118,14 @@ export function KeyDrawer({ keyData, onClose }: { keyData: ApiKey | null; onClos
             <div className="ks-kv"><span className="k">Found</span><span className="v">{foundAgo} days ago</span></div>
             {hasExposure && <div className="ks-kv"><span className="k">At risk</span><span className="v">{riskAgo} days ago</span></div>}
             <div className="ks-kv"><span className="k">Time left</span><span className="v" style={{ color: u.color }}>{u.txt}</span></div>
+            <div className="ks-kv">
+              <span className="k">Liveness</span>
+              <span className="v">
+                {k.live_status === 'live' || k.live_status === 'revoked'
+                  ? <LiveBadge status={k.live_status} />
+                  : <span style={{ color: 'var(--tx-dim)' }}>not checked</span>}
+              </span>
+            </div>
           </div>
 
           <div className="ks-dsect">

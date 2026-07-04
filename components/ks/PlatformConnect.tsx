@@ -20,6 +20,7 @@ export function PlatformConnect({ open, onClose, onConnected }: { open: boolean;
   const [name, setName] = useState('')
   const [apiUrl, setApiUrl] = useState('')
   const [key, setKey] = useState('')
+  const [appKey, setAppKey] = useState('') // 2nd credential for platforms that list keys (Datadog)
   const [test, setTest] = useState<{ state: 'idle' | 'testing' | 'ok' | 'fail'; message?: string }>({ state: 'idle' })
   const [saving, setSaving] = useState(false)
 
@@ -32,7 +33,8 @@ export function PlatformConnect({ open, onClose, onConnected }: { open: boolean;
   }, [open, onClose])
   if (!open) return null
 
-  const pick = (p: Preset) => { setSel(p); setName(p.type === 'custom' ? '' : p.name); setApiUrl(p.apiUrl); setKey(''); setTest({ state: 'idle' }) }
+  const pick = (p: Preset) => { setSel(p); setName(p.type === 'custom' ? '' : p.name); setApiUrl(p.apiUrl); setKey(''); setAppKey(''); setTest({ state: 'idle' }) }
+  const needsAppKey = sel?.type === 'datadog' // Datadog needs an application key to list keys for liveness
   const ready = !!sel && !!name && !!key && !!apiUrl
   const cfg = () => ({ type: sel!.type, apiUrl, apiKey: key, authHeader: sel!.authHeader, testEndpoint: sel!.testEndpoint })
 
@@ -46,7 +48,7 @@ export function PlatformConnect({ open, onClose, onConnected }: { open: boolean;
     setSaving(true)
     await fetch('/api/platforms', {
       method: 'POST', headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ name, platform_type: sel.type, category: sel.meta, api_url: apiUrl, api_key: key, auth_type: sel.authType, auth_header: sel.authHeader, test_endpoint: sel.testEndpoint }),
+      body: JSON.stringify({ name, platform_type: sel.type, category: sel.meta, api_url: apiUrl, api_key: key, app_key: appKey, auth_type: sel.authType, auth_header: sel.authHeader, test_endpoint: sel.testEndpoint }),
     }).catch(() => {})
     setSaving(false)
     onConnected()
@@ -85,6 +87,11 @@ export function PlatformConnect({ open, onClose, onConnected }: { open: boolean;
               <label className="ks-as__field"><span>API key</span>
                 <input className="ks-input" type="password" value={key} onChange={(e) => { setKey(e.target.value); setTest({ state: 'idle' }) }} placeholder={sel.keyPh} spellCheck={false} autoCapitalize="off" />
               </label>
+              {needsAppKey && (
+                <label className="ks-as__field"><span>Application key <span style={{ color: 'var(--tx-dim)' }}>(for liveness checks)</span></span>
+                  <input className="ks-input" type="password" value={appKey} onChange={(e) => setAppKey(e.target.value)} placeholder="Datadog application key" spellCheck={false} autoCapitalize="off" />
+                </label>
+              )}
               {test.state === 'fail' && <div className="ks-as__testmsg fail">{test.message}</div>}
               {test.state === 'ok' && <div className="ks-as__testmsg ok"><Check size={13} /> {test.message}</div>}
             </>

@@ -122,7 +122,8 @@ export async function buildSystemPrompt(userId: string): Promise<string> {
     const d = daysUntilDue(anchor, k.severity)
     const due = d < 0 ? `${-d}d OVERDUE` : `${d}d left`
     const exp = k.exposedAt && anchor.getTime() < k.foundAt.getTime() ? ` · exposed ${k.exposedAt.toISOString().slice(0, 10)} (${k.exposedAtSource ?? 'user'})` : ''
-    return `- ${k.keyName ?? 'key'} · ${k.platform ?? '?'} · ${k.severity} · rotate within ${slaDays(k.severity)}d (${due}) · found at ${k.location ?? k.source ?? '?'}${exp} · status ${k.status}`
+    const live = k.liveStatus === 'live' ? ' · LIVE on platform' : k.liveStatus === 'revoked' ? ' · revoked' : ''
+    return `- ${k.keyName ?? 'key'} · ${k.platform ?? '?'} · ${k.severity} · rotate within ${slaDays(k.severity)}d (${due}) · found at ${k.location ?? k.source ?? '?'}${exp}${live} · status ${k.status}`
   }).join('\n')
 
   const findLines = findings.map((f) => `- ${f.patternName || f.keyType} · ${f.severity} · ${f.relativePath || f.filePath}:${f.lineNumber}`).join('\n')
@@ -133,7 +134,8 @@ export async function buildSystemPrompt(userId: string): Promise<string> {
     '- You reason over key METADATA only. You never see, request, or output secret values.',
     '- You are ADVISORY. You never rotate, revoke, or change anything. When a key needs rotating, point the user to the guided rotation flow ("Start guided rotation" in the app). Never claim you performed an action.',
     '- Rotation timing is anchored to when a key was at-risk: an attested EXPOSURE date if the user set one (shown as "exposed …"), otherwise DISCOVERY (foundAt). Keystrok never guesses a key\'s age. If a key looks long-lived or was found in public history, you may suggest the user set its exposure date, but never invent one.',
-    '- Be concise and specific. Reference keys by name. Rank by severity, then by rotation time remaining.',
+    '- A key marked "LIVE on platform" was confirmed still active against a connected platform: treat it as the most urgent. "revoked" means it is no longer active, so it is far less urgent (still worth noting as a past leak). Keys with neither marker have not been liveness-checked; do not assume either way.',
+    '- Be concise and specific. Reference keys by name. Rank by: live first, then severity, then rotation time remaining.',
     '',
     `TRACKED KEYS (${keys.length}):`,
     keyLines || '(none yet)',

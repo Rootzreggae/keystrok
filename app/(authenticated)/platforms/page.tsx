@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { ArrowRight, X, Server } from 'lucide-react'
+import { ArrowRight, Server, RefreshCw } from 'lucide-react'
 import { PlatformConnect } from '@/components/ks/PlatformConnect'
 import { platOf } from '@/lib/keys-display'
 
@@ -17,6 +17,24 @@ interface Platform {
 export default function PlatformsScreen() {
   const qc = useQueryClient()
   const [connectOpen, setConnectOpen] = useState(false)
+  const [liveMsg, setLiveMsg] = useState<string | null>(null)
+
+  // Match every leaked key's last-4 against what the connected platforms report
+  // as live, then refresh the ledger so the live/revoked badges update.
+  const check = useMutation({
+    mutationFn: async () => {
+      const r = await fetch('/api/liveness/check', { method: 'POST' })
+      const j = await r.json().catch(() => null)
+      if (!r.ok) throw new Error(j?.error || 'Liveness check failed')
+      return j
+    },
+    onSuccess: (j) => {
+      qc.invalidateQueries({ queryKey: ['keys'] })
+      const warn = j.warnings?.length ? ` — ${j.warnings.join('; ')}` : ''
+      setLiveMsg(j.success ? `Checked ${j.checked}: ${j.live} live, ${j.revoked} revoked${warn}` : (j.warnings?.[0] || 'Nothing to check yet'))
+    },
+    onError: (e: Error) => setLiveMsg(e.message),
+  })
 
   const { data: platforms = [] } = useQuery<Platform[]>({
     queryKey: ['platforms'],
@@ -45,11 +63,20 @@ export default function PlatformsScreen() {
         <span className="ks-h__t">Connected platforms</span>
         <span className="ks-h__n">· {platforms.length} connected · {totalKeys} keys managed</span>
         <span className="ks-h__act">
+          {platforms.length > 0 && (
+            <button className="ks-btn" disabled={check.isPending} onClick={() => { setLiveMsg(null); check.mutate() }}>
+              <RefreshCw size={14} /> {check.isPending ? 'Checking…' : 'Check liveness'}
+            </button>
+          )}
           <button className="ks-btn" onClick={() => setConnectOpen(true)}>
             <ArrowRight size={14} /> Connect platform
           </button>
         </span>
       </div>
+
+      {liveMsg && (
+        <div style={{ marginTop: -8, marginBottom: 18, fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--tx-mut)' }}>{liveMsg}</div>
+      )}
 
       {platforms.length === 0 ? (
         <div className="ks-panel" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 520 }}>
@@ -74,14 +101,13 @@ export default function PlatformsScreen() {
                 <div className="ks-platcard__name">{p.name}</div>
                 <div className="ks-platcard__meta">{p.key_count ?? 0} key{(p.key_count ?? 0) !== 1 ? 's' : ''} tracked</div>
               </div>
-              <span className="ks-platcard__status">connected</span>
+              <span className="ks-platcard__status"><span className="ks-platcard__dot" /> connected</span>
               <button
-                className="ks-platcard__x"
-                title="Disconnect"
+                className="ks-platcard__disc"
                 disabled={remove.isPending}
-                onClick={() => confirm(`Disconnect ${p.name}?`) && remove.mutate(p.id)}
+                onClick={() => confirm(`Disconnect ${p.name}? Keystrok will stop checking its keys' liveness.`) && remove.mutate(p.id)}
               >
-                <X size={14} />
+                {remove.isPending ? 'Disconnecting…' : 'Disconnect'}
               </button>
             </div>
           ))}

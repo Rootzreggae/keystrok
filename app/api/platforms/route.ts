@@ -94,6 +94,7 @@ export async function POST(request: NextRequest) {
       category = 'Infrastructure',
       api_url,
       api_key = '',
+      app_key = '',
       auth_type = 'bearer',
       auth_header = 'Authorization',
       test_endpoint = null,
@@ -117,6 +118,9 @@ export async function POST(request: NextRequest) {
         apiUrl: api_url,
         // Encrypt at rest. Skip empty / masked-placeholder values.
         apiKey: api_key && !isMaskedSecret(api_key) ? encryptSecret(api_key) : '',
+        // Second credential (e.g. Datadog application key), needed to LIST keys
+        // for liveness. Optional; null when the platform needs only one key.
+        appKey: app_key && !isMaskedSecret(app_key) ? encryptSecret(app_key) : null,
         description,
         userId,
         authType: auth_type,

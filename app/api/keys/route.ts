@@ -66,6 +66,8 @@ export async function GET(request: NextRequest) {
         risk_start: anchor.toISOString(),
         exposed_at: key.exposedAt?.toISOString() ?? null,
         exposed_at_source: key.exposedAtSource ?? null,
+        live_status: key.liveStatus ?? null,
+        live_checked_at: key.liveCheckedAt?.toISOString() ?? null,
         daysUntilExpiry,
         isRotated: key.status === 'rotated',
         rotatedAt: key.rotatedAt?.toISOString() || null

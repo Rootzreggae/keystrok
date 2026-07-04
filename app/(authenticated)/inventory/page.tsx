@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Search, Key, Clock, SlidersHorizontal, Check } from 'lucide-react'
-import { Mark, Dot } from '@/components/ks'
+import { Mark, Dot, LiveBadge } from '@/components/ks'
 import { KeyDrawer } from '@/components/ks/KeyDrawer'
 import { KeysTimeline } from '@/components/ks/KeysTimeline'
 import { foundAgoDays, slaUsedPct } from '@/lib/rotation-policy'
@@ -131,9 +131,10 @@ export default function KeysScreen() {
                   return (
                     <tr key={k.id} className={selected?.id === k.id ? 'sel' : ''} onClick={() => setSelected(k)}>
                       <td>
-                        <div className="ks-tbl__name">
+                        <div className="ks-tbl__name" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                           <span className="ks-aqrow__sev" style={{ background: sevColor(k.severity), height: 16 }} />
                           {displayName(k.name)}
+                          <LiveBadge status={k.live_status} />
                         </div>
                         <div className="ks-tbl__src" style={{ marginTop: 4, paddingLeft: 13 }}>{cleanLocation(k.location || k.source)}</div>
                       </td>

@@ -14,6 +14,8 @@ export interface ApiKey {
   risk_start?: string // urgency anchor: exposedAt if earlier than discovery, else = created_at
   exposed_at?: string | null
   exposed_at_source?: string | null
+  live_status?: string | null // 'live' | 'revoked' | 'unknown' | null (never checked)
+  live_checked_at?: string | null
   daysUntilExpiry: number
   rotatedAt?: string | null
 }

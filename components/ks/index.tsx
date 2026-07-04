@@ -38,6 +38,31 @@ export function Mark({ children }: { children: React.ReactNode }) {
   return <span className="ks-mark">{children}</span>
 }
 
+/** Liveness of a leaked key, matched against a connected platform. Renders
+ *  nothing when unknown/unchecked so it stays quiet by default. See lib/liveness. */
+export function LiveBadge({ status, title }: { status?: string | null; title?: string }) {
+  const base: React.CSSProperties = {
+    display: 'inline-flex', alignItems: 'center', gap: 4, fontFamily: 'var(--font-mono)',
+    fontSize: 10, letterSpacing: '.05em', textTransform: 'uppercase', borderRadius: 2,
+    padding: '0 4px', lineHeight: '15px', whiteSpace: 'nowrap',
+  }
+  if (status === 'live') {
+    return (
+      <span title={title ?? 'Still live on the platform'} style={{ ...base, fontWeight: 700, color: 'var(--crit)', border: '1px solid var(--crit)' }}>
+        <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--crit)' }} aria-hidden />live
+      </span>
+    )
+  }
+  if (status === 'revoked') {
+    return (
+      <span title={title ?? 'Not found on the platform, likely revoked'} style={{ ...base, fontWeight: 600, color: 'var(--tx-dim)', border: '1px solid var(--tx-dim)' }}>
+        revoked
+      </span>
+    )
+  }
+  return null
+}
+
 /** The Keystrok wordmark: green key glyph + "keystrok_". Single source of truth. */
 export function BrandMark() {
   return (
