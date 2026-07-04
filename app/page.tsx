@@ -1,7 +1,6 @@
 'use client'
 
 import React from 'react'
-import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { LandingSchematic } from '@/components/landing/LandingSchematic'
 import { initSchematicMotion } from '@/components/landing/motion'
@@ -39,16 +38,14 @@ function StickyCta() {
 }
 
 export default function LandingPage() {
-  const router = useRouter()
-  const { data: session } = useSession()
-  const user = session?.user
+  // The landing is the public face: viewable by anyone, logged in or not. We do
+  // NOT force logged-in visitors to /dashboard (that flashed the landing then
+  // redirected, and on sign-out the stale session bounced through /dashboard to
+  // /auth/signin). Instead the header link points logged-in users to the app.
+  const { status } = useSession()
+  const authed = status === 'authenticated'
   const [v, setV] = React.useState<Variant>('lg')
   const rootRef = React.useRef<HTMLDivElement>(null)
-
-  // Authenticated users go straight to the dashboard.
-  React.useEffect(() => {
-    if (user) router.push('/dashboard')
-  }, [user, router])
 
   // Resolve the real breakpoint on mount + on resize.
   React.useEffect(() => {
@@ -67,7 +64,7 @@ export default function LandingPage() {
   return (
     <div ref={rootRef} style={{ minHeight: '100vh', background: 'var(--bg-deep, #0c0f14)' }}>
       <div key={v}>
-        <LandingSchematic variant={v} />
+        <LandingSchematic variant={v} authed={authed} />
       </div>
       {v === 'sm' && <StickyCta />}
     </div>

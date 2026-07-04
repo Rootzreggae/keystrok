@@ -72,7 +72,7 @@
 .sch-figure .fig-head { display: flex; justify-content: space-between; padding: 14px 24px; border-bottom: 1px dashed var(--line-dot); }
 
 /* pipeline diagram */
-.sch-pipe { display: grid; grid-template-columns: 200px 56px 1fr 56px 1fr 56px 1fr; align-items: center; padding: 56px 40px; gap: 0; }
+.sch-pipe { display: grid; grid-template-columns: 168px 40px 1fr 40px 1fr 40px 1fr 40px 1fr; align-items: center; padding: 56px 32px; gap: 0; }
 .sch-node { border: 1px solid var(--line-dot); padding: 22px 22px 18px; position: relative; background: var(--bg); }
 .sch-node.src { border-style: dashed; }
 .sch-node .nlabel { font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em; color: var(--ink); margin-bottom: 8px; display: flex; justify-content: space-between; }
@@ -97,7 +97,7 @@
 .sch-sec .sec-note { margin-left: auto; }
 
 /* module spec cards */
-.sch-mods { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+.sch-mods { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; }
 .sch-mod { border: 1px solid var(--line); background: var(--bg-panel); }
 .sch-mod .m-head { display: flex; justify-content: space-between; align-items: center; padding: 16px 22px; border-bottom: 1px solid var(--line); }
 .sch-mod .m-id { font-family: var(--mono); font-size: 12px; color: var(--a); letter-spacing: 0.12em; }

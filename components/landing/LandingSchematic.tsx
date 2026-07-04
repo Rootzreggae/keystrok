@@ -61,14 +61,17 @@ function SchBrand() {
   )
 }
 
-function SchBar({ v }: { v: Variant }) {
+function SchBar({ v, authed }: { v: Variant; authed?: boolean }) {
+  const entry = authed
+    ? <span className="cell end"><Icon name="arrow-right" size={14} /> <a href="/dashboard">Dashboard</a></span>
+    : <span className="cell end"><Icon name="arrow-right" size={14} /> <a href="/auth/signin">Sign in</a></span>
   if (v === 'sm') {
     return (
       <header className="sch-bar sch-bar--sm" data-screen-label="C header bar">
         <div className="wrap">
           <SchBrand />
           <span className="cell fill" />
-          <span className="cell end"><Icon name="arrow-right" size={14} /> <a href="/auth/signin">Sign in</a></span>
+          {entry}
         </div>
       </header>
     )
@@ -79,7 +82,7 @@ function SchBar({ v }: { v: Variant }) {
         <SchBrand />
         <span className="cell">Key lifecycle instrument</span>
         <span className="cell fill" />
-        <span className="cell end"><Icon name="arrow-right" size={14} /> <a href="/auth/signin">Sign in</a></span>
+        {entry}
       </div>
     </header>
   )
@@ -92,10 +95,8 @@ function SchHero() {
         <h1 data-hero-h1="true">The key lifecycle, <span className="hero-ink" data-hero-outline="true">instrumented.</span></h1>
         <div className="row">
           <p className="sub">
-            Keystrok is an instrument for the API-key lifecycle: it <strong>scans</strong> your
-            code and connected platforms for exposed keys, holds one <strong>inventory</strong>,
-            platform, age, and risk for every key, and walks you through <strong>rotation</strong> in
-            the only safe order. Self-host it on your own database.
+            Find exposed API keys, see which are still <strong>live</strong>, and rotate them safely.
+            Self-host it on your own database.
           </p>
           <div className="actions">
             <a className="btn primary" href="#cta"><Icon name="key" size={15} /> Request access</a>
@@ -118,9 +119,10 @@ interface PipeStage {
 }
 
 const PIPE_STAGES: PipeStage[] = [
-  { label: 'STAGE 1', id: 'SCAN-01', icon: 'search', name: 'Scan', desc: 'Finds exposed and forgotten keys across your code and platforms.', fk: 'mode', fv: 'read-only' },
-  { label: 'STAGE 2', id: 'INV-02', icon: 'layers', name: 'Inventory', desc: 'One ledger: key, platform, age, risk, and status.', fk: 'at rest', fv: 'encrypted' },
-  { label: 'STAGE 3', id: 'ROT-03', icon: 'rotate-cw', name: 'Rotate', desc: 'Issue → roll out → revoke. Guided, in the only safe order.', fk: 'order', fv: 'enforced' },
+  { label: 'STAGE 1', id: 'SCAN-01', icon: 'search', name: 'Scan', desc: 'Exposed and forgotten keys, across code and platforms.', fk: 'mode', fv: 'read-only' },
+  { label: 'STAGE 2', id: 'INV-02', icon: 'layers', name: 'Inventory', desc: 'One ledger: platform, real risk, exposure.', fk: 'at rest', fv: 'encrypted' },
+  { label: 'STAGE 3', id: 'VAL-03', icon: 'activity', name: 'Validate', desc: 'Which leaked keys are still live, right now.', fk: 'signal', fv: 'live / revoked' },
+  { label: 'STAGE 4', id: 'ROT-04', icon: 'rotate-cw', name: 'Rotate', desc: 'Issue → roll out → revoke, in the safe order.', fk: 'order', fv: 'enforced' },
 ]
 
 function PipeNode({ stage, step }: { stage: PipeStage; step: number }) {
@@ -159,6 +161,8 @@ function SchPipeline({ v }: { v: Variant }) {
         <PipeNode stage={PIPE_STAGES[1]} step={4} />
         <VArrow step={5} />
         <PipeNode stage={PIPE_STAGES[2]} step={6} />
+        <VArrow step={7} />
+        <PipeNode stage={PIPE_STAGES[3]} step={8} />
       </div>
     )
   } else if (v === 'md') {
@@ -174,6 +178,8 @@ function SchPipeline({ v }: { v: Variant }) {
           <PipeNode stage={PIPE_STAGES[1]} step={3} />
           <HArrow step={4} />
           <PipeNode stage={PIPE_STAGES[2]} step={5} />
+          <HArrow step={6} />
+          <PipeNode stage={PIPE_STAGES[3]} step={7} />
         </div>
       </>
     )
@@ -187,6 +193,8 @@ function SchPipeline({ v }: { v: Variant }) {
         <PipeNode stage={PIPE_STAGES[1]} step={4} />
         <HArrow step={5} />
         <PipeNode stage={PIPE_STAGES[2]} step={6} />
+        <HArrow step={7} />
+        <PipeNode stage={PIPE_STAGES[3]} step={8} />
       </div>
     )
   }
@@ -197,7 +205,7 @@ function SchPipeline({ v }: { v: Variant }) {
           <Ticks />
           <div className="fig-head">
             <span className="fig">Fig. 01: System overview</span>
-            {v !== 'sm' && <span className="ann">Scan → inventory → rotate, end to end</span>}
+            {v !== 'sm' && <span className="ann">Scan → inventory → validate → rotate, end to end</span>}
             <RunBtn />
           </div>
           {body}
@@ -217,17 +225,22 @@ interface Mod { id: string; icon: string; name: string; desc: string; specs: Mod
 const MODS: Mod[] = [
   {
     id: 'SCAN-01', icon: 'search', name: 'Scan',
-    desc: 'Walks your source trees and connected platforms; flags exposed keys and ones past their rotation date.',
+    desc: 'Exposed keys and ones past their rotation date, across code and platforms.',
     specs: [{ k: 'input', val: 'code · platforms' }, { k: 'output', val: 'findings list' }, { k: 'guarantee', val: 'read-only', ok: true }],
   },
   {
     id: 'INV-02', icon: 'layers', name: 'Inventory',
-    desc: 'The single answer to "what keys do we have, and how exposed are they." Sort by platform, age, or risk.',
+    desc: 'What keys do we have, and how exposed? Sort by platform, exposure, or risk.',
     specs: [{ k: 'input', val: 'scan findings' }, { k: 'output', val: 'one ledger' }, { k: 'guarantee', val: 'encrypted at rest', ok: true }],
   },
   {
-    id: 'ROT-03', icon: 'rotate-cw', name: 'Rotate',
-    desc: 'Walks you through issue → roll out → revoke, the order that never locks you out, and records every step.',
+    id: 'VAL-03', icon: 'activity', name: 'Validate',
+    desc: 'Which leaked keys are still live. Dead keys drop, live ones rise.',
+    specs: [{ k: 'input', val: 'ledger · platform' }, { k: 'output', val: 'live / revoked' }, { k: 'guarantee', val: 'advisory', ok: true }],
+  },
+  {
+    id: 'ROT-04', icon: 'rotate-cw', name: 'Rotate',
+    desc: 'Issue, roll out, revoke, the order that never locks you out. Every step recorded.',
     specs: [{ k: 'input', val: 'one key id' }, { k: 'output', val: 'rotated key' }, { k: 'guarantee', val: 'safe order', ok: true }],
   },
 ]
@@ -239,7 +252,7 @@ function SchModules({ v }: { v: Variant }) {
         <div className="sec-head" data-ink="true">
           <span className="fig">Fig. 02</span>
           <h2>Module specifications</h2>
-          {v === 'lg' && <span className="ann sec-note">3 modules · no feature matrix</span>}
+          {v === 'lg' && <span className="ann sec-note">4 modules · no feature matrix</span>}
         </div>
         <div className={'sch-mods' + (v === 'md' ? ' sch-mods--strip' : '')}>
           {MODS.map((m) => (
@@ -263,9 +276,9 @@ function SchModules({ v }: { v: Variant }) {
 interface CredStep { label: string; icon: string; name: string; desc: string; cls?: string }
 
 const CRED_STEPS: CredStep[] = [
-  { label: 'ON SAVE', icon: 'key', name: 'Encrypted', desc: 'A platform key you add is sealed with AES-256-GCM before it ever reaches the database.' },
-  { label: 'AT REST', icon: 'lock', name: 'Ciphertext only', desc: 'The database stores enc:v1: blobs, never plaintext, never logged.' },
-  { label: 'IN USE', icon: 'eye', name: 'Decrypted in memory', desc: 'Unsealed only at the moment of a call. Connection tests are SSRF-guarded.' },
+  { label: 'ON SAVE', icon: 'key', name: 'Encrypted', desc: 'Sealed with AES-256-GCM before it reaches the database.' },
+  { label: 'AT REST', icon: 'lock', name: 'Ciphertext only', desc: 'Stored as enc:v1: blobs. Never plaintext, never logged.' },
+  { label: 'IN USE', icon: 'eye', name: 'Decrypted in memory', desc: 'Unsealed only for a call. Connection tests are SSRF-guarded.' },
 ]
 
 function SchCredentials({ v }: { v: Variant }) {
@@ -314,6 +327,7 @@ const DEPLOY_SPECS: SpecRow[] = [
   { k: 'Auth', val: 'passwordless, invite-only' },
   { k: 'Encryption', val: 'AES-256-GCM at rest', ok: true },
   { k: 'Self-host', val: 'Docker + your Postgres', ok: true },
+  { k: 'Teams', val: 'shared workspace, roles', ok: true },
   { k: 'Telemetry', val: 'none', ok: true },
   { k: 'Stack', val: 'Next.js · Postgres · Prisma' },
 ]
@@ -331,9 +345,8 @@ function SchDeployment({ v }: { v: Variant }) {
           <div>
             <p className="lede">Run it where your keys already live.</p>
             <p className="body">
-              Keystrok ships as a Docker stack, app, Postgres, and mail, so you can run the whole
-              instrument on your own infrastructure, against your own database. The only outbound
-              calls are to the platforms you connect.
+              A Docker stack: app, Postgres, mail. Your infrastructure, your database. The only
+              outbound calls go to the platforms you connect.
             </p>
           </div>
           <div className="sch-spec-table">
@@ -354,7 +367,7 @@ function SchCta() {
         <div>
           <h2>Put your keys under instrumentation.</h2>
           <p className="sub" style={{ color: 'var(--ink)', fontFamily: 'var(--mono)', fontSize: 12, letterSpacing: '0.04em' }}>
-            Keystrok is invite-only while in beta. Request access and we&apos;ll send a sign-in link.
+            Invite-only beta. Request access and we&apos;ll send a sign-in link.
           </p>
         </div>
         <div className="actions">
@@ -382,11 +395,11 @@ function SchFooter() {
   )
 }
 
-export function LandingSchematic({ variant = 'lg' }: { variant?: Variant }) {
+export function LandingSchematic({ variant = 'lg', authed = false }: { variant?: Variant; authed?: boolean }) {
   const v = variant
   return (
     <div className={'sch sch--' + v}>
-      <SchBar v={v} />
+      <SchBar v={v} authed={authed} />
       <SchHero />
       <SchPipeline v={v} />
       <SchModules v={v} />

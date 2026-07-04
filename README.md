@@ -78,9 +78,9 @@ npm run dev -- -p 3001    # http://localhost:3001
 
 ## On how this is made
 
-I'm a designer, and I build Keystrok with AI as my engineering partner. The product, what it does, what it deliberately *won't* do (it never rotates a key on its own), how it should feel to use, is mine. The implementation is a collaboration, written and reviewed with AI in the loop.
+I'm a product designer who has spent years on developer and observability tools (among them Grafana's Frontend Observability and APM). I build Keystrok with AI as my engineering partner. The product, what it does, what it deliberately *won't* do (it never rotates a key on its own), and how it should feel to use, is mine. The implementation is a collaboration, written and reviewed with AI in the loop.
 
-I'm saying this plainly because "made with AI" sometimes gets waved off as slop. Fair instinct. So judge the work, not the method: the self-host path is verified end to end, secrets are encrypted at rest, rotation is advisory and operator-gated, and the AI assistant only ever sees key *metadata*. If you find a bug or a bad decision, open an issue. I read them, and I'd rather fix it than defend it.
+I mention the AI part plainly, not defensively. Judge the work, not the method: the self-host path is verified end to end, secrets are encrypted at rest, rotation is advisory and operator-gated, and the AI assistant only ever sees key *metadata*, never the secret values. Find a bug or a bad call? Open an issue. I'd rather fix it than defend it.
 
 ## License
 
