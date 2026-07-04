@@ -4,14 +4,72 @@ import { useEffect, useState } from 'react'
 import { X, Server, ArrowLeft, Check } from 'lucide-react'
 import { Mark } from '@/components/ks'
 
-const PRESETS = [
-  { type: 'datadog', name: 'Datadog', meta: 'Observability', code: 'DD', apiUrl: 'https://api.datadoghq.com', authType: 'api-key', authHeader: 'DD-API-KEY', testEndpoint: '/api/v1/validate', keyPh: 'your Datadog API key', fixedUrl: false },
-  { type: 'grafana', name: 'Grafana', meta: 'Observability', code: 'GRF', apiUrl: 'https://your-stack.grafana.net', authType: 'bearer', authHeader: 'Authorization', testEndpoint: '/api/org', keyPh: 'glsa_…', fixedUrl: false },
-  { type: 'stripe', name: 'Stripe', meta: 'Payments', code: 'STR', apiUrl: 'https://api.stripe.com', authType: 'bearer', authHeader: 'Authorization', testEndpoint: '/v1/charges', keyPh: 'sk_live_…', fixedUrl: true },
-  { type: 'github', name: 'GitHub', meta: 'Development', code: 'GH', apiUrl: 'https://api.github.com', authType: 'bearer', authHeader: 'Authorization', testEndpoint: '/user', keyPh: 'ghp_…', fixedUrl: true },
-  { type: 'custom', name: 'Custom / other', meta: 'Any API URL + key', code: 'API', apiUrl: '', authType: 'bearer', authHeader: 'Authorization', testEndpoint: '', keyPh: 'your API key', fixedUrl: false },
-] as const
-type Preset = (typeof PRESETS)[number]
+interface Preset {
+  type: string; name: string; meta: string; code: string
+  apiUrl: string; authType: string; authHeader: string; testEndpoint: string
+  keyPh: string; fixedUrl: boolean
+  keyHint?: string; docUrl?: string
+  urlHint?: string // helper under a free-text API URL field (e.g. Grafana stack URL)
+  keyPrefixes?: string[] // a key not starting with one of these is probably wrong
+  sites?: { label: string; apiUrl: string }[] // region picker (Datadog)
+  appKeyHint?: string // shows the 2nd-credential field when set
+  failHint?: string // appended to a failed connection test
+}
+
+const PRESETS: Preset[] = [
+  {
+    type: 'datadog', name: 'Datadog', meta: 'Observability', code: 'DD',
+    apiUrl: 'https://api.datadoghq.com', authType: 'api-key', authHeader: 'DD-API-KEY', testEndpoint: '/api/v1/validate',
+    keyPh: '32-character hex value', fixedUrl: false,
+    keyHint: 'The API key VALUE (32 hex chars), not the Key ID (the UUID). Organization Settings → API Keys.',
+    docUrl: 'https://docs.datadoghq.com/account_management/api-app-keys/',
+    sites: [
+      { label: 'US1 · datadoghq.com', apiUrl: 'https://api.datadoghq.com' },
+      { label: 'US3 · us3.datadoghq.com', apiUrl: 'https://api.us3.datadoghq.com' },
+      { label: 'US5 · us5.datadoghq.com', apiUrl: 'https://api.us5.datadoghq.com' },
+      { label: 'EU · datadoghq.eu', apiUrl: 'https://api.datadoghq.eu' },
+      { label: 'AP1 · ap1.datadoghq.com', apiUrl: 'https://api.ap1.datadoghq.com' },
+    ],
+    appKeyHint: 'A separate Application key (40 chars) from Organization Settings → Application Keys. Keystrok uses it to list your keys and flag any leaked one that is still live.',
+    failHint: 'if the key is right, check the site above matches your Datadog URL',
+  },
+  {
+    type: 'grafana', name: 'Grafana', meta: 'Observability', code: 'GRF',
+    apiUrl: 'https://your-stack.grafana.net', authType: 'bearer', authHeader: 'Authorization', testEndpoint: '/api/org',
+    keyPh: 'glsa_…', fixedUrl: false,
+    urlHint: 'Grafana Cloud: your stack URL, e.g. myorg.grafana.net. Self-hosted: your Grafana base URL.',
+    keyHint: 'A service account token (starts glsa_), not a legacy API key. Administration → Users and access → Service accounts → add a token with Viewer access or higher.',
+    keyPrefixes: ['glsa_'],
+    docUrl: 'https://grafana.com/docs/grafana/latest/administration/service-accounts/',
+    failHint: 'check the stack URL and that the token has Viewer access or higher',
+  },
+  {
+    type: 'stripe', name: 'Stripe', meta: 'Payments', code: 'STR',
+    apiUrl: 'https://api.stripe.com', authType: 'bearer', authHeader: 'Authorization', testEndpoint: '/v1/charges',
+    keyPh: 'sk_live_… or sk_test_…', fixedUrl: true,
+    keyHint: 'A secret key (sk_live_ / sk_test_) or a restricted key (rk_) with read access. Dashboard → Developers → API keys. Never the publishable key (pk_).',
+    keyPrefixes: ['sk_', 'rk_'],
+    docUrl: 'https://dashboard.stripe.com/apikeys',
+    failHint: 'make sure it is a secret or restricted key (sk_ / rk_), not a publishable key (pk_)',
+  },
+  {
+    type: 'github', name: 'GitHub', meta: 'Development', code: 'GH',
+    apiUrl: 'https://api.github.com', authType: 'bearer', authHeader: 'Authorization', testEndpoint: '/user',
+    keyPh: 'ghp_… or github_pat_…', fixedUrl: true,
+    keyHint: 'A personal access token, classic (ghp_) or fine-grained (github_pat_). Settings → Developer settings → Personal access tokens. Give it read access.',
+    keyPrefixes: ['ghp_', 'github_pat_', 'gho_', 'ghs_'],
+    docUrl: 'https://github.com/settings/tokens',
+    failHint: 'check the token has not expired and includes read access',
+  },
+  {
+    type: 'custom', name: 'Custom / other', meta: 'Any API URL + key', code: 'API',
+    apiUrl: '', authType: 'bearer', authHeader: 'Authorization', testEndpoint: '',
+    keyPh: 'your API key', fixedUrl: false,
+  },
+]
+
+// A value that looks like a UUID is almost always a Key ID pasted by mistake.
+const looksLikeKeyId = (v: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v.trim())
 
 // Connect an observability/service platform: pick → config → test the key is
 // live → connect. The key is stored encrypted and only ever used to validate.
@@ -33,9 +91,11 @@ export function PlatformConnect({ open, onClose, onConnected }: { open: boolean;
   }, [open, onClose])
   if (!open) return null
 
-  const pick = (p: Preset) => { setSel(p); setName(p.type === 'custom' ? '' : p.name); setApiUrl(p.apiUrl); setKey(''); setAppKey(''); setTest({ state: 'idle' }) }
-  const needsAppKey = sel?.type === 'datadog' // Datadog needs an application key to list keys for liveness
-  const ready = !!sel && !!name && !!key && !!apiUrl
+  // For region platforms, start with no site chosen so the user must pick one
+  // (a silent default to the wrong region was the #1 connection error).
+  const pick = (p: Preset) => { setSel(p); setName(p.type === 'custom' ? '' : p.name); setApiUrl(p.sites ? '' : p.apiUrl); setKey(''); setAppKey(''); setTest({ state: 'idle' }) }
+  const needsAppKey = !!sel?.appKeyHint
+  const ready = !!sel && !!name && !!key && !!apiUrl && (!needsAppKey || !!appKey)
   const cfg = () => ({ type: sel!.type, apiUrl, apiKey: key, authHeader: sel!.authHeader, testEndpoint: sel!.testEndpoint })
 
   const runTest = async () => {
@@ -53,6 +113,10 @@ export function PlatformConnect({ open, onClose, onConnected }: { open: boolean;
     setSaving(false)
     onConnected()
   }
+
+  const Hint = ({ text, doc }: { text: string; doc?: string }) => (
+    <div className="ks-as__hint">{text} {doc && <a className="ks-as__doclink" href={doc} target="_blank" rel="noreferrer">where do I find this? →</a>}</div>
+  )
 
   return (
     <>
@@ -81,18 +145,40 @@ export function PlatformConnect({ open, onClose, onConnected }: { open: boolean;
               <label className="ks-as__field"><span>Name</span>
                 <input className="ks-input" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Production Datadog" />
               </label>
-              <label className="ks-as__field"><span>API URL</span>
-                <input className="ks-input" value={apiUrl} onChange={(e) => { setApiUrl(e.target.value); setTest({ state: 'idle' }) }} readOnly={sel.fixedUrl} placeholder="https://api.example.com" spellCheck={false} autoCapitalize="off" />
-              </label>
-              <label className="ks-as__field"><span>API key</span>
-                <input className="ks-input" type="password" value={key} onChange={(e) => { setKey(e.target.value); setTest({ state: 'idle' }) }} placeholder={sel.keyPh} spellCheck={false} autoCapitalize="off" />
-              </label>
-              {needsAppKey && (
-                <label className="ks-as__field"><span>Application key <span style={{ color: 'var(--tx-dim)' }}>(for liveness checks)</span></span>
-                  <input className="ks-input" type="password" value={appKey} onChange={(e) => setAppKey(e.target.value)} placeholder="Datadog application key" spellCheck={false} autoCapitalize="off" />
+
+              {sel.sites ? (
+                <label className="ks-as__field"><span>{sel.name} site</span>
+                  <select className="ks-input ks-select" value={apiUrl} onChange={(e) => { setApiUrl(e.target.value); setTest({ state: 'idle' }) }}>
+                    <option value="" disabled>Select your site…</option>
+                    {sel.sites.map((s) => <option key={s.apiUrl} value={s.apiUrl}>{s.label}</option>)}
+                  </select>
+                  <Hint text="Match this to your Datadog URL (the domain in your browser). A wrong site is the most common connection error." />
+                </label>
+              ) : (
+                <label className="ks-as__field"><span>API URL</span>
+                  <input className="ks-input" value={apiUrl} onChange={(e) => { setApiUrl(e.target.value); setTest({ state: 'idle' }) }} readOnly={sel.fixedUrl} placeholder="https://api.example.com" spellCheck={false} autoCapitalize="off" />
+                  {sel.urlHint && <Hint text={sel.urlHint} />}
                 </label>
               )}
-              {test.state === 'fail' && <div className="ks-as__testmsg fail">{test.message}</div>}
+
+              <label className="ks-as__field"><span>API key</span>
+                <input className="ks-input" type="password" value={key} onChange={(e) => { setKey(e.target.value); setTest({ state: 'idle' }) }} placeholder={sel.keyPh} spellCheck={false} autoCapitalize="off" />
+                {sel.keyHint && <Hint text={sel.keyHint} doc={sel.docUrl} />}
+                {key && looksLikeKeyId(key) && <div className="ks-as__warn">That looks like a Key ID (UUID), not the key value. Copy the key itself.</div>}
+                {key && !looksLikeKeyId(key) && sel.keyPrefixes && !sel.keyPrefixes.some((p) => key.trim().startsWith(p)) && (
+                  <div className="ks-as__warn">This doesn&apos;t look like a {sel.name} key (usually starts {sel.keyPrefixes.join(' or ')}).</div>
+                )}
+              </label>
+
+              {needsAppKey && (
+                <label className="ks-as__field"><span>Application key</span>
+                  <input className="ks-input" type="password" value={appKey} onChange={(e) => setAppKey(e.target.value)} placeholder="40-character application key" spellCheck={false} autoCapitalize="off" />
+                  <Hint text={sel.appKeyHint!} doc={sel.docUrl} />
+                  {appKey && looksLikeKeyId(appKey) && <div className="ks-as__warn">That looks like a Key ID (UUID), not the application key value.</div>}
+                </label>
+              )}
+
+              {test.state === 'fail' && <div className="ks-as__testmsg fail">{test.message}{sel.failHint ? ` — ${sel.failHint}` : ''}</div>}
               {test.state === 'ok' && <div className="ks-as__testmsg ok"><Check size={13} /> {test.message}</div>}
             </>
           )}
