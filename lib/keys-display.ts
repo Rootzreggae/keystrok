@@ -11,9 +11,15 @@ export interface ApiKey {
   severity: string
   status: string
   created_at: string
+  risk_start?: string // urgency anchor: exposedAt if earlier than discovery, else = created_at
+  exposed_at?: string | null
+  exposed_at_source?: string | null
   daysUntilExpiry: number
   rotatedAt?: string | null
 }
+
+/** The urgency anchor for client-side math. Falls back to discovery if the API is old. */
+export const anchorOf = (k: ApiKey) => new Date(k.risk_start ?? k.created_at)
 
 // Platform string (often keyType-derived, e.g. "stripe_secret_live") → code + label.
 const PLAT: Record<string, { code: string; label: string }> = {

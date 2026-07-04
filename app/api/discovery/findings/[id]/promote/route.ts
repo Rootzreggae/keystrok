@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { rotationDueAt } from '@/lib/rotation-policy'
+import { rotationDueAt, riskStart } from '@/lib/rotation-policy'
 
 // POST /api/discovery/findings/[id]/promote - Promote a scan finding to inventory
 export async function POST(
@@ -58,6 +58,7 @@ export async function POST(
           riskLevel: true,
           isInEnvFile: true,
           isTestKey: true,
+          exposedAt: true, // git-derived exposure date, carried to the key
           keyHashId: true // Include keyHashId to check if it exists
         }
       })
@@ -95,8 +96,10 @@ export async function POST(
         }
 
         const status = statusMap[finding.severity.toLowerCase()] || 'at_risk'
-        // Rotation-recommended date, anchored to discovery (now). Single source of truth.
-        const expiresAt = rotationDueAt(new Date(), finding.severity)
+        // Rotation-recommended date, anchored to when the key was at-risk: the
+        // git-derived exposure date if we have one, else discovery (now).
+        const anchor = riskStart({ foundAt: new Date(), exposedAt: finding.exposedAt ?? null })
+        const expiresAt = rotationDueAt(anchor, finding.severity)
 
         // Calculate risk score (simplified version)
         const riskScore = finding.severity === 'critical' ? 90 :
@@ -141,6 +144,10 @@ export async function POST(
             detectionPattern: finding.pattern || 'manual',
             keyType: finding.keyType,
             expiresAt: expiresAt, // Use calculated expiration based on severity
+            // Git-derived exposure date, if the scanner found one. A user can
+            // later override it in the drawer (their entry wins, source 'user').
+            exposedAt: finding.exposedAt ?? null,
+            exposedAtSource: finding.exposedAt ? 'git' : null,
             environmentType: finding.isInEnvFile ? 'development' : 'unknown',
             userId: userId
           }

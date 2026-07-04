@@ -4,6 +4,70 @@ import { prisma } from '@/lib/prisma';
 import { requireAdmin } from '@/lib/roles';
 
 /**
+ * PATCH /api/keys/[id]
+ *
+ * Sets or clears the attested exposure date ("at risk since"). Any authenticated
+ * member may do this: entering evidence is triage, not a destructive action.
+ * Body: { exposedAt: string|null }. A null/empty value clears it (back to
+ * discovery-anchored). A future date is rejected. Marks the source 'user', which
+ * always wins over a git-derived date. See lib/rotation-policy riskStart().
+ */
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id: keyId } = await params
+
+  const session = await auth()
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const body = await request.json().catch(() => null)
+  if (!body || !('exposedAt' in body)) {
+    return NextResponse.json({ error: 'Missing exposedAt' }, { status: 400 })
+  }
+
+  let exposedAt: Date | null = null
+  if (body.exposedAt) {
+    const d = new Date(body.exposedAt)
+    if (isNaN(d.getTime())) {
+      return NextResponse.json({ error: 'Invalid date' }, { status: 400 })
+    }
+    if (d.getTime() > Date.now()) {
+      return NextResponse.json({ error: 'Exposure date cannot be in the future' }, { status: 400 })
+    }
+    exposedAt = d
+  }
+
+  const existing = await prisma.discoveredKey.findUnique({ where: { id: keyId } })
+  if (!existing) {
+    return NextResponse.json({ error: 'Key not found' }, { status: 404 })
+  }
+
+  const key = await prisma.discoveredKey.update({
+    where: { id: keyId },
+    data: { exposedAt, exposedAtSource: exposedAt ? 'user' : null },
+  })
+
+  await prisma.activity.create({
+    data: {
+      action: 'key_exposure_set',
+      description: exposedAt
+        ? `Set exposure date for ${existing.keyName} to ${exposedAt.toISOString().slice(0, 10)}`
+        : `Cleared exposure date for ${existing.keyName}`,
+      userId: session.user.id,
+    },
+  })
+
+  return NextResponse.json({
+    success: true,
+    exposed_at: key.exposedAt?.toISOString() ?? null,
+    exposed_at_source: key.exposedAtSource ?? null,
+  })
+}
+
+/**
  * DELETE /api/keys/[id]
  *
  * Deletes a discovered key from the inventory.

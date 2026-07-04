@@ -24,6 +24,22 @@ function bandDays(severity: string): number {
   return ROTATION_DAYS[severity?.toLowerCase() as Severity] ?? ROTATION_DAYS.high
 }
 
+/**
+ * The urgency anchor: how long the key has actually been at-risk.
+ *
+ * Defaults to `foundAt` (discovery). If an attested `exposedAt` is present and
+ * EARLIER than discovery, we count from then instead, because the key was
+ * exposed before we caught it. The guard is one-directional on purpose: an
+ * exposure date can only pull the deadline in (more urgent), never push it out.
+ * A future or later-than-discovery `exposedAt` is ignored, so a stray data entry
+ * can never make a leaked key look safer. Null exposedAt == today's behavior.
+ */
+export function riskStart(key: { foundAt: Date; exposedAt?: Date | null }, now: Date = new Date()): Date {
+  const e = key.exposedAt
+  if (!e || e.getTime() > now.getTime()) return key.foundAt
+  return e.getTime() < key.foundAt.getTime() ? e : key.foundAt
+}
+
 /** Date by which rotation is recommended = foundAt + severity band. */
 export function rotationDueAt(foundAt: Date, severity: string): Date {
   return new Date(foundAt.getTime() + bandDays(severity) * DAY_MS)

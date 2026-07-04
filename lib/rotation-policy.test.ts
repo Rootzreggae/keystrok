@@ -1,7 +1,7 @@
 // Run: node --experimental-strip-types lib/rotation-policy.test.ts
 // ponytail: no framework, plain asserts, the smallest thing that fails if the bands break.
 import assert from 'node:assert/strict'
-import { rotationDueAt, daysUntilDue, rotationStatus } from './rotation-policy.ts'
+import { rotationDueAt, daysUntilDue, rotationStatus, riskStart } from './rotation-policy.ts'
 
 const DAY = 1000 * 60 * 60 * 24
 const now = new Date('2026-06-23T00:00:00Z')
@@ -29,5 +29,17 @@ assert.equal(rotationStatus({ foundAt: ago(1), severity: 'critical' }, now), 'du
 
 // Rotated keys are never flagged, regardless of age.
 assert.equal(rotationStatus({ foundAt: ago(999), severity: 'critical', status: 'rotated' }, now), 'rotated')
+
+// --- riskStart: the exposure anchor ---
+// No exposedAt -> falls back to foundAt (today's behavior).
+assert.equal(riskStart({ foundAt: ago(3), exposedAt: null }, now).getTime(), ago(3).getTime())
+// exposedAt earlier than discovery -> counts from exposure (the main win).
+assert.equal(riskStart({ foundAt: ago(3), exposedAt: ago(200) }, now).getTime(), ago(200).getTime())
+// exposedAt LATER than discovery -> ignored, never pushes the deadline out.
+assert.equal(riskStart({ foundAt: ago(30), exposedAt: ago(1) }, now).getTime(), ago(30).getTime())
+// exposedAt in the future -> ignored.
+assert.equal(riskStart({ foundAt: ago(3), exposedAt: new Date(now.getTime() + 5 * DAY) }, now).getTime(), ago(3).getTime())
+// A key found today but exposed 200d ago is deeply overdue even at 'low'.
+assert.equal(rotationStatus({ foundAt: riskStart({ foundAt: now, exposedAt: ago(200) }, now), severity: 'low' }, now), 'overdue')
 
 console.log('rotation-policy: all assertions passed')

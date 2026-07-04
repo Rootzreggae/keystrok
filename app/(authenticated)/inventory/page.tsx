@@ -7,7 +7,7 @@ import { Mark, Dot } from '@/components/ks'
 import { KeyDrawer } from '@/components/ks/KeyDrawer'
 import { KeysTimeline } from '@/components/ks/KeysTimeline'
 import { foundAgoDays, slaUsedPct } from '@/lib/rotation-policy'
-import { type ApiKey, platOf, SEVL, sevColor, displayName, urgency, cleanLocation } from '@/lib/keys-display'
+import { type ApiKey, platOf, SEVL, sevColor, displayName, urgency, cleanLocation, anchorOf } from '@/lib/keys-display'
 
 const SEVS = ['critical', 'high', 'medium', 'low'] as const
 
@@ -126,7 +126,7 @@ export default function KeysScreen() {
                 {rows.map((k) => {
                   const u = urgency(k)
                   const plat = platOf(k.platform)
-                  const pct = slaUsedPct(new Date(k.created_at), k.severity)
+                  const pct = slaUsedPct(anchorOf(k), k.severity)
                   const foundAgo = foundAgoDays(new Date(k.created_at))
                   return (
                     <tr key={k.id} className={selected?.id === k.id ? 'sel' : ''} onClick={() => setSelected(k)}>

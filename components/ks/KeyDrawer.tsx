@@ -6,7 +6,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useAssistant } from '@/components/ks/Assistant'
 import { X, RotateCw, Sparkles } from 'lucide-react'
 import { Pill, Dot } from '@/components/ks'
-import { slaDays, foundAgoDays } from '@/lib/rotation-policy'
+import { slaDays, foundAgoDays, riskStart, daysUntilDue } from '@/lib/rotation-policy'
 import { type ApiKey, SEVL, displayName, urgency, cleanLocation } from '@/lib/keys-display'
 
 // Reusable key detail drawer. Pass the selected key (or null) and an onClose.
@@ -16,6 +16,14 @@ export function KeyDrawer({ keyData, onClose }: { keyData: ApiKey | null; onClos
   const { open: openAssistant } = useAssistant()
   const [starting, setStarting] = useState(false)
   const [startError, setStartError] = useState<string | null>(null)
+  // Exposure date is edited locally so the drawer updates instantly; the list
+  // refetches on save. Seeded from the key and re-synced when a new key opens.
+  const [exposedAt, setExposedAt] = useState<string | null>(keyData?.exposed_at ?? null)
+  const [exposedSource, setExposedSource] = useState<string | null>(keyData?.exposed_at_source ?? null)
+  const [editingDate, setEditingDate] = useState(false)
+  const [dateDraft, setDateDraft] = useState('')
+  const [savingDate, setSavingDate] = useState(false)
+  const [dateErr, setDateErr] = useState<string | null>(null)
 
   // Close on Escape.
   useEffect(() => {
@@ -25,14 +33,48 @@ export function KeyDrawer({ keyData, onClose }: { keyData: ApiKey | null; onClos
     return () => window.removeEventListener('keydown', onKey)
   }, [keyData, onClose])
 
+  // Re-sync local exposure state when a different key is opened.
+  useEffect(() => {
+    setExposedAt(keyData?.exposed_at ?? null)
+    setExposedSource(keyData?.exposed_at_source ?? null)
+    setEditingDate(false)
+    setDateErr(null)
+  }, [keyData?.id, keyData?.exposed_at, keyData?.exposed_at_source])
+
   if (!keyData) return null
 
   const k = keyData
-  const u = urgency(k)
+  const foundDate = new Date(k.created_at)
+  const anchor = riskStart({ foundAt: foundDate, exposedAt: exposedAt ? new Date(exposedAt) : null })
+  const hasExposure = anchor.getTime() < foundDate.getTime()
+  // Recompute urgency locally from the anchor so an edit reflects immediately.
+  const u = urgency({ ...k, daysUntilExpiry: daysUntilDue(anchor, k.severity) })
   const sla = slaDays(k.severity)
-  const foundAgo = foundAgoDays(new Date(k.created_at))
+  const foundAgo = foundAgoDays(foundDate)
+  const riskAgo = foundAgoDays(anchor)
+  const today = new Date().toISOString().slice(0, 10)
   const loc = cleanLocation(k.location || k.source)
   const ln = loc.match(/:(\d+)$/)?.[1] ?? '1'
+
+  const saveDate = async (value: string | null) => {
+    setSavingDate(true)
+    setDateErr(null)
+    try {
+      const res = await fetch(`/api/keys/${k.id}`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ exposedAt: value }),
+      })
+      const data = await res.json().catch(() => null)
+      if (!res.ok) throw new Error(data?.error || `Could not save (${res.status})`)
+      setExposedAt(data.exposed_at)
+      setExposedSource(data.exposed_at_source)
+      setEditingDate(false)
+      await qc.invalidateQueries({ queryKey: ['keys'] })
+    } catch (e) {
+      setDateErr(e instanceof Error ? e.message : 'Could not save')
+    } finally {
+      setSavingDate(false)
+    }
+  }
 
   const startRotation = async () => {
     setStarting(true)
@@ -72,9 +114,43 @@ export function KeyDrawer({ keyData, onClose }: { keyData: ApiKey | null; onClos
         <div className="ks-drawer__body">
           <div className="ks-dsect">
             <div className="ks-dsect__l">Status</div>
-            <div className="ks-kv"><span className="k">Rotation SLA</span><span className="v">{sla} days from discovery</span></div>
+            <div className="ks-kv"><span className="k">Rotation SLA</span><span className="v">{sla} days from {hasExposure ? 'exposure' : 'discovery'}</span></div>
             <div className="ks-kv"><span className="k">Found</span><span className="v">{foundAgo} days ago</span></div>
+            {hasExposure && <div className="ks-kv"><span className="k">At risk</span><span className="v">{riskAgo} days ago</span></div>}
             <div className="ks-kv"><span className="k">Time left</span><span className="v" style={{ color: u.color }}>{u.txt}</span></div>
+          </div>
+
+          <div className="ks-dsect">
+            <div className="ks-dsect__l">Exposure date</div>
+            {!editingDate ? (
+              <>
+                <div className="ks-kv">
+                  <span className="k">At risk since</span>
+                  <span className="v">{exposedAt ? exposedAt.slice(0, 10) : 'unknown'}</span>
+                </div>
+                {exposedAt && (
+                  <div style={{ fontSize: 11, color: 'var(--tx-dim)', marginTop: 2 }}>
+                    {exposedSource === 'git' ? 'from git history' : 'you entered this'}
+                  </div>
+                )}
+                <button className="ks-btn" style={{ marginTop: 9 }} onClick={() => { setDateDraft(exposedAt?.slice(0, 10) ?? ''); setDateErr(null); setEditingDate(true) }}>
+                  {exposedAt ? 'Edit date' : 'Set exposure date'}
+                </button>
+              </>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <input type="date" className="ks-input" max={today} value={dateDraft} onChange={(e) => setDateDraft(e.target.value)} />
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button className="ks-btn ks-btn--primary" disabled={savingDate || !dateDraft} onClick={() => saveDate(dateDraft)}>{savingDate ? 'Saving…' : 'Save'}</button>
+                  {exposedAt && <button className="ks-btn" disabled={savingDate} onClick={() => saveDate(null)}>Clear</button>}
+                  <button className="ks-btn" disabled={savingDate} onClick={() => { setEditingDate(false); setDateErr(null) }}>Cancel</button>
+                </div>
+                {dateErr && <div style={{ color: 'var(--crit)', fontSize: 11 }}>{dateErr}</div>}
+                <div style={{ fontSize: 11, color: 'var(--tx-dim)', lineHeight: 1.5 }}>
+                  When did this key actually leak (a public commit, a breach)? Leave it unset if you don&apos;t know, Keystrok counts from discovery instead. A date only ever makes rotation more urgent.
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="ks-dsect">
@@ -86,7 +162,7 @@ export function KeyDrawer({ keyData, onClose }: { keyData: ApiKey | null; onClos
           <div className="ks-dsect">
             <div className="ks-dsect__l">Provenance</div>
             <div style={{ fontSize: 12.5, color: 'var(--tx-mut)', lineHeight: 1.6 }}>
-              Tracked from discovery. Keystrok never sees or stores a key&apos;s true creation or expiry date.
+              Rotation is anchored to when the key was at-risk: the exposure date if you set one, otherwise discovery. Keystrok never guesses a key&apos;s age.
             </div>
           </div>
         </div>

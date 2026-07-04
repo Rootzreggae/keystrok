@@ -9,6 +9,33 @@ import type { Finding, ScanResult, ScanOptions, FileInfo, FileScanResult } from 
 import { hashIdentifier, classifyKeyFormat } from '@/lib/crypto'
 import path from 'path'
 import os from 'os'
+import { execFile } from 'child_process'
+import { promisify } from 'util'
+
+const pexec = promisify(execFile)
+
+/**
+ * Best-effort exposure date for a git-tracked finding: the commit date of the
+ * line holding the secret, i.e. when it entered history (went "public"). Returns
+ * null for non-git paths or any failure, so the caller falls back to discovery.
+ * execFile (no shell) with an absolute pathspec, so the path can't be injected.
+ * ponytail: one `git blame` per finding; fine for now, batch by file if a huge
+ * repo makes scans slow. Uses last-touch of the line as a proxy for introduction.
+ */
+async function gitExposureDate(filePath: string, line: number): Promise<Date | null> {
+  try {
+    const { stdout } = await pexec(
+      'git', ['blame', '-L', `${line},${line}`, '--porcelain', '--', filePath],
+      { cwd: path.dirname(filePath), timeout: 5000, maxBuffer: 1 << 20 },
+    )
+    const m = stdout.match(/^author-time (\d+)/m)
+    if (!m) return null
+    const d = new Date(parseInt(m[1], 10) * 1000)
+    return isNaN(d.getTime()) ? null : d
+  } catch {
+    return null
+  }
+}
 
 export interface ScanRunConfig {
   name: string
@@ -192,6 +219,9 @@ export async function storeScanFindings(sessionId: string, userId: string, findi
 
       const localFindingData = convertFindingToLocalScanFindingData(finding, sessionId, userId, fileScan.id, keyHashRecord.id)
 
+      // Git-tracked findings carry their real exposure date (commit of the line).
+      const exposedAt = fileInfo?.isGitTracked ? await gitExposureDate(finding.filePath, finding.lineNumber) : null
+
       const existing = await prisma.localScanFinding.findFirst({
         where: { userId, filePath: finding.filePath, lineNumber: finding.lineNumber, detectionRule: finding.detectionRule, keyPreview: finding.keyPreview },
         select: { id: true },
@@ -199,9 +229,9 @@ export async function storeScanFindings(sessionId: string, userId: string, findi
       const localFinding = existing
         ? await prisma.localScanFinding.update({
             where: { id: existing.id },
-            data: { sessionId, fileScanId: fileScan.id, keyHashId: keyHashRecord.id, lineContent: finding.lineContent, relativePath: finding.relativePath },
+            data: { sessionId, fileScanId: fileScan.id, keyHashId: keyHashRecord.id, lineContent: finding.lineContent, relativePath: finding.relativePath, exposedAt },
           })
-        : await prisma.localScanFinding.create({ data: localFindingData })
+        : await prisma.localScanFinding.create({ data: { ...localFindingData, exposedAt } })
 
       processedFindings.push(localFinding)
     } catch (error) {

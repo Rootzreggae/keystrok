@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { Mark, Dot } from '@/components/ks'
 import { daysUntilDue } from '@/lib/rotation-policy'
-import { type ApiKey, platOf, SEVL, displayName, urgency } from '@/lib/keys-display'
+import { type ApiKey, platOf, SEVL, displayName, urgency, anchorOf } from '@/lib/keys-display'
 
 // Rotation horizon: keys plotted on a NOW→horizon window, one lane per severity,
 // positioned by days-until-rotation. The horizon is zoomable via presets that
@@ -31,7 +31,7 @@ export function KeysTimeline({ keys, onSelect }: { keys: ApiKey[]; onSelect: (k:
   const lanes = LANES.map((sev) => {
     const items = keys
       .filter((k) => (k.severity ?? '').toLowerCase() === sev)
-      .map((k) => ({ k, day: daysUntilDue(new Date(k.created_at), k.severity), row: 0 }))
+      .map((k) => ({ k, day: daysUntilDue(anchorOf(k), k.severity), row: 0 }))
       .sort((a, b) => a.day - b.day)
 
     const rowEnds: number[] = []

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { rotationDueAt, daysUntilDue } from '@/lib/rotation-policy'
+import { rotationDueAt, daysUntilDue, riskStart } from '@/lib/rotation-policy'
 
 // GET /api/keys - Returns all discovered keys for the user
 export async function GET(request: NextRequest) {
@@ -26,10 +26,12 @@ export async function GET(request: NextRequest) {
 
     // Transform keys to match the expected format
     const transformedKeys = keys.map(key => {
-      // Rotation recommendation anchored to discovery date (we don't know real key age).
-      // `expires_at` / `daysUntilExpiry` field names kept for callers; they now mean "rotation due".
-      const expiresAt = rotationDueAt(key.foundAt, key.severity)
-      const daysUntilExpiry = daysUntilDue(key.foundAt, key.severity)
+      // Rotation recommendation anchored to when the key was at-risk: exposedAt if
+      // attested and earlier than discovery, else foundAt. See riskStart().
+      // `expires_at` / `daysUntilExpiry` field names kept for callers; they mean "rotation due".
+      const anchor = riskStart(key)
+      const expiresAt = rotationDueAt(anchor, key.severity)
+      const daysUntilExpiry = daysUntilDue(anchor, key.severity)
 
       // Preserve the actual status from database instead of overriding
       let status = key.status
@@ -61,6 +63,9 @@ export async function GET(request: NextRequest) {
         severity: key.severity,
         expires_at: expiresAt.toISOString(),
         created_at: key.foundAt.toISOString(),
+        risk_start: anchor.toISOString(),
+        exposed_at: key.exposedAt?.toISOString() ?? null,
+        exposed_at_source: key.exposedAtSource ?? null,
         daysUntilExpiry,
         isRotated: key.status === 'rotated',
         rotatedAt: key.rotatedAt?.toISOString() || null

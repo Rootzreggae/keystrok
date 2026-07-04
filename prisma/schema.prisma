@@ -207,6 +207,9 @@ model DiscoveredKey {
   userId            String
   platformId        String?
   foundAt           DateTime           @default(now())
+  exposedAt         DateTime?          // "at risk since"; overrides foundAt when earlier. See lib/rotation-policy riskStart().
+  exposedAtSource   String?            // 'user' | 'git' (null = unset). Human-entered beats git-derived.
+  platformCreatedAt DateTime?          // context only in v1; hygiene clock later. Not wired to urgency yet.
   updatedAt         DateTime           @updatedAt
   keyName           String
   location          String
@@ -326,6 +329,7 @@ model LocalScanFinding {
   status          String      @default("active")
   notes           String?
   fixedAt         DateTime?
+  exposedAt       DateTime?   // git-derived: commit date of the secret line. Carried to DiscoveredKey on promote.
   userId          String
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
