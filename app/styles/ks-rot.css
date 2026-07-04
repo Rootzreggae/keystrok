@@ -7,6 +7,8 @@
 .kb .ks-rot__qhd { flex: none; padding: 16px 18px; border-bottom: 1px solid var(--div); }
 .kb .ks-rot__qlist { flex: 1; min-height: 0; overflow-y: auto; }
 .kb .ks-rot__qsec { font-family: var(--font-mono); font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--tx-dim); padding: 14px 18px 7px; }
+.kb .ks-rot__qsec--toggle { display: flex; align-items: center; gap: 5px; width: 100%; background: none; border: none; cursor: pointer; text-align: left; transition: color .12s; }
+.kb .ks-rot__qsec--toggle:hover { color: var(--tx-mut); }
 .kb .ks-qitem { display: flex; gap: 12px; padding: 14px 18px; border-bottom: 1px solid var(--div); cursor: pointer; transition: background .1s; }
 .kb .ks-qitem:hover { background: var(--elev); }
 .kb .ks-qitem.sel { background: var(--a-dim); box-shadow: inset 2px 0 0 var(--a); }

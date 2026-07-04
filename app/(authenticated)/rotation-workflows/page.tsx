@@ -3,7 +3,7 @@
 import { Suspense, useState } from 'react'
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query'
 import { useSearchParams } from 'next/navigation'
-import { Check, Lock, RotateCw, ShieldAlert, KeyRound } from 'lucide-react'
+import { Check, Lock, RotateCw, ShieldAlert, KeyRound, ChevronRight, ChevronDown } from 'lucide-react'
 import { Mark, Dot, Pill } from '@/components/ks'
 import { platOf, SEVL, displayName, needsAction, urgency, type ApiKey } from '@/lib/keys-display'
 import { isDestructiveStep } from '@/lib/rotation-policy'
@@ -122,6 +122,7 @@ function RotationsInner() {
   const focus = useSearchParams().get('workflow')
   const [selId, setSelId] = useState<string | null>(null)
   const [startErr, setStartErr] = useState<string | null>(null)
+  const [doneOpen, setDoneOpen] = useState(false) // completed rotations are secondary; collapsed by default
   const qc = useQueryClient()
 
   const { data: workflows = [] } = useQuery<Workflow[]>({
@@ -150,6 +151,8 @@ function RotationsInner() {
   const dueKeys = keys.filter((k) => needsAction(k) && !startedKeyIds.has(k.id))
   const inProgress = workflows.filter((w) => w.status !== 'completed')
   const done = workflows.filter((w) => w.status === 'completed')
+  // Nothing open, but rotations have been run: the queue is "caught up", not empty.
+  const allClear = dueKeys.length === 0 && inProgress.length === 0 && done.length > 0
 
   const start = useMutation({
     mutationFn: async (keyId: string) => {
@@ -165,7 +168,9 @@ function RotationsInner() {
     onError: (e: Error) => setStartErr(e.message),
   })
 
-  const activeId = selId ?? focus ?? inProgress[0]?.id ?? done[0]?.id ?? null
+  // Don't auto-open a completed rotation on load; if nothing is open we want the
+  // "all caught up" state, not a stale success card. (Selecting one still works.)
+  const activeId = selId ?? focus ?? inProgress[0]?.id ?? null
 
   const { data: detail } = useQuery<WorkflowDetail>({
     queryKey: ['workflow', activeId],
@@ -206,7 +211,9 @@ function RotationsInner() {
   const doneCount = steps.filter((s) => isDoneStep(s.status)).length
   const curStep = sel?.status === 'completed' ? steps.length : Math.min(doneCount + 1, steps.length)
   const started = hhmm(sel?.startedAt)
-  const progressSub = `step ${curStep} of ${steps.length}${started ? ` · started ${started}` : ''}`
+  const progressSub = sel?.status === 'completed'
+    ? `rotation complete · was ${SEVL[sev] ?? sev}`
+    : `step ${curStep} of ${steps.length}${started ? ` · started ${started}` : ''}`
 
   return (
     <div className="ks-page--wide">
@@ -248,8 +255,12 @@ function RotationsInner() {
               )
             })}
 
-            {done.length > 0 && <div className="ks-rot__qsec">Done · {done.length}</div>}
-            {done.map((w) => {
+            {done.length > 0 && (
+              <button type="button" className="ks-rot__qsec ks-rot__qsec--toggle" onClick={() => setDoneOpen((v) => !v)} aria-expanded={doneOpen}>
+                {doneOpen ? <ChevronDown size={12} /> : <ChevronRight size={12} />} Completed · {done.length}
+              </button>
+            )}
+            {doneOpen && done.map((w) => {
               const total = w.steps?.length ?? 0
               return (
                 <div key={w.id} className={'ks-qitem' + (activeId === w.id ? ' sel' : '')} onClick={() => setSelId(w.id)}>
@@ -267,10 +278,22 @@ function RotationsInner() {
         <div className="ks-rotmain">
           {startErr && <div className="ks-drawer__err" style={{ margin: '0 0 18px' }} role="alert">{startErr}</div>}
           {!sel && (
-            <div className="ks-empty" style={{ margin: 'auto', paddingTop: 80 }}>
-              <span className="ks-empty__ico"><RotateCw size={26} strokeWidth={1.75} /></span>
-              <div className="ks-empty__t">{dueKeys.length} {dueKeys.length === 1 ? 'key is' : 'keys are'} due</div>
-              <div className="ks-empty__s">Pick a key on the left and press Start to begin its guided, step-by-step rotation. Keystrok never rotates a key on its own.</div>
+            <div className="ks-panel" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 520 }}>
+              <div className="ks-empty">
+                <span className="ks-empty__ico">{allClear ? <Check size={26} strokeWidth={1.75} /> : <RotateCw size={26} strokeWidth={1.75} />}</span>
+                {allClear ? (
+                  <>
+                    <div className="ks-empty__t">All caught up</div>
+                    <div className="ks-empty__s">Every rotation is complete, nothing needs your attention. A finished rotation lives on its key (marked rotated) and in your activity log, so it is on the record even though the queue is clear.</div>
+                    <a href="/activity" className="ks-btn" style={{ marginTop: 18, textDecoration: 'none' }}>View rotation history →</a>
+                  </>
+                ) : (
+                  <>
+                    <div className="ks-empty__t">{dueKeys.length} {dueKeys.length === 1 ? 'key is' : 'keys are'} due</div>
+                    <div className="ks-empty__s">Pick a key on the left and press Start to begin its guided, step-by-step rotation. Keystrok never rotates a key on its own.</div>
+                  </>
+                )}
+              </div>
             </div>
           )}
           {sel && (
@@ -281,9 +304,13 @@ function RotationsInner() {
                   <div className="ks-rotmain__name">{displayName(sel.discoveredKey?.keyName ?? 'Rotation')}</div>
                   <div className="ks-rotmain__sub">{progressSub}</div>
                 </div>
-                <Pill tone={sev === 'critical' ? 'crit' : sev === 'high' ? 'high' : 'mut'}>
-                  <Dot sev={sev as 'critical'} />{SEVL[sev] ?? sev}
-                </Pill>
+                {sel.status === 'completed' ? (
+                  <Pill tone="a"><Check size={12} /> Resolved</Pill>
+                ) : (
+                  <Pill tone={sev === 'critical' ? 'crit' : sev === 'high' ? 'high' : 'mut'}>
+                    <Dot sev={sev as 'critical'} />{SEVL[sev] ?? sev}
+                  </Pill>
+                )}
               </div>
 
               {sel.status === 'completed' ? (
