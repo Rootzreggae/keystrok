@@ -1,0 +1,34 @@
+/* Incident timeline: a vertical rail of lifecycle events for one key. The rail
+ * segment inside the exposure window is tinted crit, so the danger period reads
+ * at a glance. Square, mono, token-driven per DESIGN_SYSTEM.md. */
+
+.kb .ks-tl__loading { font-family: var(--font-mono); font-size: 11.5px; color: var(--tx-dim); padding: 4px 0; }
+
+.kb .ks-tl__win {
+  display: flex; align-items: center; gap: 9px; margin-bottom: 16px;
+  padding: 9px 12px; border: 1px solid var(--div-2); border-radius: 2px; background: var(--inset);
+}
+.kb .ks-tl__win.open { border-color: var(--crit-line); background: var(--crit-dim); }
+.kb .ks-tl__winlbl { font-family: var(--font-mono); font-size: 9.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--tx-dim); }
+.kb .ks-tl__windur { font-family: var(--font-mono); font-size: 12px; font-weight: 600; color: var(--tx); }
+.kb .ks-tl__win.open .ks-tl__windur { color: var(--crit); }
+.kb .ks-tl__winflag { margin-left: auto; font-family: var(--font-mono); font-size: 10px; color: var(--crit); border: 1px solid var(--crit-line); border-radius: 2px; padding: 1px 6px; }
+
+.kb .ks-tl__list { position: relative; }
+.kb .ks-tl__ev { position: relative; display: flex; align-items: flex-start; gap: 12px; padding: 0 0 15px 20px; }
+/* the rail: a line from this dot down to the next event */
+.kb .ks-tl__ev::before { content: ''; position: absolute; left: 4px; top: 7px; bottom: -8px; width: 1px; background: var(--div-2); }
+.kb .ks-tl__ev:last-child::before { display: none; }
+.kb .ks-tl__ev.in::before { background: var(--crit-line); }
+
+.kb .ks-tl__dot { position: absolute; left: 0; top: 4px; width: 9px; height: 9px; border-radius: 50%; background: var(--tx-dim); box-shadow: 0 0 0 3px var(--panel); }
+.kb .ks-tl__dot.crit { background: var(--crit); }
+.kb .ks-tl__dot.high { background: var(--high); }
+.kb .ks-tl__dot.ok { background: var(--ok); }
+.kb .ks-tl__dot.mut { background: var(--tx-dim); }
+.kb .ks-tl__dot.open { background: transparent; border: 1px solid var(--crit); }
+
+.kb .ks-tl__body { flex: 1; min-width: 0; }
+.kb .ks-tl__label { font-size: 12.5px; color: var(--tx); line-height: 1.35; }
+.kb .ks-tl__detail { font-family: var(--font-mono); font-size: 10.5px; color: var(--tx-dim); margin-top: 2px; }
+.kb .ks-tl__time { font-family: var(--font-mono); font-size: 10.5px; color: var(--tx-mut); white-space: nowrap; padding-top: 1px; }
