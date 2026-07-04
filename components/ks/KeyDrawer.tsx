@@ -7,7 +7,7 @@ import { useAssistant } from '@/components/ks/Assistant'
 import { X, RotateCw, Sparkles } from 'lucide-react'
 import { Pill, Dot, LiveBadge } from '@/components/ks'
 import { slaDays, foundAgoDays, riskStart, daysUntilDue } from '@/lib/rotation-policy'
-import { type ApiKey, SEVL, displayName, urgency, cleanLocation } from '@/lib/keys-display'
+import { type ApiKey, SEVL, displayName, urgency, cleanLocation, ago } from '@/lib/keys-display'
 
 // Reusable key detail drawer. Pass the selected key (or null) and an onClose.
 export function KeyDrawer({ keyData, onClose }: { keyData: ApiKey | null; onClose: () => void }) {
@@ -122,11 +122,20 @@ export function KeyDrawer({ keyData, onClose }: { keyData: ApiKey | null; onClos
               <span className="k">Liveness</span>
               <span className="v">
                 {k.live_status === 'live' || k.live_status === 'revoked'
-                  ? <LiveBadge status={k.live_status} />
+                  ? <LiveBadge status={k.live_status} active={k.usage_active} />
                   : <span style={{ color: 'var(--tx-dim)' }}>not checked</span>}
               </span>
             </div>
+            {k.last_used_at && (
+              <div className="ks-kv"><span className="k">Last used</span><span className="v">{ago(k.last_used_at)} ago{k.last_used_source ? ` · ${k.last_used_source}` : ''}</span></div>
+            )}
           </div>
+
+          {k.usage_active && k.last_used_at && (
+            <div style={{ margin: '0 0 4px', padding: '12px 14px', background: 'var(--crit-dim)', border: '1px solid var(--crit-line)', fontSize: 12.5, color: 'var(--crit)', lineHeight: 1.5 }}>
+              <b>Active incident.</b> This leaked key is still live on its platform and was used {ago(k.last_used_at)} ago. Rotate it first.
+            </div>
+          )}
 
           <div className="ks-dsect">
             <div className="ks-dsect__l">Exposure date</div>

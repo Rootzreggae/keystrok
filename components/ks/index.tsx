@@ -39,8 +39,9 @@ export function Mark({ children }: { children: React.ReactNode }) {
 }
 
 /** Liveness of a leaked key, matched against a connected platform. Renders
- *  nothing when unknown/unchecked so it stays quiet by default. See lib/liveness. */
-export function LiveBadge({ status, title }: { status?: string | null; title?: string }) {
+ *  nothing when unknown/unchecked so it stays quiet by default. `active` = live
+ *  AND used recently, an incident in progress, so it reads hotter. See lib/liveness. */
+export function LiveBadge({ status, active, title }: { status?: string | null; active?: boolean; title?: string }) {
   const base: React.CSSProperties = {
     display: 'inline-flex', alignItems: 'center', gap: 4, fontFamily: 'var(--font-mono)',
     fontSize: 10, letterSpacing: '.05em', textTransform: 'uppercase', borderRadius: 2,
@@ -48,8 +49,11 @@ export function LiveBadge({ status, title }: { status?: string | null; title?: s
   }
   if (status === 'live') {
     return (
-      <span title={title ?? 'Still live on the platform'} style={{ ...base, fontWeight: 700, color: 'var(--crit)', border: '1px solid var(--crit)' }}>
-        <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--crit)' }} aria-hidden />live
+      <span
+        title={title ?? (active ? 'Still live, and used recently: an active incident' : 'Still live on the platform')}
+        style={{ ...base, fontWeight: 700, color: 'var(--crit)', border: '1px solid var(--crit)', background: active ? 'var(--crit-dim)' : undefined }}
+      >
+        <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--crit)' }} aria-hidden />{active ? 'live · active' : 'live'}
       </span>
     )
   }

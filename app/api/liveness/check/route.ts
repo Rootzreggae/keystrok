@@ -3,7 +3,7 @@ import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { decryptSecret } from '@/lib/crypto'
 import { requireAdmin } from '@/lib/roles'
-import { providerOf, isListable, statusFor, datadogLiveLast4 } from '@/lib/liveness'
+import { providerOf, isListable, statusFor, last4, datadogKeyUsage, type KeyUsage } from '@/lib/liveness'
 
 // POST /api/liveness/check
 // Matches every discovered key's last-4 against the keys a connected platform
@@ -21,24 +21,25 @@ export async function POST(request: NextRequest) {
   const listable = platforms.filter((p) => isListable(p.type))
 
   const warnings: string[] = []
-  const liveByProvider = new Map<string, Set<string>>()
+  // provider -> (last4 -> usage). Presence = live; value carries lastUsedAt.
+  const usageByProvider = new Map<string, Map<string, KeyUsage>>()
 
   for (const p of listable) {
     const provider = providerOf(p.type)
     try {
       if (provider === 'datadog') {
         if (!p.appKey) { warnings.push(`${p.name}: no application key set, cannot list Datadog keys`); continue }
-        const set = await datadogLiveLast4({ apiUrl: p.apiUrl, apiKey: decryptSecret(p.apiKey), appKey: decryptSecret(p.appKey) })
-        const merged = liveByProvider.get(provider) ?? new Set<string>()
-        for (const l of set) merged.add(l)
-        liveByProvider.set(provider, merged)
+        const map = await datadogKeyUsage({ apiUrl: p.apiUrl, apiKey: decryptSecret(p.apiKey), appKey: decryptSecret(p.appKey) })
+        const merged = usageByProvider.get(provider) ?? new Map<string, KeyUsage>()
+        for (const [l4, u] of map) merged.set(l4, u)
+        usageByProvider.set(provider, merged)
       }
     } catch (e) {
       warnings.push(`${p.name}: ${e instanceof Error ? e.message : 'liveness check failed'}`)
     }
   }
 
-  if (liveByProvider.size === 0) {
+  if (usageByProvider.size === 0) {
     return NextResponse.json({
       success: false, checked: 0, live: 0, revoked: 0,
       warnings: warnings.length ? warnings : ['No connected platform can list keys yet (Datadog needs an application key).'],
@@ -52,19 +53,33 @@ export async function POST(request: NextRequest) {
     select: { id: true, platform: true, keyPreview: true },
   })
   const now = new Date()
+  // Build a live-key set per provider once (statusFor takes a Set of last-4s).
+  const liveSets = new Map<string, Set<string>>()
+  for (const [prov, m] of usageByProvider) liveSets.set(prov, new Set(m.keys()))
+
   let live = 0, revoked = 0, checked = 0
   for (const k of keys) {
-    const set = liveByProvider.get(providerOf(k.platform))
+    const provider = providerOf(k.platform)
+    const set = liveSets.get(provider)
     if (!set) continue
     const status = statusFor(k.keyPreview, set)
     if (status === 'unknown') continue
-    await prisma.discoveredKey.update({ where: { id: k.id }, data: { liveStatus: status, liveCheckedAt: now } })
+    // last-used rides the same response; only meaningful when we matched the key.
+    const usage = usageByProvider.get(provider)?.get(last4(k.keyPreview) ?? '')
+    await prisma.discoveredKey.update({
+      where: { id: k.id },
+      data: {
+        liveStatus: status, liveCheckedAt: now,
+        lastUsedAt: usage?.lastUsedAt ?? null,
+        lastUsedSource: usage?.lastUsedAt ? provider : null,
+      },
+    })
     checked++
     if (status === 'live') live++
     else revoked++
   }
 
-  const providers = [...liveByProvider.keys()]
+  const providers = [...usageByProvider.keys()]
   await prisma.activity.create({
     data: { action: 'liveness_checked', description: `Liveness check: ${live} live, ${revoked} revoked across ${providers.join(', ')}`, userId: session.user.id },
   }).catch(() => {})

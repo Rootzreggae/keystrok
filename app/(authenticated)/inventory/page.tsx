@@ -134,7 +134,7 @@ export default function KeysScreen() {
                         <div className="ks-tbl__name" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                           <span className="ks-aqrow__sev" style={{ background: sevColor(k.severity), height: 16 }} />
                           {displayName(k.name)}
-                          <LiveBadge status={k.live_status} />
+                          <LiveBadge status={k.live_status} active={k.usage_active} />
                         </div>
                         <div className="ks-tbl__src" style={{ marginTop: 4, paddingLeft: 13 }}>{cleanLocation(k.location || k.source)}</div>
                       </td>

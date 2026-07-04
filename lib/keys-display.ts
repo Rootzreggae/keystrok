@@ -16,6 +16,9 @@ export interface ApiKey {
   exposed_at_source?: string | null
   live_status?: string | null // 'live' | 'revoked' | 'unknown' | null (never checked)
   live_checked_at?: string | null
+  last_used_at?: string | null
+  last_used_source?: string | null
+  usage_active?: boolean // still live AND used recently: an active incident
   daysUntilExpiry: number
   rotatedAt?: string | null
 }

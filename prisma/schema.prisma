@@ -213,6 +213,8 @@ model DiscoveredKey {
   platformCreatedAt DateTime?          // context only in v1; hygiene clock later. Not wired to urgency yet.
   liveStatus        String?            // 'live' | 'revoked' | 'unknown' (null = never checked). See lib/liveness.
   liveCheckedAt     DateTime?          // when liveStatus was last matched against a connected platform.
+  lastUsedAt        DateTime?          // when the platform last saw this key used (null = unknown / not reported).
+  lastUsedSource    String?            // which platform reported last-used (e.g. 'datadog'); null = unset.
   updatedAt         DateTime           @updatedAt
   keyName           String
   location          String

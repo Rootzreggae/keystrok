@@ -2,7 +2,15 @@
 // ponytail: plain asserts on the pure match logic (the part with a real branch).
 // The Datadog HTTP call is thin and gets verified live against a real account.
 import assert from 'node:assert/strict'
-import { last4, statusFor, isListable, providerOf, ddLast4 } from './liveness.ts'
+import { last4, statusFor, isListable, providerOf, ddLast4, isRecentlyUsed } from './liveness.ts'
+
+// isRecentlyUsed: the "active incident" recency window (7 days).
+const NOW = new Date('2026-07-04T00:00:00Z')
+const daysAgo = (d: number) => new Date(NOW.getTime() - d * 86400000)
+assert.equal(isRecentlyUsed(daysAgo(1), NOW), true)
+assert.equal(isRecentlyUsed(daysAgo(6), NOW), true)
+assert.equal(isRecentlyUsed(daysAgo(30), NOW), false)
+assert.equal(isRecentlyUsed(null, NOW), false)
 
 // Datadog attribute field: it's `last4` (EU v2), with `last_four` as a fallback.
 // Regression guard: reading only `last_four` returned null against the live EU API.
