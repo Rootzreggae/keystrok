@@ -22,6 +22,11 @@ export interface AlertableKey {
 
 export interface Incident { kind: AlertKind; severity: 'critical'; detail: string }
 
+// A "happening now" alert (live_and_used) is only trustworthy on fresh liveness
+// data; past this window we can't claim it's live right now, so we don't page it.
+// A standing condition (rotation_failed) has no such gate: it's true until fixed.
+export const LIVE_FRESH_DAYS = 7
+
 /**
  * Which alert-worthy incident (if any) a key is currently in. Pure: reuses the
  * same predicates the UI does, so alerts and the dashboard never disagree.
@@ -31,7 +36,9 @@ export function incidentFor(k: AlertableKey, now: Date = new Date()): Incident |
   if (rotationFailed(k)) {
     return { kind: 'rotation_failed', severity: 'critical', detail: 'marked rotated, but a post-rotation check still found it live. The old credential was never revoked.' }
   }
-  if (k.liveStatus === 'live' && isRecentlyUsed(k.lastUsedAt ?? null, now)) {
+  // Only page "live and used" on fresh liveness data, never cry wolf on stale state.
+  const liveFresh = !!k.liveCheckedAt && now.getTime() - k.liveCheckedAt.getTime() <= LIVE_FRESH_DAYS * 86400000
+  if (liveFresh && k.liveStatus === 'live' && isRecentlyUsed(k.lastUsedAt ?? null, now)) {
     return { kind: 'live_and_used', severity: 'critical', detail: 'still live on its platform and used recently. Active incident, rotate it first.' }
   }
   return null

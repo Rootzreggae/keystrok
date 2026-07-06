@@ -73,3 +73,23 @@ export async function runAlerts(keys: AlertableKey[]): Promise<{ fired: number; 
   }
   return { fired, resolved }
 }
+
+/**
+ * The evaluation concern, standalone: reconcile alerts for every tracked key
+ * from current stored state. Called after each liveness check (both the success
+ * and the "no platform could list" early-return paths, since rotation_failed is
+ * knowable without a fresh listing), and by the Phase-2 scheduler later.
+ * Best-effort: never throws into its caller.
+ */
+export async function evaluateAllAlerts(): Promise<{ fired: number; resolved: number }> {
+  try {
+    const all = await prisma.discoveredKey.findMany({
+      where: { status: { not: 'false_positive' } },
+      select: { id: true, keyName: true, platform: true, severity: true, keyPreview: true, liveStatus: true, liveCheckedAt: true, lastUsedAt: true, rotatedAt: true },
+    })
+    return await runAlerts(all)
+  } catch (e) {
+    console.error('alert evaluation failed:', e)
+    return { fired: 0, resolved: 0 }
+  }
+}

@@ -46,8 +46,13 @@ export async function POST(request: NextRequest) {
   }
 
   if (usageByProvider.size === 0) {
+    // No fresh listing, but standing incidents (rotation_failed) are still knowable
+    // from stored state, so evaluate alerts anyway. The freshness gate suppresses
+    // "happening now" alerts (live_and_used) here, correctly.
+    const { evaluateAllAlerts } = await import('@/lib/alert-runner')
+    const alerts = await evaluateAllAlerts()
     return NextResponse.json({
-      success: false, checked: 0, live: 0, revoked: 0,
+      success: false, checked: 0, live: 0, revoked: 0, alerts,
       warnings: warnings.length ? warnings : ['No connected platform can list keys yet (Datadog needs an application key, AWS a secret access key).'],
     })
   }
@@ -92,19 +97,9 @@ export async function POST(request: NextRequest) {
   }).catch(() => {})
 
   // Fire-on-check: reconcile alert state now that liveness/usage is fresh. Best-
-  // effort, a channel failure must never fail the check. Evaluates all keys (not
-  // just those checked) so a rotation_failed incident surfaces too; dedup gates it.
-  let alerts = { fired: 0, resolved: 0 }
-  try {
-    const all = await prisma.discoveredKey.findMany({
-      where: { status: { not: 'false_positive' } },
-      select: { id: true, keyName: true, platform: true, severity: true, keyPreview: true, liveStatus: true, liveCheckedAt: true, lastUsedAt: true, rotatedAt: true },
-    })
-    const { runAlerts } = await import('@/lib/alert-runner')
-    alerts = await runAlerts(all)
-  } catch (e) {
-    console.error('alert run failed:', e)
-  }
+  // effort (never fails the check), evaluates all keys so rotation_failed surfaces too.
+  const { evaluateAllAlerts } = await import('@/lib/alert-runner')
+  const alerts = await evaluateAllAlerts()
 
   return NextResponse.json({ success: true, checked, live, revoked, providers, warnings, alerts })
 }
