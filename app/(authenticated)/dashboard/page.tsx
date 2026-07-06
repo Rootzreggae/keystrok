@@ -6,6 +6,7 @@ import { useState } from 'react'
 import { ArrowRight, RotateCw, Shield, Github, Search, CheckCircle2, RefreshCw, X, Server, FileText, type LucideIcon } from 'lucide-react'
 import { Mark } from '@/components/ks'
 import { KeyDrawer } from '@/components/ks/KeyDrawer'
+import { PostureStrip } from '@/components/ks/PostureStrip'
 import { useSourceConnect } from '@/components/ks/SourceConnect'
 import { type ApiKey, platOf, SEVL, sevColor, displayName, urgency, needsAction, ago, cleanLocation } from '@/lib/keys-display'
 
@@ -136,6 +137,7 @@ export default function HomeScreen() {
 
   return (
     <div className="ks-home">
+      <PostureStrip />
       <div className="ks-home__statbar">
         <div className="ks-home__statcell"><div className={'ks-stat__n' + (counts.needAction ? ' warn' : ' zero')}>{counts.needAction}</div><div className="ks-stat__l">Need action</div></div>
         <div className="ks-home__statcell"><div className={'ks-stat__n' + (counts.overdue ? ' crit' : ' zero')}>{counts.overdue}</div><div className="ks-stat__l">Overdue</div></div>
