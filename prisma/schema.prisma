@@ -112,6 +112,41 @@ model GithubAppConfig {
   @@map("github_app_config")
 }
 
+// Instance-wide alert delivery. Single-tenant (one instance = one team), so a
+// singleton row like GithubAppConfig. One channel in v1 (telegram | webhook).
+// Secrets (telegramToken, webhookUrl) encrypted at rest. See lib/alerting.ts.
+model AlertConfig {
+  id              String   @id @default("default")
+  enabled         Boolean  @default(false)
+  channel         String   @default("telegram") // 'telegram' | 'webhook'
+  telegramToken   String? // encrypted bot token
+  telegramChatId  String?
+  webhookUrl      String? // encrypted
+  lastDeliveryOk  Boolean?
+  lastDeliveryAt  DateTime?
+  lastDeliveryMsg String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("alert_config")
+}
+
+// One row per fired incident, per key + kind. Doubles as the dedup source (an
+// open row = already alerted, don't re-fire) and a delivery log. Edge-triggered:
+// a row opens when a key enters an alert state, resolvedAt is set when it leaves.
+model AlertEvent {
+  id          String    @id @default(cuid())
+  keyId       String
+  kind        String // 'live_and_used' | 'rotation_failed'
+  severity    String
+  firedAt     DateTime  @default(now())
+  resolvedAt  DateTime?
+  deliveredOk Boolean   @default(false)
+
+  @@index([keyId, kind, resolvedAt])
+  @@map("alert_events")
+}
+
 model Session {
   id           String   @id @default(cuid())
   sessionToken String   @unique

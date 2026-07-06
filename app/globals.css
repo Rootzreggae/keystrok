@@ -15,6 +15,7 @@
 @import "./styles/ks-auth.css";
 @import "./styles/ks-team.css";
 @import "./styles/ks-timeline.css";
+@import "./styles/ks-settings.css";
 
 :root {
   --background: #1a1b1b;

@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { signOut } from 'next-auth/react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Home, Key, RefreshCw, Search, Server, Activity, Zap, LogOut, Clock, Menu, X, ChevronLeft, ChevronRight, ChevronUp, Users } from 'lucide-react'
+import { Home, Key, RefreshCw, Search, Server, Activity, Zap, LogOut, Clock, Menu, X, ChevronLeft, ChevronRight, ChevronUp, Users, Settings } from 'lucide-react'
 import { BrandMark } from '@/components/ks'
 import { CommandPalette } from '@/components/ks/CommandPalette'
 import { SourceConnect, SourceConnectContext } from '@/components/ks/SourceConnect'
@@ -29,6 +29,7 @@ const TITLES: Record<string, string> = {
   ...Object.fromEntries(GROUPS.flatMap((g) => g.items.map((i) => [i.href, i.name]))),
   '/search': 'Search',
   '/team': 'Team',
+  '/settings': 'Settings',
 }
 
 
@@ -40,7 +41,7 @@ export function AppShell({ email, isAdmin, children }: { email?: string | null; 
   // Team management is admin-only; add it to the System group for admins.
   const groups = isAdmin
     ? GROUPS.map((g) => g.label === 'System'
-        ? { label: g.label, items: [...g.items, { name: 'Team', href: '/team', icon: Users, badge: null }] }
+        ? { label: g.label, items: [...g.items, { name: 'Team', href: '/team', icon: Users, badge: null }, { name: 'Settings', href: '/settings', icon: Settings, badge: null }] }
         : { label: g.label, items: [...g.items] })
     : GROUPS
   const initial = (email?.[0] ?? 'K').toUpperCase()

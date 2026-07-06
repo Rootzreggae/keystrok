@@ -1,0 +1,16 @@
+/* Instance settings (Alerts today). Square, mono-labelled, token-driven. */
+.kb .ks-set__row { display: flex; align-items: flex-start; gap: 18px; }
+.kb .ks-set__row > div:first-child { flex: 1; }
+.kb .ks-set__k { font-size: 13px; font-weight: 600; color: var(--tx); }
+.kb .ks-set__d { font-size: 12px; color: var(--tx-mut); margin-top: 3px; line-height: 1.5; }
+.kb .ks-set__field { display: flex; flex-direction: column; gap: 7px; }
+.kb .ks-set__field > span:first-child { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--tx-mut); }
+.kb .ks-set__hint { font-size: 11.5px; color: var(--tx-mut); line-height: 1.5; }
+
+.kb .ks-seg { display: inline-flex; border: 1px solid var(--div-2); border-radius: 2px; overflow: hidden; }
+.kb .ks-seg__b { font-family: var(--font-mono); font-size: 12px; color: var(--tx-mut); background: var(--bg-2); border: none; border-right: 1px solid var(--div-2); padding: 7px 16px; cursor: pointer; transition: color .1s, background .1s; }
+.kb .ks-seg__b:last-child { border-right: none; }
+.kb .ks-seg__b:hover { color: var(--tx-2); }
+.kb .ks-seg__b.active { color: var(--tx); background: var(--elev); }
+
+.kb .ks-set__status { display: flex; align-items: center; gap: 8px; font-family: var(--font-mono); font-size: 11.5px; color: var(--tx-mut); }

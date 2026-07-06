@@ -91,5 +91,20 @@ export async function POST(request: NextRequest) {
     data: { action: 'liveness_checked', description: `Liveness check: ${live} live, ${revoked} revoked across ${providers.join(', ')}`, userId: session.user.id },
   }).catch(() => {})
 
-  return NextResponse.json({ success: true, checked, live, revoked, providers, warnings })
+  // Fire-on-check: reconcile alert state now that liveness/usage is fresh. Best-
+  // effort, a channel failure must never fail the check. Evaluates all keys (not
+  // just those checked) so a rotation_failed incident surfaces too; dedup gates it.
+  let alerts = { fired: 0, resolved: 0 }
+  try {
+    const all = await prisma.discoveredKey.findMany({
+      where: { status: { not: 'false_positive' } },
+      select: { id: true, keyName: true, platform: true, severity: true, keyPreview: true, liveStatus: true, liveCheckedAt: true, lastUsedAt: true, rotatedAt: true },
+    })
+    const { runAlerts } = await import('@/lib/alert-runner')
+    alerts = await runAlerts(all)
+  } catch (e) {
+    console.error('alert run failed:', e)
+  }
+
+  return NextResponse.json({ success: true, checked, live, revoked, providers, warnings, alerts })
 }
