@@ -168,7 +168,7 @@ export default function KeysScreen() {
                         {/* one urgency encoding: overdue = text only; healthy = "Nd left" + a window-used bar */}
                         {u.overdue ? (
                           <span className="ks-tbl__u" style={{ color: 'var(--crit)' }}>
-                            overdue — {k.live_status === 'live' ? 'live, ' : ''}past SLA
+                            overdue · {k.live_status === 'live' ? 'live, ' : ''}past SLA
                           </span>
                         ) : (
                           <div className="ks-tbl__win">

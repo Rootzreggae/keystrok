@@ -40,29 +40,33 @@
 .kb .ks-tl__zoomb:last-child { border-right: none; }
 .kb .ks-tl__zoomb:hover { color: var(--tx-mut); }
 .kb .ks-tl__zoomb.active { color: var(--tx); background: var(--elev); }
-.kb .ks-tl__row, .kb .ks-tl__overlay { display: grid; grid-template-columns: 110px minmax(0, 1fr); }
+.kb .ks-tl__row, .kb .ks-tl__overlay { display: grid; grid-template-columns: 130px minmax(0, 1fr); }
+/* the timeline is a bordered panel, depth via a stepped surface + gridded rows */
+.kb .ks-tl__box { position: relative; border: 1px solid var(--div-2); background: var(--panel); overflow: hidden; }
+.kb .ks-tl__axisrow { border-bottom: 1px solid var(--div); }
+.kb .ks-tl__gutter { border-right: 1px solid var(--div); padding-left: 14px; }
 .kb .ks-tl__track { position: relative; }
-.kb .ks-tl__track--axis { height: 26px; }
-.kb .ks-tl__now { position: absolute; top: 4px; transform: translateX(-50%); font-family: var(--font-mono); font-size: 9.5px; letter-spacing: 0.08em; color: var(--tx-mut); }
-.kb .ks-tl__tick { position: absolute; top: 4px; transform: translateX(-50%); font-family: var(--font-mono); font-size: 10.5px; color: var(--tx-dim); }
+.kb .ks-tl__track--axis { height: 30px; }
+.kb .ks-tl__now { position: absolute; top: 9px; transform: translateX(-50%); font-family: var(--font-mono); font-size: 9.5px; letter-spacing: 0.08em; color: var(--tx-mut); }
+.kb .ks-tl__tick { position: absolute; top: 9px; transform: translateX(-50%); font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.06em; color: var(--tx-mut); }
 
 /* lanes + the single continuous overlay behind them */
 .kb .ks-tl__lanes { position: relative; }
 .kb .ks-tl__overlay { position: absolute; inset: 0; pointer-events: none; z-index: 0; }
 .kb .ks-tl__overlaytrack { position: relative; }
-/* overdue is a BUCKET, not a time axis: hatched fill, dashed NOW edge. Overdue-
- * by-how-long is not linear with the future scale, so it doesn't get scale space. */
-.kb .ks-tl__od { position: absolute; top: 0; bottom: 0; left: 0; background-image: repeating-linear-gradient(-45deg, rgba(255, 255, 255, 0.022) 0 8px, transparent 8px 16px); border-right: 1px dashed var(--crit-line); }
-.kb .ks-tl__odtick { position: absolute; left: 6px; top: 7px; font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--crit); }
-.kb .ks-tl__nowline { position: absolute; top: 0; bottom: 0; width: 2px; transform: translateX(-1px); background: var(--tx); }
+/* overdue is a BUCKET, not a time axis: a recessed hatched surface with a dashed
+ * NOW edge. Overdue-by-how-long isn't linear with the future scale. */
+.kb .ks-tl__od { position: absolute; top: 0; bottom: 0; left: 0; background-color: var(--inset); background-image: repeating-linear-gradient(-45deg, rgba(251, 113, 133, 0.05) 0 7px, transparent 7px 14px); border-right: 1px dashed var(--crit-line); }
+.kb .ks-tl__odtick { position: absolute; left: 6px; top: 9px; font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--crit); }
+.kb .ks-tl__nowline { position: absolute; top: 0; bottom: 0; width: 2px; transform: translateX(-1px); background: var(--tx-mut); }
 .kb .ks-tl__grid { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--div); }
 
 .kb .ks-tl__lane { position: relative; z-index: 1; padding: 20px 0; border-bottom: 1px solid var(--div); }
 .kb .ks-tl__lane:last-child { border-bottom: none; }
-.kb .ks-tl__lbl { display: flex; align-items: flex-start; gap: 7px; font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--tx-dim); }
-.kb .ks-tl__empty { margin-left: 8px; color: var(--div-3); letter-spacing: 0.04em; }
+.kb .ks-tl__lbl { display: flex; align-items: flex-start; gap: 7px; font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--tx-mut); }
+.kb .ks-tl__empty { margin-left: 8px; color: var(--tx-mut); letter-spacing: 0.04em; }
 
-.kb .ks-tl__chip { position: absolute; display: inline-flex; align-items: center; gap: 7px; height: 33px; padding: 0 10px; background: var(--elev); border: 1px solid var(--div-2); border-radius: 2px; cursor: pointer; white-space: nowrap; transition: background .1s, border-color .1s; }
+.kb .ks-tl__chip { position: absolute; display: inline-flex; align-items: center; gap: 7px; height: 33px; padding: 0 10px; background: var(--elev); border: 1px solid var(--div-2); border-radius: 2px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3); cursor: pointer; white-space: nowrap; transition: background .1s, border-color .1s; }
 .kb .ks-tl__chip:hover { background: var(--bg-2); border-color: var(--div-3); }
 .kb .ks-tl__chip[data-overdue] { border-color: var(--crit-line); background: rgba(251, 113, 133, 0.10); }
 .kb .ks-tl__chip[data-overdue] .ks-tl__cdays { color: var(--crit); }

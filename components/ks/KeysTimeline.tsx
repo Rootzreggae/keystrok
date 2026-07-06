@@ -26,7 +26,10 @@ export function KeysTimeline({ keys, onSelect }: { keys: ApiKey[]; onSelect: (k:
   const span = cfg.max - cfg.floor
   const chipDays = span * 0.18 // chip footprint in day-units, scales with zoom
   const clampDay = (d: number) => Math.max(cfg.floor, Math.min(cfg.max, d))
-  const pct = (day: number) => ((clampDay(day) - cfg.floor) / span) * 100
+  // Overdue is a fixed-width bucket on the left (not part of the linear scale):
+  // NOW sits at the bucket's right edge, the future runs from there to the horizon.
+  const BUCKET = 26 // percent of the track reserved for the overdue bucket
+  const pct = (day: number) => BUCKET + (Math.min(Math.max(day, 0), cfg.max) / cfg.max) * (100 - BUCKET)
 
   const lanes = LANES.map((sev) => {
     const items = keys
@@ -56,7 +59,8 @@ export function KeysTimeline({ keys, onSelect }: { keys: ApiKey[]; onSelect: (k:
         </div>
       </div>
 
-      <div className="ks-tl__row">
+      <div className="ks-tl__box">
+      <div className="ks-tl__row ks-tl__axisrow">
         <div className="ks-tl__gutter" />
         <div className="ks-tl__track ks-tl__track--axis">
           <span className="ks-tl__odtick">Overdue</span>
@@ -121,6 +125,7 @@ export function KeysTimeline({ keys, onSelect }: { keys: ApiKey[]; onSelect: (k:
           </div>
           )
         })}
+      </div>
       </div>
     </div>
   )

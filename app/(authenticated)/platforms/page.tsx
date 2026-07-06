@@ -30,7 +30,7 @@ export default function PlatformsScreen() {
     },
     onSuccess: (j) => {
       qc.invalidateQueries({ queryKey: ['keys'] })
-      const warn = j.warnings?.length ? ` — ${j.warnings.join('; ')}` : ''
+      const warn = j.warnings?.length ? ` · ${j.warnings.join('; ')}` : ''
       setLiveMsg(j.success ? `Checked ${j.checked}: ${j.live} live, ${j.revoked} revoked${warn}` : (j.warnings?.[0] || 'Nothing to check yet'))
     },
     onError: (e: Error) => setLiveMsg(e.message),

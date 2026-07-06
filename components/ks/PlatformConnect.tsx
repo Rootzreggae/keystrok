@@ -191,7 +191,7 @@ export function PlatformConnect({ open, onClose, onConnected }: { open: boolean;
                 </label>
               )}
 
-              {test.state === 'fail' && <div className="ks-as__testmsg fail">{test.message}{sel.failHint ? ` — ${sel.failHint}` : ''}</div>}
+              {test.state === 'fail' && <div className="ks-as__testmsg fail">{test.message}{sel.failHint ? ` · ${sel.failHint}` : ''}</div>}
               {test.state === 'ok' && <div className="ks-as__testmsg ok"><Check size={13} /> {test.message}</div>}
             </>
           )}

@@ -32,7 +32,7 @@ export function HomeBand({ needAction, overdue, rotating, total, onView }: {
           <div className="ks-band__n">{needAction}{needAction > 0 && <span className="affix">▲</span>}</div>
           <div className="ks-band__l">Needs action</div>
           {needAction > 0 && (
-            <div className="ks-band__d">{overdue > 0 ? `${overdue} overdue — SLA expired` : 'in the rotation window'}</div>
+            <div className="ks-band__d">{overdue > 0 ? `${overdue} overdue · SLA expired` : 'in the rotation window'}</div>
           )}
           <span className="ks-band__go">view →</span>
         </button>
@@ -68,7 +68,7 @@ function HygieneBand({ p }: { p: Posture }) {
       </div>
 
       <div className="ks-band__m">
-        <div className="v">{mttr === null ? '—' : mttr}{mttr !== null && <span className="u">d to rotate</span>}</div>
+        <div className="v">{mttr === null ? 'n/a' : mttr}{mttr !== null && <span className="u">d to rotate</span>}</div>
         <div className="k">
           {mttr === null ? 'no rotations yet'
             : onTarget ? <><span className="ok">✓ on target</span> · ≤ {MTTR_TARGET}d</>
