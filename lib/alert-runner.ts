@@ -81,6 +81,32 @@ export async function runAlerts(keys: AlertableKey[]): Promise<{ fired: number; 
  * knowable without a fresh listing), and by the Phase-2 scheduler later.
  * Best-effort: never throws into its caller.
  */
+/**
+ * One-shot alerts for newly-discovered leaks (scheduled scans). Unlike the
+ * key-state incidents, a new finding fires once and never "recovers", so its
+ * AlertEvent opens and closes at the same instant (purely a dedup + log record).
+ * Deduped by (keyHashId, 'new_finding'): a leak is announced exactly once.
+ * Caller decides which severities qualify (v1: critical/high) to avoid fatigue.
+ */
+export async function alertNewFindings(findings: { keyHashId: string; keyType: string; severity: string; repository: string; relativePath: string }[]): Promise<number> {
+  if (findings.length === 0) return 0
+  const loaded = await loadChannel().catch(() => null)
+  if (!loaded) return 0
+  const { cfg, baseUrl } = loaded
+  const now = new Date()
+  let fired = 0
+  for (const f of findings) {
+    const already = await prisma.alertEvent.findFirst({ where: { keyId: f.keyHashId, kind: 'new_finding' } })
+    if (already) continue
+    const link = baseUrl ? ` ${baseUrl.replace(/\/$/, '')}/discovery-scanner` : ''
+    const text = `🔴 Keystrok: new ${f.keyType} committed in ${f.repository} · ${f.relativePath} (${f.severity})${link}`
+    const res = await send(cfg, text)
+    await prisma.alertEvent.create({ data: { keyId: f.keyHashId, kind: 'new_finding', severity: f.severity, firedAt: now, resolvedAt: now, deliveredOk: res.ok } })
+    fired++
+  }
+  return fired
+}
+
 export async function evaluateAllAlerts(): Promise<{ fired: number; resolved: number }> {
   try {
     const all = await prisma.discoveredKey.findMany({

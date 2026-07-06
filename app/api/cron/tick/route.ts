@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { runLivenessCheck } from '@/lib/liveness-runner'
+import { cronAuthorized } from '@/lib/cron-auth'
 
 // POST /api/cron/tick — the scheduled monitor tick. Self-host has no cloud
 // scheduler, so the operator points their own cron / systemd-timer / Vercel Cron
@@ -14,18 +15,8 @@ import { runLivenessCheck } from '@/lib/liveness-runner'
 //
 // Setup: set CRON_SECRET, then e.g.
 //   0 * * * *  curl -fsS -X POST -H "Authorization: Bearer $CRON_SECRET" https://<instance>/api/cron/tick
-function authorized(req: NextRequest): boolean {
-  const secret = process.env.CRON_SECRET
-  if (!secret) return false // no secret configured -> endpoint disabled, fail closed
-  const auth = req.headers.get('authorization') || ''
-  const bearer = auth.startsWith('Bearer ') ? auth.slice(7) : ''
-  // also accept ?key= for schedulers that can't set headers
-  const q = req.nextUrl.searchParams.get('key') || ''
-  return bearer === secret || q === secret
-}
-
 async function tick(req: NextRequest) {
-  if (!authorized(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!cronAuthorized(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   // Scheduled run: no actor, so no per-user activity-log entry.
   const result = await runLivenessCheck()
   return NextResponse.json({ ok: true, ...result })
