@@ -85,7 +85,7 @@ export async function evaluateAllAlerts(): Promise<{ fired: number; resolved: nu
   try {
     const all = await prisma.discoveredKey.findMany({
       where: { status: { not: 'false_positive' } },
-      select: { id: true, keyName: true, platform: true, severity: true, keyPreview: true, liveStatus: true, liveCheckedAt: true, lastUsedAt: true, rotatedAt: true },
+      select: { id: true, keyName: true, platform: true, severity: true, keyPreview: true, foundAt: true, exposedAt: true, liveStatus: true, liveCheckedAt: true, lastUsedAt: true, rotatedAt: true },
     })
     return await runAlerts(all)
   } catch (e) {

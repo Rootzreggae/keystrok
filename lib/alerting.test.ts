@@ -19,6 +19,14 @@ assert.equal(incidentFor(base({ rotatedAt: daysAgo(5), liveStatus: 'live', liveC
 // rotation_failed is a standing condition: fires even when liveness is old
 assert.equal(incidentFor(base({ rotatedAt: daysAgo(90), liveStatus: 'live', liveCheckedAt: daysAgo(85) }), NOW)?.kind, 'rotation_failed')
 
+// sla_crossed: not rotated, past its deadline (critical SLA is short, 40d is well over)
+assert.equal(incidentFor(base({ foundAt: daysAgo(40) }), NOW)?.kind, 'sla_crossed')
+assert.equal(incidentFor(base({ foundAt: daysAgo(40), severity: 'critical' }), NOW)?.severity, 'critical')
+assert.equal(incidentFor(base({ foundAt: daysAgo(2) }), NOW), null) // still inside the window
+assert.equal(incidentFor(base({ foundAt: daysAgo(40), rotatedAt: daysAgo(1) }), NOW), null) // rotated -> resolved, no page
+// precedence: live_and_used (fresh) outranks sla_crossed for the same overdue key
+assert.equal(incidentFor(base({ foundAt: daysAgo(40), liveStatus: 'live', liveCheckedAt: daysAgo(1), lastUsedAt: daysAgo(1) }), NOW)?.kind, 'live_and_used')
+
 // buildRequest: telegram needs token + chat_id; webhook needs a url.
 const inc = incidentFor(base({ liveStatus: 'live', lastUsedAt: daysAgo(1), liveCheckedAt: daysAgo(1) }), NOW)!
 const text = summaryText(base({}), inc)
