@@ -40,6 +40,16 @@ export function mailConfigured(): boolean {
   return resolveTransport() !== 'none'
 }
 
+/** Human-readable mail delivery status for the Settings UI. No secrets. */
+export function mailStatus(): { transport: Transport; from: string; detail: string } {
+  const transport = resolveTransport()
+  const from = defaultFrom()
+  const detail = transport === 'resend' ? 'Resend'
+    : transport === 'smtp' ? `SMTP · ${process.env.EMAIL_SERVER_HOST}:${Number(process.env.EMAIL_SERVER_PORT) || 587}`
+    : 'not configured'
+  return { transport, from, detail }
+}
+
 /**
  * SMTP transport config from EMAIL_SERVER_* env. Auth is omitted entirely when
  * no user is set so unauthenticated dev servers (MailHog on :1025) work without
