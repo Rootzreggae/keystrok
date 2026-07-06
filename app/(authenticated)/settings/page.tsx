@@ -3,6 +3,7 @@ import { auth } from '@/lib/auth'
 import { isAdmin } from '@/lib/roles'
 import { AlertsSettings } from '@/components/ks/AlertsSettings'
 import { EmailSettings } from '@/components/ks/EmailSettings'
+import { AppearanceSettings } from '@/components/ks/AppearanceSettings'
 
 // Instance settings, admin-only. Home for alert delivery today; the natural
 // place for Assistant model config and other instance settings later.
@@ -23,6 +24,7 @@ export default async function SettingsPage() {
   }
   return (
     <div className="ks-home" style={{ maxWidth: 760 }}>
+      <AppearanceSettings />
       <AlertsSettings />
       <EmailSettings />
     </div>

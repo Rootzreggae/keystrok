@@ -39,10 +39,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" style={{ margin: 0, padding: 0, backgroundColor: '#1a1b1b', overflowX: 'hidden', maxWidth: '100vw' }}>
+    <html lang="en" style={{ margin: 0, padding: 0, overflowX: 'hidden', maxWidth: '100vw' }}>
+      <head>
+        {/* No-flash theme resolve: set data-theme before paint from the user's
+            saved preference, else the system. Dark is the default identity. */}
+        <script dangerouslySetInnerHTML={{ __html: `(function(){try{var p=localStorage.getItem('ks-theme');var t=(p==='light'||p==='dark')?p:(window.matchMedia('(prefers-color-scheme: light)').matches?'light':'dark');document.documentElement.setAttribute('data-theme',t);}catch(e){}})();` }} />
+      </head>
       <body
         className={`${inter.className} ${archivo.variable} ${plexMono.variable} antialiased`}
-        style={{ margin: 0, padding: 0, backgroundColor: '#1a1b1b', color: '#e4e4e7', overflowX: 'hidden', maxWidth: '100vw' }}
+        style={{ margin: 0, padding: 0, overflowX: 'hidden', maxWidth: '100vw' }}
       >
         <Providers>
           <div style={{ overflowX: 'hidden', maxWidth: '100vw' }}>

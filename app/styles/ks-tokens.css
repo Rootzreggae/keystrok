@@ -12,11 +12,11 @@
  * CSS requires @import rules before all others, and Tailwind expands inline. */
 
 .kb {
-  /* surfaces: charcoal, not near-black. --bg-0 is the deepest (the content
-   * canvas); the sidebar sits on the lighter --bg for depth/contrast. */
+  /* surfaces: charcoal, not near-black. desk deepened one step (design round 2)
+   * so the elevated tier reads. --bg-0 is the deepest; sidebar sits on --bg. */
   --bg-0: #131519;
-  --bg: #181b22;
-  --bg-2: #1e222b;
+  --bg: #14171d;
+  --bg-2: #181c23;
   --panel: #21262f;
   --elev: #272d38;
   --inset: #15181e;
@@ -33,19 +33,26 @@
   --tx-dim: #626c7c;
 
   /* state: the only place colour is allowed */
-  --a: #34d399;        /* accent: proceed / healthy / active / primary action */
+  --a: #34d399;        /* accent: verified-secure / healthy state ONLY (not actions) */
   --a-2: #5fe0b0;
   --a-dim: rgba(52, 211, 153, 0.13);
   --a-line: rgba(52, 211, 153, 0.34);
   --crit: #fb7185;     /* overdue / critical */
   --crit-dim: rgba(251, 113, 133, 0.13);
   --crit-line: rgba(251, 113, 133, 0.34);
-  --high: #fb9b53;     /* high severity / warning */
+  --high: #fb9b53;     /* high severity / warning — graphic (dots, ticks, bars) */
   --high-dim: rgba(251, 155, 83, 0.13);
   --high-line: rgba(251, 155, 83, 0.34);
-  --med: #fbbf4c;      /* medium */
+  --med: #fbbf4c;      /* medium — graphic */
   --low: #8fa1bd;      /* low */
   --ok: #34d399;       /* success = accent */
+
+  /* semantic derived tokens (re-valued per theme below) */
+  --edge: var(--div-3);              /* border of the elevated tier: cards, bands, tables */
+  --hover: rgba(255, 255, 255, 0.04); /* row/cell hover wash */
+  --warn-ink: #fb9b53;               /* amber TEXT (counts, ▲ labels) — split from graphic in light */
+  --scrim: rgba(0, 0, 0, 0.55);      /* dismissible-overlay backdrop */
+  --overlay-shadow: 0 18px 60px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.06);
 
   /* radii: square. 0 panels, 2px controls, 50% dots */
   --r-panel: 0px;
@@ -66,6 +73,49 @@
   font-size: 13.5px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+}
+
+/* Light theme: same token contract, re-valued. Applied when the resolved theme
+ * (a no-flash script sets data-theme on <html> from the user's pref, else the
+ * system) is light. Dark stays the identity + default; light is opt-in.
+ * Scoped through .kb so the landing page is untouched. Design round 2. */
+html[data-theme="light"] .kb {
+  --bg-0: #d9dce3;
+  --bg: #eaecf1;
+  --bg-2: #e0e3ea;   /* recessed / rail */
+  --panel: #ffffff;
+  --elev: #ffffff;
+  --inset: #e4e7ed;
+
+  /* dividers become ink-based (white alpha is invisible on light) */
+  --div: rgba(16, 24, 40, 0.10);
+  --div-2: rgba(16, 24, 40, 0.17);
+  --div-3: rgba(16, 24, 40, 0.27);
+
+  --tx: #171c26;
+  --tx-2: #3c4453;
+  --tx-mut: #5b6472;
+  --tx-dim: #8a92a0;   /* decoration only; never on --bg-2 (use --tx-mut there) */
+
+  --a: #0c8f60;        /* verified-secure green, darkened for light-bg contrast */
+  --a-2: #0c8f60;
+  --a-dim: rgba(12, 143, 96, 0.10);
+  --a-line: rgba(12, 143, 96, 0.38);
+  --crit: #d3365a;
+  --crit-dim: rgba(211, 54, 90, 0.08);
+  --crit-line: rgba(211, 54, 90, 0.38);
+  --high: #e87b1e;     /* graphic amber (dots, ticks, bars) */
+  --high-dim: rgba(232, 123, 30, 0.10);
+  --high-line: rgba(232, 123, 30, 0.55);
+  --med: #e8a713;      /* graphic amber */
+  --low: #64748b;
+  --ok: #0c8f60;
+
+  --edge: var(--div-2);              /* elevated tier: div-2 borders on the white cards */
+  --hover: rgba(16, 24, 40, 0.04);
+  --warn-ink: #b45309;               /* amber TEXT, split from the vivid graphic ambers */
+  --scrim: rgba(23, 28, 38, 0.35);
+  --overlay-shadow: 0 24px 80px rgba(16, 24, 40, 0.28), 0 0 0 1px rgba(16, 24, 40, 0.06);
 }
 
 .kb .mono { font-family: var(--font-mono); }
