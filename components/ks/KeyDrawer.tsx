@@ -132,6 +132,12 @@ export function KeyDrawer({ keyData, onClose }: { keyData: ApiKey | null; onClos
             )}
           </div>
 
+          {k.rotation_failed && (
+            <div style={{ margin: '0 0 4px', padding: '12px 14px', background: 'var(--crit-dim)', border: '1px solid var(--crit-line)', fontSize: 12.5, color: 'var(--crit)', lineHeight: 1.5 }}>
+              <b>Rotation didn&apos;t stick.</b> This key is marked rotated, but a liveness check after the rotation still found it live on its platform. The old credential was never revoked, treat it as still exposed and rotate again.
+            </div>
+          )}
+
           {k.usage_active && k.last_used_at && (
             <div style={{ margin: '0 0 4px', padding: '12px 14px', background: 'var(--crit-dim)', border: '1px solid var(--crit-line)', fontSize: 12.5, color: 'var(--crit)', lineHeight: 1.5 }}>
               <b>Active incident.</b> This leaked key is still live on its platform and was used {ago(k.last_used_at)} ago. Rotate it first.

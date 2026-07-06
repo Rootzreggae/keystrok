@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import { ago } from '@/lib/keys-display'
 
 interface TLEvent { at: string; kind: string; label: string; detail?: string; tone: 'crit' | 'high' | 'ok' | 'mut'; window: boolean }
-interface TLWindow { start: string; end: string | null; days: number; open: boolean; usedDuring: boolean }
+interface TLWindow { start: string; end: string | null; days: number; open: boolean; usedDuring: boolean; rotationFailed?: boolean }
 interface TL { events: TLEvent[]; window: TLWindow | null }
 
 // Vertical incident timeline for one key: the lifecycle composed as events, with
@@ -49,7 +49,7 @@ export function KeyTimeline({ keyId }: { keyId: string }) {
             <span className="ks-tl__dot open" aria-hidden />
             <div className="ks-tl__body">
               <div className="ks-tl__label" style={{ color: 'var(--crit)' }}>Still exposed</div>
-              <div className="ks-tl__detail">no rotation yet</div>
+              <div className="ks-tl__detail">{w.rotationFailed ? 'rotated, but never revoked' : 'no rotation yet'}</div>
             </div>
             <div className="ks-tl__time">now</div>
           </div>

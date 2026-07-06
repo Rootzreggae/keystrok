@@ -59,6 +59,17 @@ export interface KeyUsage {
   location?: string | null
 }
 
+/**
+ * Remediation-failure signal: the key is marked rotated, but a liveness check at
+ * or after the rotation still found it live, so the old credential was never
+ * actually revoked. The most dangerous state in the system: it reads "handled"
+ * while still exposed. Derived from stored fields, and requires post-rotation
+ * evidence (a stale pre-rotation check does not count, we never guess).
+ */
+export function rotationFailed(key: { rotatedAt?: Date | null; liveStatus?: string | null; liveCheckedAt?: Date | null }): boolean {
+  return !!key.rotatedAt && key.liveStatus === 'live' && !!key.liveCheckedAt && key.liveCheckedAt.getTime() >= key.rotatedAt.getTime()
+}
+
 // A key is "recently used" if the platform saw it within this window. Used with
 // liveStatus === 'live' to flag an active incident (live AND being used).
 export const RECENT_USE_DAYS = 7

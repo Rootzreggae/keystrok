@@ -19,6 +19,7 @@ export interface ApiKey {
   last_used_at?: string | null
   last_used_source?: string | null
   usage_active?: boolean // still live AND used recently: an active incident
+  rotation_failed?: boolean // rotated, but a post-rotation check still found it live
   daysUntilExpiry: number
   rotatedAt?: string | null
 }

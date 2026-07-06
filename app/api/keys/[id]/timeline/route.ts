@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { isDestructiveStep } from '@/lib/rotation-policy'
+import { rotationFailed } from '@/lib/liveness'
 
 // GET /api/keys/[id]/timeline
 // The lifecycle of one leaked key as an ordered list of events: created,
@@ -30,9 +31,13 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   if (!key) return NextResponse.json({ error: 'Key not found' }, { status: 404 })
 
   const now = new Date()
-  // The exposure window: at-risk since exposedAt (else discovery) until rotated (else open).
+  // Rotated, but a post-rotation check still found it live: the rotation didn't
+  // revoke the old credential, so the exposure window never actually closed.
+  const rotFailed = rotationFailed(key)
+  // The exposure window: at-risk since exposedAt (else discovery) until rotated
+  // (else open). A failed rotation keeps it open, the key is still exposed.
   const windowStart = key.exposedAt ?? key.foundAt
-  const windowEnd = key.rotatedAt ?? null
+  const windowEnd = rotFailed ? null : key.rotatedAt ?? null
   const inWindow = (d: Date) => d.getTime() >= windowStart.getTime() && (windowEnd ? d.getTime() <= windowEnd.getTime() : true)
   const usedDuring = !!key.lastUsedAt && inWindow(key.lastUsedAt)
 
@@ -50,7 +55,8 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   if (key.liveCheckedAt) {
     const live = key.liveStatus === 'live'
     push(key.liveCheckedAt, 'checked', live ? 'Confirmed still live' : key.liveStatus === 'revoked' ? 'Confirmed revoked' : 'Liveness checked',
-      live ? 'crit' : key.liveStatus === 'revoked' ? 'ok' : 'mut')
+      live ? 'crit' : key.liveStatus === 'revoked' ? 'ok' : 'mut',
+      rotFailed ? 'rotation did not revoke this key' : undefined)
   }
   for (const wf of key.rotationWorkflows) {
     push(wf.startedAt, 'rotation_started', 'Rotation started', 'ok')
@@ -60,7 +66,8 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       const revoke = isDestructiveStep(s)
       push(s.completedAt, 'step', s.name, revoke ? 'ok' : 'ok', skipped ? 'skipped' : revoke ? 'irreversible, old key revoked' : undefined)
     }
-    push(wf.completedAt, 'rotated', 'Rotated, exposure closed', 'ok')
+    push(wf.completedAt, 'rotated', rotFailed ? 'Rotated, but the key stayed live' : 'Rotated, exposure closed',
+      rotFailed ? 'crit' : 'ok', rotFailed ? 'the old credential was never revoked' : undefined)
   }
 
   ev.sort((a, b) => Date.parse(a.at) - Date.parse(b.at))
@@ -68,6 +75,6 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   const days = Math.max(0, Math.floor(((windowEnd ?? now).getTime() - windowStart.getTime()) / 86400000))
   return NextResponse.json({
     events: ev,
-    window: { start: windowStart.toISOString(), end: windowEnd?.toISOString() ?? null, days, open: !windowEnd, usedDuring },
+    window: { start: windowStart.toISOString(), end: windowEnd?.toISOString() ?? null, days, open: !windowEnd, usedDuring, rotationFailed: rotFailed },
   })
 }

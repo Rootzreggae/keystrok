@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { rotationDueAt, daysUntilDue, riskStart } from '@/lib/rotation-policy'
-import { isRecentlyUsed } from '@/lib/liveness'
+import { isRecentlyUsed, rotationFailed } from '@/lib/liveness'
 
 // GET /api/keys - Returns all discovered keys for the user
 export async function GET(request: NextRequest) {
@@ -73,6 +73,8 @@ export async function GET(request: NextRequest) {
         last_used_source: key.lastUsedSource ?? null,
         // The incident signal: still live AND used within the recency window.
         usage_active: key.liveStatus === 'live' && isRecentlyUsed(key.lastUsedAt),
+        // Remediation failed: rotated, but a post-rotation check still found it live.
+        rotation_failed: rotationFailed(key),
         daysUntilExpiry,
         isRotated: key.status === 'rotated',
         rotatedAt: key.rotatedAt?.toISOString() || null

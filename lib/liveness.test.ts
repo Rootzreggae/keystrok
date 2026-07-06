@@ -2,7 +2,18 @@
 // ponytail: plain asserts on the pure match logic (the part with a real branch).
 // The Datadog HTTP call is thin and gets verified live against a real account.
 import assert from 'node:assert/strict'
-import { last4, statusFor, isListable, providerOf, ddLast4, isRecentlyUsed } from './liveness.ts'
+import { last4, statusFor, isListable, providerOf, ddLast4, isRecentlyUsed, rotationFailed } from './liveness.ts'
+
+// rotationFailed: rotated, then still live at/after the rotation = the old key
+// was never revoked. Needs post-rotation evidence; a stale check does not count.
+const t0 = new Date('2026-07-01T00:00:00Z')
+const after = new Date('2026-07-02T00:00:00Z')
+const before = new Date('2026-06-30T00:00:00Z')
+assert.equal(rotationFailed({ rotatedAt: t0, liveStatus: 'live', liveCheckedAt: after }), true)
+assert.equal(rotationFailed({ rotatedAt: t0, liveStatus: 'live', liveCheckedAt: before }), false) // checked before rotating
+assert.equal(rotationFailed({ rotatedAt: t0, liveStatus: 'revoked', liveCheckedAt: after }), false)
+assert.equal(rotationFailed({ rotatedAt: null, liveStatus: 'live', liveCheckedAt: after }), false) // not rotated
+assert.equal(rotationFailed({ rotatedAt: t0, liveStatus: 'live', liveCheckedAt: null }), false) // no evidence
 
 // isRecentlyUsed: the "active incident" recency window (7 days).
 const NOW = new Date('2026-07-04T00:00:00Z')
