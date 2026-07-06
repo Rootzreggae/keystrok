@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { signOut } from 'next-auth/react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Home, Key, RefreshCw, Search, Server, Activity, Zap, LogOut, Clock, Menu, X, ChevronLeft, ChevronRight, ChevronUp, Users, Settings } from 'lucide-react'
+import { Home, Key, RefreshCw, Search, Server, Activity, Zap, LogOut, Clock, Menu, X, ChevronLeft, ChevronRight, ChevronUp, Settings } from 'lucide-react'
 import { BrandMark } from '@/components/ks'
 import { CommandPalette } from '@/components/ks/CommandPalette'
 import { ThemeToggle } from '@/components/ks/ThemeToggle'
@@ -44,12 +44,10 @@ export function AppShell({ email, isAdmin, children }: { email?: string | null; 
   const router = useRouter()
   const qc = useQueryClient()
   const title = TITLES[pathname] ?? 'Keystrok'
-  // Team management is admin-only; add it to the System group for admins.
-  const groups = isAdmin
-    ? GROUPS.map((g) => g.label === 'System'
-        ? { label: g.label, items: [...g.items, { name: 'Team', href: '/team', icon: Users, badge: null }] }
-        : { label: g.label, items: [...g.items] })
-    : GROUPS
+  // Team + Alerts + Email now live inside Settings (Workspace group); the sidebar
+  // is the same for everyone. isAdmin still gates the admin sections in Settings.
+  void isAdmin
+  const groups = GROUPS
   const initial = (email?.[0] ?? 'K').toUpperCase()
   const name = (email?.split('@')[0] ?? 'signed in').replace(/[._-]+/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
   const [cmdOpen, setCmdOpen] = useState(false)

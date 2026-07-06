@@ -8,8 +8,11 @@
 .kb .ks-set__railitem:hover { color: var(--tx); background: var(--hover); }
 .kb .ks-set__railitem.active { color: var(--tx); background: var(--hover); box-shadow: inset 2px 0 0 var(--tx); }
 .kb .ks-set__railitem svg { flex: none; }
-.kb .ks-set__content { min-width: 0; max-width: 640px; }
+.kb .ks-set__content { min-width: 0; max-width: 720px; }
 .kb .ks-set__content > .ks-panel { margin-top: 0 !important; }
+/* Team, folded in from its own page: stack its panels with the same rhythm. */
+.kb .ks-teamwrap { display: flex; flex-direction: column; gap: 16px; }
+.kb .ks-teamwrap > .ks-panel { margin-top: 0 !important; }
 @container page (max-width: 640px) { .kb .ks-set { grid-template-columns: minmax(0, 1fr); } .kb .ks-set__rail { position: static; flex-direction: row; flex-wrap: wrap; } }
 
 /* Instance settings sections. Square, mono-labelled, token-driven. */
