@@ -17,7 +17,7 @@ export function PostureStrip() {
   })
   if (!data) return null
 
-  const { compliance, mttrDays, resolvedCount, openExposureDays, trend } = data
+  const { compliance, mttrDays, resolvedCount, rotationsFailed, openExposureDays, trend } = data
   // Nothing tracked yet -> the statbar/empty states already cover it.
   if (compliance.total === 0 && resolvedCount === 0) return null
 
@@ -35,6 +35,9 @@ export function PostureStrip() {
             <div className={'ks-posture__n ' + complianceTone}>{compliance.pct === null ? '—' : `${compliance.pct}%`}</div>
             <div className="ks-posture__l">within rotation SLA</div>
             <div className="ks-posture__s">{compliance.within}/{compliance.total} open keys</div>
+            {rotationsFailed > 0 && (
+              <div className="ks-posture__s" style={{ color: 'var(--crit)' }}>{`${rotationsFailed} rotation${rotationsFailed > 1 ? 's' : ''} didn't stick`}</div>
+            )}
           </div>
           <div className="ks-posture__m">
             <div className="ks-posture__n">{mttrDays === null ? '—' : `${mttrDays}d`}</div>

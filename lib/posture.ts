@@ -3,11 +3,14 @@
 // No new data collection, no history table: the backlog trend is reconstructed
 // from the same timestamps. Pure so it's unit-testable (see posture.test.ts).
 import { riskStart, slaDays } from './rotation-policy.ts'
+import { rotationFailed } from './liveness.ts'
 
 export interface PostureKey {
   foundAt: Date
   exposedAt?: Date | null
   rotatedAt?: Date | null
+  liveStatus?: string | null
+  liveCheckedAt?: Date | null
   status: string
   severity: string
 }
@@ -17,28 +20,35 @@ export interface Posture {
   compliance: { within: number; total: number; pct: number | null } // open keys inside their rotation SLA
   mttrDays: number | null   // mean time to rotate, over resolved keys
   resolvedCount: number
+  rotationsFailed: number   // rotated, but a post-rotation check still found it live
   openExposureDays: number  // days open keys have spent at risk and are still burning
   trend: TrendPoint[]       // weekly open-at-risk backlog, oldest -> newest
 }
 
 const DAY = 86400000
-const isResolved = (k: PostureKey) => k.status === 'rotated' || !!k.rotatedAt
 const isFalsePositive = (k: PostureKey) => k.status === 'false_positive'
+// Resolved = rotated AND the rotation actually stuck. A rotated-but-still-live
+// key is NOT resolved: it reads "handled" while still exposed, so posture must
+// treat it as open and non-compliant, not credit it as done.
+const isResolved = (k: PostureKey) => (k.status === 'rotated' || !!k.rotatedAt) && !rotationFailed(k)
 
 export function computePosture(keys: PostureKey[], now: Date = new Date(), weeks = 12): Posture {
   const active = keys.filter((k) => !isFalsePositive(k))
-  const open = active.filter((k) => !isResolved(k))
+  const open = active.filter((k) => !isResolved(k)) // includes rotated-but-still-live
   const resolved = active.filter(isResolved)
+  const rotationsFailed = active.filter(rotationFailed).length
 
-  // Within SLA if the rotation due date (SLA counted from when the key went at-risk) is still ahead.
+  // Within SLA if the rotation due date (SLA counted from when the key went at-risk)
+  // is still ahead. A failed rotation is a demonstrated violation, never "within".
   let within = 0
   for (const k of open) {
+    if (rotationFailed(k)) continue
     const due = riskStart(k, now).getTime() + slaDays(k.severity) * DAY
     if (due >= now.getTime()) within++
   }
   const compliance = { within, total: open.length, pct: open.length ? Math.round((within / open.length) * 100) : null }
 
-  // MTTR: mean (rotatedAt - riskStart) over keys that were actually rotated.
+  // MTTR: mean (rotatedAt - riskStart) over keys that were actually rotated and stuck.
   const rot = resolved.filter((k) => k.rotatedAt)
   const mttrDays = rot.length
     ? Math.round(rot.reduce((s, k) => s + Math.max(0, (k.rotatedAt!.getTime() - riskStart(k, now).getTime()) / DAY), 0) / rot.length)
@@ -56,13 +66,14 @@ export function computePosture(keys: PostureKey[], now: Date = new Date(), weeks
     let count = 0
     for (const k of active) {
       const rs = riskStart(k, now).getTime()
-      // Resolved-by-status but no rotatedAt: we can't time when it closed, so
-      // collapse it to rs (never shows as open backlog), consistent with `open`.
-      const resolvedAt = k.rotatedAt ? k.rotatedAt.getTime() : isResolved(k) ? rs : Infinity
+      // A failed rotation never closes (open forever). Otherwise: rotatedAt if we
+      // have it; resolved-by-status with no timestamp collapses to rs (never shows
+      // as open backlog), consistent with `open`.
+      const resolvedAt = rotationFailed(k) ? Infinity : k.rotatedAt ? k.rotatedAt.getTime() : isResolved(k) ? rs : Infinity
       if (rs <= end && resolvedAt > end) count++
     }
     trend.push({ weekEnd: new Date(end).toISOString().slice(0, 10), open: count })
   }
 
-  return { compliance, mttrDays, resolvedCount: resolved.length, openExposureDays, trend }
+  return { compliance, mttrDays, resolvedCount: resolved.length, rotationsFailed, openExposureDays, trend }
 }

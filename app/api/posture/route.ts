@@ -11,7 +11,7 @@ export async function GET() {
 
   const keys = await prisma.discoveredKey.findMany({
     where: { userId: session.user.id },
-    select: { foundAt: true, exposedAt: true, rotatedAt: true, status: true, severity: true },
+    select: { foundAt: true, exposedAt: true, rotatedAt: true, liveStatus: true, liveCheckedAt: true, status: true, severity: true },
   })
   return NextResponse.json(computePosture(keys))
 }

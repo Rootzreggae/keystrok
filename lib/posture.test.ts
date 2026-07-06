@@ -39,6 +39,19 @@ const noTs = computePosture([{ foundAt: daysAgo(10), status: 'rotated', severity
 assert.equal(noTs.trend.at(-1)!.open, 0)
 assert.equal(noTs.compliance.total, 0)
 
+// rotated-but-still-live: NOT resolved. Counts as open + non-compliant, drops
+// out of MTTR, keeps accruing exposure, stays in the backlog trend.
+const failed = { foundAt: daysAgo(10), rotatedAt: daysAgo(5), liveStatus: 'live', liveCheckedAt: daysAgo(4), status: 'rotated', severity: 'high' }
+const pf = computePosture([failed], NOW, 4)
+assert.equal(pf.rotationsFailed, 1)
+assert.equal(pf.resolvedCount, 0)
+assert.equal(pf.compliance.total, 1)
+assert.equal(pf.compliance.within, 0)   // demonstrated violation, never within SLA
+assert.equal(pf.compliance.pct, 0)
+assert.equal(pf.mttrDays, null)          // not credited as a rotation
+assert.equal(pf.openExposureDays, 10)    // still burning from foundAt
+assert.equal(pf.trend.at(-1)!.open, 1)   // still open backlog
+
 // empty input: no open keys -> pct null, mttr null, no throw
 const empty = computePosture([], NOW)
 assert.equal(empty.compliance.pct, null)
