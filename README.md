@@ -21,9 +21,9 @@ Find exposed API keys in your code, track them, and rotate them safely. Keystrok
 
 | | |
 | --- | --- |
-| ![The key ledger, ranked by SLA used](docs/screenshots/keys.png) **The ledger** — every tracked key, ranked by how much of its rotation window is spent. | ![Key detail: where it was found, masked preview, provenance](docs/screenshots/key-detail.png) **Key detail** — where it was found, a masked preview, and honest provenance (never a guessed age). |
-| ![Guided, step-by-step rotation with an irreversible revoke step](docs/screenshots/rotation.png) **Guided rotation** — run each step yourself; the revoke step is admin-gated and irreversible. | ![Discovery: scan a source and triage findings](docs/screenshots/discovery.png) **Discovery** — scan a Git source or local folder, then triage findings into the ledger. |
-| ![The admin-only Members tab: invite, roles, remove](docs/screenshots/team.png) **Team** — invite members, set roles, and manage access from an admin-only tab. | |
+| ![The key ledger: liveness, severity, rotation window](docs/screenshots/keys.png) **The ledger**: every tracked key with its liveness, severity, and rotation window, one urgency signal per row. | ![Key detail: incident timeline, liveness, provenance](docs/screenshots/key-detail.png) **Key detail**: where it was found, a masked preview, honest provenance, and a per-key incident timeline. |
+| ![Guided, step-by-step rotation with an irreversible revoke step](docs/screenshots/rotation.png) **Guided rotation**: run each step yourself; the revoke step is admin-gated and irreversible. | ![Discovery: scan a source and triage findings](docs/screenshots/discovery.png) **Discovery**: scan a Git source or local folder, then triage findings into the ledger. |
+| ![The admin-only Members tab: invite, roles, remove](docs/screenshots/team.png) **Team**: invite members, set roles, and manage access from an admin-only tab. | |
 
 ## Stack
 

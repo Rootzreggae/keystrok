@@ -25,7 +25,7 @@
 .kb .ks-fpop__check.on { background: var(--a); border-color: var(--a); }
 .kb .ks-fpop__clear { width: 100%; margin-top: 4px; padding: 8px; background: none; border: none; border-top: 1px solid var(--div); cursor: pointer; font-family: var(--font-mono); font-size: 11px; color: var(--tx-dim); text-align: left; }
 .kb .ks-fpop__clear:hover { color: var(--tx-mut); }
-.kb .ks-keys__body { flex: 1; min-height: 0; overflow: hidden; display: flex; flex-direction: column; }
+.kb .ks-keys__body { flex: 1; min-height: 0; overflow: hidden; display: flex; flex-direction: column; padding: 20px 24px 24px; }
 
 /* severity tick (shared atom) */
 .kb .ks-aqrow__sev { width: 3px; flex: none; border-radius: 0; }
