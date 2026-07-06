@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { requireAdmin } from '@/lib/roles'
+import { mailConfigured } from '@/lib/mailer'
 
 // GET /api/team - members (active users) + pending invites. Admin-only.
 export async function GET() {
@@ -22,5 +23,7 @@ export async function GET() {
   return NextResponse.json({
     members: members.map((m) => ({ ...m, you: m.id === session.user.id })),
     invites,
+    // when false, invites + magic links are silently dropped (no mail transport)
+    mailConfigured: mailConfigured(),
   })
 }

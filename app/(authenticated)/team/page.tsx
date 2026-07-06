@@ -2,13 +2,13 @@
 
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { UserPlus, X, Shield } from 'lucide-react'
+import { UserPlus, X, Shield, AlertTriangle } from 'lucide-react'
 import { Pill } from '@/components/ks'
 
 type Role = 'admin' | 'member'
 interface Member { id: string; email: string; role: Role; createdAt: string; you: boolean }
 interface Invite { id: string; email: string; role: Role; createdAt: string }
-interface TeamData { members: Member[]; invites: Invite[] }
+interface TeamData { members: Member[]; invites: Invite[]; mailConfigured: boolean }
 
 const joined = (iso: string) => new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
 const Avatar = ({ email, pending }: { email: string; pending?: boolean }) => (
@@ -85,6 +85,16 @@ export default function TeamPage() {
           </button>
         )}
       </div>
+
+      {/* No mail transport wired up: invites (and magic links) are silently dropped. */}
+      {data && !data.mailConfigured && (
+        <div role="alert" style={{ margin: '0 0 16px', padding: '12px 14px', background: 'var(--high-dim)', border: '1px solid var(--high-line)', display: 'flex', gap: 10, alignItems: 'flex-start', fontSize: 12.5, lineHeight: 1.55, color: 'var(--tx-2)' }}>
+          <AlertTriangle size={15} style={{ flex: 'none', marginTop: 1, color: 'var(--high)' }} />
+          <div>
+            <b style={{ color: 'var(--tx)' }}>Email isn&apos;t configured, so invites won&apos;t send.</b> This instance has no mail transport, invited people never get the sign-in link (and neither do magic-link logins). Set <code>RESEND_API_KEY</code>, or <code>EMAIL_SERVER_*</code> for your own SMTP, then restart. Until then, add someone by allowing their email and having them sign in at <code>/auth/signin</code> directly.
+          </div>
+        </div>
+      )}
 
       {err && <div className="ks-drawer__err" role="alert" style={{ margin: '0 0 16px' }}>{err}</div>}
 

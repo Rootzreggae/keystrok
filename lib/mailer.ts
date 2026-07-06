@@ -34,6 +34,12 @@ function resolveTransport(): Transport {
   return 'none'
 }
 
+/** Whether an outbound mail transport is wired up. False = invites/magic links
+ *  are silently dropped (the 'none' no-op), so callers can warn the operator. */
+export function mailConfigured(): boolean {
+  return resolveTransport() !== 'none'
+}
+
 /**
  * SMTP transport config from EMAIL_SERVER_* env. Auth is omitted entirely when
  * no user is set so unauthenticated dev servers (MailHog on :1025) work without
