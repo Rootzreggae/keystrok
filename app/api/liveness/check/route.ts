@@ -3,7 +3,7 @@ import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { decryptSecret } from '@/lib/crypto'
 import { requireAdmin } from '@/lib/roles'
-import { providerOf, isListable, statusFor, last4, datadogKeyUsage, type KeyUsage } from '@/lib/liveness'
+import { providerOf, isListable, statusFor, last4, datadogKeyUsage, awsKeyUsage, type KeyUsage } from '@/lib/liveness'
 
 // POST /api/liveness/check
 // Matches every discovered key's last-4 against the keys a connected platform
@@ -27,9 +27,15 @@ export async function POST(request: NextRequest) {
   for (const p of listable) {
     const provider = providerOf(p.type)
     try {
+      let map: Map<string, KeyUsage> | null = null
       if (provider === 'datadog') {
         if (!p.appKey) { warnings.push(`${p.name}: no application key set, cannot list Datadog keys`); continue }
-        const map = await datadogKeyUsage({ apiUrl: p.apiUrl, apiKey: decryptSecret(p.apiKey), appKey: decryptSecret(p.appKey) })
+        map = await datadogKeyUsage({ apiUrl: p.apiUrl, apiKey: decryptSecret(p.apiKey), appKey: decryptSecret(p.appKey) })
+      } else if (provider === 'aws') {
+        if (!p.appKey) { warnings.push(`${p.name}: no secret access key set, cannot list AWS keys`); continue }
+        map = await awsKeyUsage({ accessKeyId: decryptSecret(p.apiKey), secretAccessKey: decryptSecret(p.appKey) })
+      }
+      if (map) {
         const merged = usageByProvider.get(provider) ?? new Map<string, KeyUsage>()
         for (const [l4, u] of map) merged.set(l4, u)
         usageByProvider.set(provider, merged)
@@ -42,7 +48,7 @@ export async function POST(request: NextRequest) {
   if (usageByProvider.size === 0) {
     return NextResponse.json({
       success: false, checked: 0, live: 0, revoked: 0,
-      warnings: warnings.length ? warnings : ['No connected platform can list keys yet (Datadog needs an application key).'],
+      warnings: warnings.length ? warnings : ['No connected platform can list keys yet (Datadog needs an application key, AWS a secret access key).'],
     })
   }
 
@@ -71,7 +77,8 @@ export async function POST(request: NextRequest) {
       data: {
         liveStatus: status, liveCheckedAt: now,
         lastUsedAt: usage?.lastUsedAt ?? null,
-        lastUsedSource: usage?.lastUsedAt ? provider : null,
+        // source carries the "from where" when the platform reports it (AWS region/service)
+        lastUsedSource: usage?.lastUsedAt ? (usage.location ? `${provider} · ${usage.location}` : provider) : null,
       },
     })
     checked++

@@ -9,6 +9,8 @@ interface Preset {
   apiUrl: string; authType: string; authHeader: string; testEndpoint: string
   keyPh: string; fixedUrl: boolean
   keyHint?: string; docUrl?: string
+  keyLabel?: string // primary credential label (default "API key")
+  appKeyLabel?: string; appKeyPh?: string // 2nd-credential label/placeholder
   urlHint?: string // helper under a free-text API URL field (e.g. Grafana stack URL)
   keyPrefixes?: string[] // a key not starting with one of these is probably wrong
   sites?: { label: string; apiUrl: string }[] // region picker (Datadog)
@@ -60,6 +62,17 @@ const PRESETS: Preset[] = [
     keyPrefixes: ['ghp_', 'github_pat_', 'gho_', 'ghs_'],
     docUrl: 'https://github.com/settings/tokens',
     failHint: 'check the token has not expired and includes read access',
+  },
+  {
+    type: 'aws', name: 'AWS', meta: 'Cloud', code: 'AWS',
+    apiUrl: 'https://iam.amazonaws.com', authType: 'aws', authHeader: 'Authorization', testEndpoint: '',
+    keyPh: 'AKIA…', fixedUrl: true, keyLabel: 'Access Key ID',
+    keyHint: 'The Access Key ID (starts AKIA), IAM → Users → your user → Security credentials. Read-only access is enough.',
+    keyPrefixes: ['AKIA'],
+    appKeyLabel: 'Secret Access Key', appKeyPh: '40-character secret',
+    appKeyHint: 'The Secret Access Key shown once when the access key was created. Keystrok uses it only to call IAM ListAccessKeys and GetAccessKeyLastUsed: is a leaked key still live, and where was it last used.',
+    docUrl: 'https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_access-keys.html',
+    failHint: 'the full check runs on a liveness check, not here',
   },
   {
     type: 'custom', name: 'Custom / other', meta: 'Any API URL + key', code: 'API',
@@ -161,7 +174,7 @@ export function PlatformConnect({ open, onClose, onConnected }: { open: boolean;
                 </label>
               )}
 
-              <label className="ks-as__field"><span>API key</span>
+              <label className="ks-as__field"><span>{sel.keyLabel ?? 'API key'}</span>
                 <input className="ks-input" type="password" value={key} onChange={(e) => { setKey(e.target.value); setTest({ state: 'idle' }) }} placeholder={sel.keyPh} spellCheck={false} autoCapitalize="off" />
                 {sel.keyHint && <Hint text={sel.keyHint} doc={sel.docUrl} />}
                 {key && looksLikeKeyId(key) && <div className="ks-as__warn">That looks like a Key ID (UUID), not the key value. Copy the key itself.</div>}
@@ -171,8 +184,8 @@ export function PlatformConnect({ open, onClose, onConnected }: { open: boolean;
               </label>
 
               {needsAppKey && (
-                <label className="ks-as__field"><span>Application key</span>
-                  <input className="ks-input" type="password" value={appKey} onChange={(e) => setAppKey(e.target.value)} placeholder="40-character application key" spellCheck={false} autoCapitalize="off" />
+                <label className="ks-as__field"><span>{sel.appKeyLabel ?? 'Application key'}</span>
+                  <input className="ks-input" type="password" value={appKey} onChange={(e) => setAppKey(e.target.value)} placeholder={sel.appKeyPh ?? '40-character application key'} spellCheck={false} autoCapitalize="off" />
                   <Hint text={sel.appKeyHint!} doc={sel.docUrl} />
                   {appKey && looksLikeKeyId(appKey) && <div className="ks-as__warn">That looks like a Key ID (UUID), not the application key value.</div>}
                 </label>

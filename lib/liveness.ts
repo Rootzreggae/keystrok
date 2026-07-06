@@ -15,8 +15,8 @@
 export type LiveStatus = 'live' | 'revoked' | 'unknown'
 
 // Providers whose "list keys" API exposes a fingerprint we can match. Others
-// stay 'unknown'. Datadog first; AWS (SigV4) and the rest come later.
-const LISTABLE = new Set(['datadog'])
+// stay 'unknown'. Datadog (header auth) and AWS (SigV4 IAM) so far.
+const LISTABLE = new Set(['datadog', 'aws'])
 
 /** Bare provider from a platform/keyType string ("datadog_api_key" -> "datadog"). */
 export function providerOf(s: string): string {
@@ -53,7 +53,11 @@ export function ddLast4(attributes: { last4?: string | null; last_four?: string 
   return l4 ? String(l4).toLowerCase() : null
 }
 
-export interface KeyUsage { lastUsedAt: Date | null }
+export interface KeyUsage {
+  lastUsedAt: Date | null
+  // "from where" the platform reports (AWS: "us-east-1 / s3"). Null when unknown.
+  location?: string | null
+}
 
 // A key is "recently used" if the platform saw it within this window. Used with
 // liveStatus === 'live' to flag an active incident (live AND being used).
@@ -101,5 +105,59 @@ export async function datadogKeyUsage(opts: { apiUrl?: string | null; apiKey: st
     }
   }
   if (ok === 0) throw new Error('Could not list Datadog keys (check the api + application keys)')
+  return map
+}
+
+/**
+ * AWS: map of access-key last-4 -> usage, for the connected credential's own IAM
+ * user. ListAccessKeys gives the live (Active) key IDs; GetAccessKeyLastUsed adds
+ * when + where each was last used (region + service, the "from where" the leaked
+ * key's last-4 is matched against). Only Active keys land in the map, so an
+ * Inactive leaked key reads as revoked. IAM XML is parsed with a couple of regex
+ * pulls; no XML dependency for four fields.
+ * Docs: POST iam.amazonaws.com Action=ListAccessKeys|GetAccessKeyLastUsed.
+ * ponytail: lists only the caller's own user; a key on a *different* IAM user
+ * reads unmatched (revoked). Add ListUsers fan-out if multi-user accounts need it.
+ */
+export async function awsKeyUsage(opts: { accessKeyId: string; secretAccessKey: string }): Promise<Map<string, KeyUsage>> {
+  const { signRequest } = await import('@/lib/aws-sigv4') // lazy so pure helpers stay node-testable
+  const { assertSafePlatformUrl } = await import('@/lib/ssrf')
+  const host = 'iam.amazonaws.com'
+  const url = `https://${host}/`
+  await assertSafePlatformUrl(url)
+
+  const call = async (action: string, extra = ''): Promise<string> => {
+    const body = `Action=${action}&Version=2010-05-08${extra}`
+    const headers = signRequest({
+      method: 'POST', host, service: 'iam', region: 'us-east-1',
+      accessKeyId: opts.accessKeyId, secretAccessKey: opts.secretAccessKey, body,
+      contentType: 'application/x-www-form-urlencoded; charset=utf-8',
+    })
+    const res = await fetch(url, { method: 'POST', headers, body })
+    const text = await res.text()
+    if (!res.ok) throw new Error(`IAM ${action} failed (${res.status})`)
+    return text
+  }
+
+  const listXml = await call('ListAccessKeys')
+  const map = new Map<string, KeyUsage>()
+  for (const m of listXml.split('<member>').slice(1)) {
+    const id = m.match(/<AccessKeyId>([^<]+)<\/AccessKeyId>/)?.[1]
+    const status = m.match(/<Status>([^<]+)<\/Status>/)?.[1]
+    if (!id || status !== 'Active') continue // Inactive == effectively revoked
+    let usage: KeyUsage = { lastUsedAt: null, location: null }
+    try {
+      const lu = await call('GetAccessKeyLastUsed', `&AccessKeyId=${encodeURIComponent(id)}`)
+      const raw = lu.match(/<LastUsedDate>([^<]+)<\/LastUsedDate>/)?.[1]
+      const region = lu.match(/<Region>([^<]+)<\/Region>/)?.[1]
+      const service = lu.match(/<ServiceName>([^<]+)<\/ServiceName>/)?.[1]
+      const d = raw ? new Date(raw) : null
+      const where = [region, service].filter((x) => x && x !== 'N/A')
+      usage = { lastUsedAt: d && !isNaN(d.getTime()) ? d : null, location: where.length ? where.join(' / ') : null }
+    } catch {
+      // key is listed (live) but last-used lookup failed; keep it live, usage unknown
+    }
+    map.set(id.slice(-4).toLowerCase(), usage)
+  }
   return map
 }
