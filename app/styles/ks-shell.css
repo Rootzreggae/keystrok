@@ -72,16 +72,17 @@
 .ks-top__menu:hover { color: var(--tx); }
 .ks-top__title { font-family: var(--font-sans); font-weight: 700; font-size: 16px; color: var(--tx); }
 /* canonical, always-visible "find more keys" action: present on every screen */
-.ks-top__find { margin-left: auto; flex: none; }
-@media (max-width: 640px) { .ks-top__find span { display: none; } }
-
-.ks-top__search { display: flex; align-items: center; gap: 10px; width: 280px; max-width: 42vw; height: 34px; padding: 0 12px; border: 1px solid var(--div-2); border-radius: 0; background: var(--bg-2); color: var(--tx-dim); font-size: 13px; cursor: text; transition: border-color .12s; }
+.ks-top__search { margin-left: auto; display: flex; align-items: center; gap: 10px; width: 280px; max-width: 42vw; height: 34px; padding: 0 12px; border: 1px solid var(--div-2); border-radius: 0; background: var(--bg-2); color: var(--tx-dim); font-size: 13px; cursor: text; transition: border-color .12s; }
 .ks-top__search:hover { border-color: var(--div-3); }
 .ks-top__search svg { width: 15px; height: 15px; flex: none; }
 .ks-top__search .ph { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ks-top__kbd { font-family: var(--font-mono); font-size: 10.5px; padding: 2px 6px; border: 1px solid var(--div-2); border-radius: 0; background: var(--inset); color: var(--tx-mut); line-height: 1; flex: none; }
-.ks-top__scan { display: flex; align-items: center; gap: 6px; font-family: var(--font-mono); font-size: 11px; color: var(--tx-dim); flex: none; }
+.ks-top__scan { display: flex; align-items: center; gap: 7px; flex: none; height: 34px; padding: 0 5px 0 11px; border: 1px solid var(--div); border-radius: 2px; background: transparent; font-family: var(--font-mono); font-size: 11px; color: var(--tx-mut); cursor: pointer; white-space: nowrap; transition: border-color .12s, color .12s; }
+.ks-top__scan:hover { border-color: var(--div-2); color: var(--tx-2); }
 .ks-top__scan svg { width: 13px; height: 13px; flex: none; }
+.ks-top__scan.is-stale { border-color: rgba(251, 191, 76, 0.35); background: rgba(251, 191, 76, 0.07); color: var(--med); }
+.ks-top__scanbtn { font-family: var(--font-mono); font-size: 10.5px; color: var(--tx-2); border: 1px solid var(--div-2); border-radius: 2px; padding: 3px 8px; background: var(--panel); }
+.ks-top__scan.is-stale .ks-top__scanbtn { color: var(--med); border-color: rgba(251, 191, 76, 0.35); background: transparent; }
 
 .ks-content { flex: 1; min-height: 0; overflow-y: auto; container-type: inline-size; container-name: page; }
 .ks-page { width: 100%; margin: 0; padding: clamp(16px, 2vw, 24px) clamp(16px, 2.2vw, 28px) 40px; }

@@ -5,12 +5,12 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { signOut } from 'next-auth/react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Home, Key, RefreshCw, Search, ScanSearch, Server, Activity, Zap, LogOut, Clock, Menu, X, ChevronLeft, ChevronRight, ChevronUp, Users } from 'lucide-react'
+import { Home, Key, RefreshCw, Search, Server, Activity, Zap, LogOut, Clock, Menu, X, ChevronLeft, ChevronRight, ChevronUp, Users } from 'lucide-react'
 import { BrandMark } from '@/components/ks'
 import { CommandPalette } from '@/components/ks/CommandPalette'
 import { SourceConnect, SourceConnectContext } from '@/components/ks/SourceConnect'
 import { AssistantChat, AssistantConnect, AssistantContext, useAssistantProvider } from '@/components/ks/Assistant'
-import { type ApiKey, urgency, ago } from '@/lib/keys-display'
+import { type ApiKey, needsAction, ago } from '@/lib/keys-display'
 
 const GROUPS = [
   { label: 'Daily', items: [
@@ -83,19 +83,21 @@ export function AppShell({ email, isAdmin, children }: { email?: string | null; 
   // Badge + scan-chip data (shared cache with the pages).
   const { data: keys = [] } = useQuery<ApiKey[]>({ queryKey: ['keys'], queryFn: async () => { const r = await fetch('/api/keys'); const j = await r.json(); return j.keys ?? j ?? [] } })
   const { data: findings = [] } = useQuery<unknown[]>({ queryKey: ['findings', 'active'], queryFn: async () => { const r = await fetch('/api/discovery/results?status=active'); const j = await r.json(); return j.results?.findings ?? j.findings ?? [] } })
-  const { data: workflows = [] } = useQuery<{ status: string }[]>({ queryKey: ['workflows'], queryFn: async () => { const r = await fetch('/api/workflows'); const j = await r.json(); return j.data?.workflows ?? j.workflows ?? [] } })
-  const { data: platforms = [] } = useQuery<unknown[]>({ queryKey: ['platforms'], queryFn: async () => { const r = await fetch('/api/platforms'); const j = await r.json(); return j.platforms ?? j.data?.platforms ?? j ?? [] } })
   const { data: scanAt } = useQuery<string | null>({ queryKey: ['last-scan'], queryFn: async () => { const r = await fetch('/api/discovery/status'); const j = await r.json().catch(() => null); return j?.currentScan?.completedAt ?? j?.recentScans?.[0]?.completedAt ?? null } })
 
-  const overdue = keys.filter((k) => urgency(k).overdue).length
-  const openWf = workflows.filter((w) => w.status !== 'completed').length
+  // Sidebar badges mean "needs attention" only, never counts-of-things: Keys
+  // (and Home) show the needs-action count, Discovery shows untriaged findings.
+  // Platforms/Rotations/total-key badges are dropped.
+  const needs = keys.filter(needsAction).length
   const badges: Record<string, { n: number; crit?: boolean } | null> = {
-    home: overdue > 0 ? { n: overdue, crit: true } : null,
-    keys: keys.length ? { n: keys.length } : null,
-    rotations: openWf ? { n: openWf } : null,
+    home: needs > 0 ? { n: needs, crit: true } : null,
+    keys: needs > 0 ? { n: needs, crit: true } : null,
+    rotations: null,
     discovery: findings.length ? { n: findings.length, crit: true } : null,
-    platforms: platforms.length ? { n: platforms.length } : null,
+    platforms: null,
   }
+  // Scan action fuses with the staleness chip: a scan older than a day is stale.
+  const scanStale = scanAt ? Date.now() - Date.parse(scanAt) > 86400000 : true
 
   return (
     <SourceConnectContext.Provider value={{ openConnect }}>
@@ -133,7 +135,7 @@ export function AppShell({ email, isAdmin, children }: { email?: string | null; 
               <div className="t">Assistant</div>
               <div className="row">
                 {asst?.connected
-                  ? <><span className="ks-side__copilot-dot" /><span className="mod">{asst.provider?.model}</span></>
+                  ? <><span className="ks-side__copilot-dot" /><span className="mod">ready</span></>
                   : <span className="mod">Connect a model</span>}
               </div>
             </div>
@@ -169,15 +171,17 @@ export function AppShell({ email, isAdmin, children }: { email?: string | null; 
             {navOpen ? <X size={18} /> : <Menu size={18} />}
           </button>
           <span className="ks-top__title">{title}</span>
-          <button className="ks-btn ks-btn--primary ks-btn--sm ks-top__find" onClick={() => router.push('/discovery-scanner')} title="Scan a source to find keys">
-            <ScanSearch size={14} /> <span>Find keys</span>
-          </button>
           <button className="ks-top__search" type="button" onClick={() => setCmdOpen(true)}>
             <Search />
             <span className="ph">Search keys or run a command…</span>
             <span className="ks-top__kbd">⌘K</span>
           </button>
-          {scanAt && <span className="ks-top__scan"><Clock size={13} /> scan {ago(scanAt)} ago</span>}
+          {/* scan action is always present, fused with the staleness chip */}
+          <button className={'ks-top__scan' + (scanStale ? ' is-stale' : '')} onClick={() => router.push('/discovery-scanner')} title="Scan a source for exposed keys">
+            <Clock size={13} />
+            <span>{scanAt ? `${scanStale ? 'last scan' : 'scanned'} ${ago(scanAt)} ago` : 'never scanned'}</span>
+            <span className="ks-top__scanbtn">{scanStale ? 'Scan now' : 'Scan'}</span>
+          </button>
         </header>
         <main className="ks-content">{children}</main>
       </div>
