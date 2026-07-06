@@ -231,6 +231,9 @@ export default function DiscoveryScreen() {
           </div>
           <div className="ks-scantarget">
             <label className="ks-scantarget__lbl">Scan a folder</label>
+            <div style={{ fontSize: 11, color: 'var(--tx-mut)', margin: '0 0 8px', lineHeight: 1.5 }}>
+              One-off, run when you click. Only connected GitHub sources are re-scanned automatically.
+            </div>
             <button className="ks-btn" style={{ width: '100%', justifyContent: 'center', marginBottom: 10 }} disabled={browsing || scanning} onClick={browseFolder}>
               <FolderOpen size={14} /> {browsing ? 'Scanning folder…' : 'Browse folder…'}
             </button>
