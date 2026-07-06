@@ -1,18 +1,30 @@
 'use client'
 
 import { useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { useQuery } from '@tanstack/react-query'
 import { Search, Key, Clock, SlidersHorizontal, Check } from 'lucide-react'
-import { Mark, Dot, LiveBadge } from '@/components/ks'
+import { Mark, Dot } from '@/components/ks'
 import { KeyDrawer } from '@/components/ks/KeyDrawer'
 import { KeysTimeline } from '@/components/ks/KeysTimeline'
 import { foundAgoDays, slaUsedPct } from '@/lib/rotation-policy'
-import { type ApiKey, platOf, SEVL, sevColor, displayName, urgency, cleanLocation, anchorOf } from '@/lib/keys-display'
+import { type ApiKey, platOf, SEVL, sevColor, displayName, urgency, needsAction, cleanLocation, anchorOf } from '@/lib/keys-display'
 
 const SEVS = ['critical', 'high', 'medium', 'low'] as const
 
+// Liveness is its own column: never render nothing (absence is ambiguous). A
+// live leaked key is the dangerous kind, so it gets the crit pill.
+function livenessPill(k: ApiKey) {
+  if (k.live_status === 'live') return <span className="ks-liv ks-liv--live">● LIVE</span>
+  if (k.live_status === 'revoked') return <span className="ks-liv ks-liv--rev">revoked</span>
+  return <span className="ks-liv ks-liv--unk">unverified</span>
+}
+
 export default function KeysScreen() {
+  const params = useSearchParams()
   const [lens, setLens] = useState<'table' | 'timeline'>('table')
+  // Home's "Needs action" cell deep-links here with ?filter=needs-action.
+  const [needsOnly, setNeedsOnly] = useState(params.get('filter') === 'needs-action')
   const [overdueOnly, setOverdueOnly] = useState(false)
   const [filterOpen, setFilterOpen] = useState(false)
   const [sevSet, setSevSet] = useState<Set<string>>(new Set())
@@ -32,7 +44,9 @@ export default function KeysScreen() {
 
   const keys = data ?? []
   const overdueCount = keys.filter((k) => urgency(k).overdue).length
+  const needsCount = keys.filter(needsAction).length
   const rows = keys
+    .filter((k) => !needsOnly || needsAction(k))
     .filter((k) => !overdueOnly || urgency(k).overdue)
     .filter((k) => sevSet.size === 0 || sevSet.has((k.severity ?? '').toLowerCase()))
 
@@ -68,6 +82,17 @@ export default function KeysScreen() {
             </button>
           ))}
         </div>
+        {needsCount > 0 && (
+          <button
+            className="ks-keys__chip"
+            onClick={() => setNeedsOnly((v) => !v)}
+            style={needsOnly ? { borderColor: 'var(--crit-line)', background: 'var(--crit-dim)' } : undefined}
+            title="Filter to keys that need action"
+          >
+            <Dot sev="critical" />
+            <b>{needsCount}</b> needs action
+          </button>
+        )}
         {overdueCount > 0 && (
           <button
             className="ks-keys__chip"
@@ -111,12 +136,12 @@ export default function KeysScreen() {
             <table className="ks-tbl">
               <thead>
                 <tr>
-                  <th style={{ width: '30%' }}>Key</th>
-                  <th>Platform</th>
-                  <th>Severity</th>
-                  <th>Found</th>
-                  <th>Rotation window</th>
-                  <th style={{ width: 120 }}>SLA used</th>
+                  <th>Key</th>
+                  <th style={{ width: 130 }}>Platform</th>
+                  <th style={{ width: 120 }}>Severity</th>
+                  <th style={{ width: 130 }}>Liveness</th>
+                  <th style={{ width: 90 }}>Found</th>
+                  <th style={{ width: 200 }}>Rotation window</th>
                 </tr>
               </thead>
               <tbody>
@@ -130,25 +155,27 @@ export default function KeysScreen() {
                   const foundAgo = foundAgoDays(new Date(k.created_at))
                   return (
                     <tr key={k.id} className={selected?.id === k.id ? 'sel' : ''} onClick={() => setSelected(k)}>
-                      <td>
-                        <div className="ks-tbl__name" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                          <span className="ks-aqrow__sev" style={{ background: sevColor(k.severity), height: 16 }} />
-                          {displayName(k.name)}
-                          <LiveBadge status={k.live_status} active={k.usage_active} />
-                        </div>
-                        <div className="ks-tbl__src" style={{ marginTop: 4, paddingLeft: 13 }}>{cleanLocation(k.location || k.source)}</div>
+                      {/* severity edge tick: 3px, full row height */}
+                      <td style={{ boxShadow: `inset 3px 0 0 ${sevColor(k.severity)}` }}>
+                        <div className="ks-tbl__name">{displayName(k.name)}</div>
+                        <div className="ks-tbl__src" style={{ marginTop: 4 }}>{cleanLocation(k.location || k.source)}</div>
                       </td>
                       <td><span className="ks-tbl__sev"><Mark>{plat.code}</Mark> {plat.label}</span></td>
                       <td><span className="ks-tbl__sev"><Dot sev={k.severity as 'critical'} />{SEVL[k.severity] ?? k.severity}</span></td>
+                      <td>{livenessPill(k)}</td>
                       <td><span className="ks-tbl__u" style={{ color: 'var(--tx-mut)' }}>{foundAgo}d ago</span></td>
-                      <td><span className="ks-tbl__u" style={{ color: u.color }}>{u.txt}</span></td>
                       <td>
-                        <div className="ks-tbl__sla">
-                          <div className="ks-tbl__bar">
-                            <div className="ks-tbl__barfill" style={{ width: Math.max(pct, 4) + '%', background: u.overdue ? 'var(--crit)' : sevColor(k.severity) }} />
+                        {/* one urgency encoding: overdue = text only; healthy = "Nd left" + a window-used bar */}
+                        {u.overdue ? (
+                          <span className="ks-tbl__u" style={{ color: 'var(--crit)' }}>
+                            overdue — {k.live_status === 'live' ? 'live, ' : ''}past SLA
+                          </span>
+                        ) : (
+                          <div className="ks-tbl__win">
+                            <span className="ks-tbl__u" style={{ color: 'var(--tx-mut)' }}>{u.txt}</span>
+                            <div className="ks-tbl__bar"><div className="ks-tbl__barfill" style={{ width: Math.max(pct, 4) + '%', background: 'var(--med)' }} /></div>
                           </div>
-                          <span className="ks-tbl__slapct">{u.overdue ? 'over' : pct + '%'}</span>
-                        </div>
+                        )}
                       </td>
                     </tr>
                   )
