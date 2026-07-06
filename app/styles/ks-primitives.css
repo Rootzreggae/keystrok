@@ -11,11 +11,12 @@
   cursor: pointer; white-space: nowrap;
   transition: background .12s, border-color .12s, filter .12s;
 }
-.kb .ks-btn:hover { background: rgba(255, 255, 255, .05); border-color: var(--div-3); }
-.kb .ks-btn--primary { background: var(--a); border-color: var(--a); color: #06251a; font-weight: 600; }
-.kb .ks-btn--primary:hover { filter: brightness(1.07); background: var(--a); }
+.kb .ks-btn:hover { background: var(--hover); border-color: var(--div-3); }
+/* actions go ink (auto-inverts per theme); emerald is reserved for security-ok state */
+.kb .ks-btn--primary { background: var(--tx); border-color: var(--tx); color: var(--bg); font-weight: 600; }
+.kb .ks-btn--primary:hover { background: var(--tx); opacity: 0.88; }
 .kb .ks-btn--ghost { border-color: transparent; color: var(--tx-mut); }
-.kb .ks-btn--ghost:hover { color: var(--tx); background: rgba(255, 255, 255, .04); }
+.kb .ks-btn--ghost:hover { color: var(--tx); background: var(--hover); }
 .kb .ks-btn--sm { height: 27px; padding: 0 10px; font-size: 12px; }
 .kb .ks-btn:disabled { opacity: .5; cursor: not-allowed; }
 
@@ -54,7 +55,7 @@
 .kb .ks-tick--low { background: var(--low); }
 
 /* Panel: filled charcoal, 1px border, radius 0 */
-.kb .ks-panel { background: var(--panel); border: 1px solid var(--div-2); border-radius: var(--r-panel); }
+.kb .ks-panel { background: var(--panel); border: 1px solid var(--edge); border-radius: var(--r-panel); }
 .kb .ks-panel__hd { display: flex; align-items: center; gap: 10px; padding: 15px 18px; border-bottom: 1px solid var(--div); }
 .kb .ks-panel__t { font-size: 13.5px; font-weight: 600; color: var(--tx); }
 .kb .ks-panel__sub { font-family: var(--font-mono); font-size: 10.5px; color: var(--tx-dim); }

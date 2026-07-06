@@ -45,9 +45,9 @@
 .ks-side__acctchev { color: var(--tx-dim); flex: none; }
 
 /* account menu popover */
-.ks-acctmenu { position: absolute; bottom: 100%; left: 10px; right: 10px; margin-bottom: 6px; background: var(--elev); border: 1px solid var(--div-2); border-radius: 3px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45); padding: 4px; z-index: 50; }
+.ks-acctmenu { position: absolute; bottom: 100%; left: 10px; right: 10px; margin-bottom: 6px; background: var(--elev); border: 1px solid var(--div-2); border-radius: 3px; box-shadow: var(--overlay-shadow); padding: 4px; z-index: 50; }
 .ks-acctmenu button { display: flex; align-items: center; gap: 9px; width: 100%; padding: 8px 10px; background: none; border: none; color: var(--tx-2); font-size: 12.5px; cursor: pointer; border-radius: 2px; text-align: left; }
-.ks-acctmenu button:hover { background: rgba(255, 255, 255, 0.05); color: var(--tx); }
+.ks-acctmenu button:hover { background: var(--hover); color: var(--tx); }
 
 /* collapsed icon-rail */
 .ks-side.is-collapsed { width: var(--side-w-collapsed); }
@@ -80,7 +80,7 @@
 .ks-top__scan { display: flex; align-items: center; gap: 7px; flex: none; height: 34px; padding: 0 5px 0 11px; border: 1px solid var(--div); border-radius: 2px; background: transparent; font-family: var(--font-mono); font-size: 11px; color: var(--tx-mut); cursor: pointer; white-space: nowrap; transition: border-color .12s, color .12s; }
 .ks-top__scan:hover { border-color: var(--div-2); color: var(--tx-2); }
 .ks-top__scan svg { width: 13px; height: 13px; flex: none; }
-.ks-top__scan.is-stale { border-color: rgba(251, 191, 76, 0.35); background: rgba(251, 191, 76, 0.07); color: var(--med); }
+.ks-top__scan.is-stale { border-color: var(--high-line); background: var(--high-dim); color: var(--warn-ink); }
 .ks-top__scanbtn { font-family: var(--font-mono); font-size: 10.5px; color: var(--tx-2); border: 1px solid var(--div-2); border-radius: 2px; padding: 3px 8px; background: var(--panel); }
 .ks-top__scan.is-stale .ks-top__scanbtn { color: var(--med); border-color: rgba(251, 191, 76, 0.35); background: transparent; }
 

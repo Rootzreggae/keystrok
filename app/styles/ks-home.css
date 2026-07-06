@@ -7,7 +7,7 @@
 .kb .ks-band { margin: 0 0 24px; }
 
 /* operational row */
-.kb .ks-band__now { display: flex; border: 1px solid var(--div-2); background: var(--panel); }
+.kb .ks-band__now { display: flex; border: 1px solid var(--edge); background: var(--panel); }
 .kb .ks-band__cell { flex: 1; padding: 18px 20px 16px; border-right: 1px solid var(--div); position: relative; text-align: left; }
 .kb .ks-band__cell:last-child { border-right: 0; }
 .kb .ks-band__n { font-family: var(--font-mono); font-size: 30px; font-weight: 650; color: var(--tx); line-height: 1; display: flex; align-items: baseline; gap: 9px; }
@@ -15,7 +15,7 @@
 .kb .ks-band__l { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.13em; text-transform: uppercase; color: var(--tx-mut); margin-top: 8px; }
 .kb .ks-band__d { font-family: var(--font-mono); font-size: 11px; color: var(--tx-mut); margin-top: 4px; }
 .kb button.ks-band__cell { font: inherit; background: var(--panel); }
-.kb .ks-band__cell.is-attn { flex: 1.6; background: var(--elev); box-shadow: inset 3px 0 0 var(--crit); cursor: pointer; }
+.kb .ks-band__cell.is-attn { flex: 1.6; background: var(--elev); box-shadow: inset 3px 0 0 var(--crit), inset 0 0 0 1px var(--edge); cursor: pointer; }
 .kb .ks-band__cell.is-attn .ks-band__n { color: var(--crit); }
 .kb .ks-band__cell.is-attn .ks-band__l { color: var(--crit); opacity: 0.85; }
 .kb .ks-band__go { position: absolute; top: 18px; right: 16px; font-family: var(--font-mono); font-size: 11px; color: var(--tx-2); border: 1px solid var(--div-2); border-radius: 2px; padding: 3px 8px; background: var(--panel); }
@@ -27,10 +27,10 @@
 .kb .ks-band__m { display: flex; flex-direction: column; justify-content: center; }
 .kb .ks-band__m .v { font-family: var(--font-mono); font-size: 16px; font-weight: 650; color: var(--tx); display: flex; align-items: baseline; gap: 7px; }
 .kb .ks-band__m .v .u { font-size: 11px; font-weight: 400; color: var(--tx-mut); }
-.kb .ks-band__m .v.warn { color: var(--high); }
+.kb .ks-band__m .v.warn { color: var(--warn-ink); }
 .kb .ks-band__m .k { font-family: var(--font-mono); font-size: 10.5px; color: var(--tx-mut); margin-top: 4px; }
 .kb .ks-band__m .k .ok { color: var(--a); }
-.kb .ks-band__m .k .warn { color: var(--high); }
+.kb .ks-band__m .k .warn { color: var(--warn-ink); }
 .kb .ks-band__trend { margin-left: auto; display: flex; align-items: center; gap: 12px; }
 .kb .ks-band__bars { display: flex; align-items: flex-end; gap: 3px; height: 34px; border-bottom: 1px solid var(--div-2); padding-bottom: 1px; }
 .kb .ks-band__bars i { width: 10px; background: var(--div-2); }

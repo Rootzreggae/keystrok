@@ -2,7 +2,7 @@
  * position:fixed (not absolute) so it overlays the viewport from inside any page. */
 
 .kb .ks-drawer-scrim { position: fixed; inset: 0; background: rgba(8, 10, 14, 0.5); backdrop-filter: blur(2px); z-index: 60; animation: ksfade .15s ease; }
-.kb .ks-drawer { position: fixed; top: 0; right: 0; bottom: 0; width: 460px; max-width: 92vw; z-index: 61; background: var(--bg-2); border-left: 1px solid var(--div-2); box-shadow: -24px 0 60px rgba(0, 0, 0, 0.4); display: flex; flex-direction: column; animation: ksslide .18s ease; }
+.kb .ks-drawer { position: fixed; top: 0; right: 0; bottom: 0; width: 460px; max-width: 92vw; z-index: 61; background: var(--bg-2); border-left: 1px solid var(--div-2); box-shadow: var(--overlay-shadow); display: flex; flex-direction: column; animation: ksslide .18s ease; }
 @keyframes ksslide { from { transform: translateX(100%); } }
 @keyframes ksfade { from { opacity: 0; } }
 

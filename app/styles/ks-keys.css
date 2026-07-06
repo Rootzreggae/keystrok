@@ -7,7 +7,7 @@
 .kb .ks-lens { display: flex; gap: 2px; padding: 3px; background: var(--bg-2); border: 1px solid var(--div-2); border-radius: 2px; }
 .kb .ks-lens__b { display: flex; align-items: center; gap: 7px; padding: 6px 12px; border-radius: 2px; cursor: pointer; font-family: var(--font-mono); font-size: 11.5px; color: var(--tx-mut); border: none; background: none; transition: color .12s, background .12s; }
 .kb .ks-lens__b:hover { color: var(--tx); }
-.kb .ks-lens__b.active { background: var(--elev); color: var(--tx); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25); }
+.kb .ks-lens__b.active { background: var(--elev); color: var(--tx); }
 
 .kb .ks-keys__chip { display: inline-flex; align-items: center; gap: 7px; height: 30px; padding: 0 12px; border: 1px solid var(--div-2); background: transparent; cursor: pointer; font-family: var(--font-mono); font-size: 11.5px; color: var(--tx-mut); border-radius: 2px; transition: border-color .12s, background .12s; }
 .kb .ks-keys__chip:hover { border-color: var(--crit-line); background: var(--crit-dim); }
@@ -17,7 +17,7 @@
 /* severity filter popover */
 .kb .ks-fpop__wrap { position: relative; }
 .kb .ks-fpop__scrim { position: fixed; inset: 0; z-index: 40; }
-.kb .ks-fpop { position: absolute; top: calc(100% + 6px); right: 0; z-index: 41; width: 182px; background: var(--elev); border: 1px solid var(--div-2); border-radius: 2px; box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45); padding: 6px; }
+.kb .ks-fpop { position: absolute; top: calc(100% + 6px); right: 0; z-index: 41; width: 182px; background: var(--elev); border: 1px solid var(--div-2); border-radius: 2px; box-shadow: var(--overlay-shadow); padding: 6px; }
 .kb .ks-fpop__l { font-family: var(--font-mono); font-size: 9.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--tx-dim); padding: 6px 8px 5px; }
 .kb .ks-fpop__row { display: flex; align-items: center; gap: 9px; width: 100%; padding: 7px 8px; background: none; border: none; cursor: pointer; font-family: var(--font-mono); font-size: 12px; color: var(--tx-2); border-radius: 2px; text-align: left; }
 .kb .ks-fpop__row:hover { background: var(--bg-2); }
@@ -66,7 +66,7 @@
 .kb .ks-tl__lbl { display: flex; align-items: flex-start; gap: 7px; font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--tx-mut); }
 .kb .ks-tl__empty { margin-left: 8px; color: var(--tx-mut); letter-spacing: 0.04em; }
 
-.kb .ks-tl__chip { position: absolute; display: inline-flex; align-items: center; gap: 7px; height: 33px; padding: 0 10px; background: var(--elev); border: 1px solid var(--div-2); border-radius: 2px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3); cursor: pointer; white-space: nowrap; transition: background .1s, border-color .1s; }
+.kb .ks-tl__chip { position: absolute; display: inline-flex; align-items: center; gap: 7px; height: 33px; padding: 0 10px; background: var(--elev); border: 1px solid var(--div-2); border-radius: 2px; cursor: pointer; white-space: nowrap; transition: background .1s, border-color .1s; }
 .kb .ks-tl__chip:hover { background: var(--bg-2); border-color: var(--div-3); }
 .kb .ks-tl__chip[data-overdue] { border-color: var(--crit-line); background: rgba(251, 113, 133, 0.10); }
 .kb .ks-tl__chip[data-overdue] .ks-tl__cdays { color: var(--crit); }
