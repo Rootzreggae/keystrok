@@ -58,3 +58,32 @@
   .kb .ks-rot { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); }
   .kb .ks-rot__queue { border-right: none; border-bottom: 1px solid var(--div); max-height: 40vh; }
 }
+
+/* Truthful empty states (Round-1 handoff): single-pane, "empty is not done".
+ * State 1: queue clear but a key is past its SLA, a crit prompt, not a party.
+ * State 2: genuinely healthy, an "all caught up" hero at optical center. */
+.kb .ks-rot3 { padding: 22px 24px; }
+.kb .ks-rot3__due { display: flex; align-items: center; gap: 14px; border: 1px solid var(--crit-line); background: var(--panel); box-shadow: inset 3px 0 0 var(--crit); padding: 14px 16px; }
+.kb .ks-rot3__due.soon { border-color: var(--div-2); box-shadow: inset 3px 0 0 var(--high); }
+.kb .ks-rot3__due .cap { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--crit); }
+.kb .ks-rot3__due.soon .cap { color: var(--high); }
+.kb .ks-rot3__due .nm { font-family: var(--font-mono); font-size: 13px; font-weight: 650; color: var(--tx); margin-top: 4px; }
+.kb .ks-rot3__due .meta { font-family: var(--font-mono); font-size: 11px; color: var(--tx-mut); margin-top: 3px; }
+.kb .ks-rot3__btn { display: inline-flex; align-items: center; gap: 7px; border: 0; border-radius: 2px; padding: 8px 14px; font-family: var(--font-sans); font-weight: 650; font-size: 12.5px; background: var(--a); color: #10231b; cursor: pointer; white-space: nowrap; }
+.kb .ks-rot3__btn:disabled { opacity: 0.6; cursor: default; }
+.kb .ks-rot3__btn--ghost { background: var(--elev); color: var(--tx); border: 1px solid var(--div-2); }
+.kb .ks-rot3__hero { text-align: center; max-width: 460px; margin: 0 auto; padding-top: 9vh; }
+.kb .ks-rot3__hero .ico { width: 44px; height: 44px; border-radius: 50%; background: var(--a-dim); border: 1px solid var(--a-line); display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; color: var(--a); }
+.kb .ks-rot3__hero h3 { margin: 0 0 8px; font-size: 16px; color: var(--tx); }
+.kb .ks-rot3__hero p { margin: 0 0 18px; font-size: 12.5px; line-height: 1.55; color: var(--tx-mut); }
+
+/* completed rotations become main-pane content, the single history affordance */
+.kb .ks-comptbl { border: 1px solid var(--div-2); background: var(--panel); }
+.kb .ks-comptbl__cap { display: flex; align-items: center; padding: 12px 16px; border-bottom: 1px solid var(--div); font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.13em; text-transform: uppercase; color: var(--tx-mut); }
+.kb .ks-comptbl__cap .lnk { margin-left: auto; color: var(--tx-mut); text-transform: none; letter-spacing: 0; font-size: 11px; text-decoration: none; }
+.kb .ks-comptbl__cap .lnk:hover { color: var(--tx-2); }
+.kb .ks-comptbl__row { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--div); font-family: var(--font-mono); font-size: 12px; color: var(--tx-2); }
+.kb .ks-comptbl__row:last-child { border-bottom: 0; }
+.kb .ks-comptbl__row .ok { color: var(--a); display: inline-flex; }
+.kb .ks-comptbl__row .nm { font-weight: 650; color: var(--tx); }
+.kb .ks-comptbl__row .meta { margin-left: auto; color: var(--tx-mut); font-size: 11px; }

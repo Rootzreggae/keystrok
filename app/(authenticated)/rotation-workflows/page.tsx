@@ -145,14 +145,13 @@ function RotationsInner() {
     },
   })
 
-  // A rotation exists for these keys already; everything else that needs action
-  // is "due, not started" and auto-appears in the queue (no workflow row yet).
-  const startedKeyIds = new Set(workflows.map((w) => w.discoveredKeyId).filter(Boolean))
-  const dueKeys = keys.filter((k) => needsAction(k) && !startedKeyIds.has(k.id))
   const inProgress = workflows.filter((w) => w.status !== 'completed')
+  // Only an IN-PROGRESS rotation suppresses a key from the due list. A completed
+  // one does not: a rotation that failed (key still live, still needs action)
+  // must re-enter as due rather than reading as handled.
+  const activeKeyIds = new Set(inProgress.map((w) => w.discoveredKeyId).filter(Boolean))
+  const dueKeys = keys.filter((k) => needsAction(k) && !activeKeyIds.has(k.id))
   const done = workflows.filter((w) => w.status === 'completed')
-  // Nothing open, but rotations have been run: the queue is "caught up", not empty.
-  const allClear = dueKeys.length === 0 && inProgress.length === 0 && done.length > 0
 
   const start = useMutation({
     mutationFn: async (keyId: string) => {
@@ -214,6 +213,82 @@ function RotationsInner() {
   const progressSub = sel?.status === 'completed'
     ? `rotation complete · was ${SEVL[sev] ?? sev}`
     : `step ${curStep} of ${steps.length}${started ? ` · started ${started}` : ''}`
+
+  // No rotation to walk right now: single-pane, truthful empty state. Empty is
+  // not the same as done, a key past its SLA gets a prompt, never a celebration.
+  if (!sel) {
+    const overdueDue = dueKeys.filter((k) => urgency(k).overdue)
+    const top = overdueDue[0] ?? dueKeys[0]
+    const restDue = dueKeys.filter((k) => k.id !== top?.id)
+    return (
+      <div className="ks-page--wide">
+        <div className="ks-rot3">
+          {startErr && <div className="ks-drawer__err" style={{ margin: '0 0 18px' }} role="alert">{startErr}</div>}
+
+          {top ? (
+            <div className={'ks-rot3__due' + (overdueDue.length ? '' : ' soon')}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div className="cap">
+                  {overdueDue.length
+                    ? `▲ Queue clear · ${overdueDue.length} key${overdueDue.length > 1 ? 's' : ''} past ${overdueDue.length > 1 ? 'their' : 'its'} SLA`
+                    : `Queue clear · ${dueKeys.length} due soon`}
+                </div>
+                <div className="nm">{displayName(top.name)}</div>
+                <div className="meta">
+                  {platOf(top.platform).label} · {SEVL[top.severity] ?? top.severity}
+                  {top.live_status === 'live' ? ' · live' : ''} · {urgency(top).txt}
+                </div>
+              </div>
+              <button className="ks-rot3__btn" disabled={start.isPending} onClick={() => start.mutate(top.id)}>
+                <RotateCw size={13} /> {start.isPending && start.variables === top.id ? 'Starting…' : 'Start rotation'}
+              </button>
+            </div>
+          ) : (
+            <div className="ks-rot3__hero">
+              <div className="ico"><Check size={22} /></div>
+              <h3>All caught up</h3>
+              <p>No open rotations, and every tracked key is inside its window. Finished rotations stay on the record, on their key and in Activity.</p>
+              <a href="/inventory" className="ks-rot3__btn ks-rot3__btn--ghost" style={{ textDecoration: 'none' }}>
+                <RotateCw size={13} /> Start a rotation
+              </a>
+            </div>
+          )}
+
+          {restDue.length > 0 && (
+            <div className="ks-comptbl" style={{ marginTop: 16 }}>
+              <div className="ks-comptbl__cap">Also due · {restDue.length}</div>
+              {restDue.map((k) => (
+                <div key={k.id} className="ks-comptbl__row">
+                  <Mark>{platOf(k.platform).code}</Mark>
+                  <span className="nm">{displayName(k.name)}</span>
+                  <span className="meta">{urgency(k).txt}</span>
+                  <button className="ks-btn ks-btn--sm" style={{ marginLeft: 12 }} disabled={start.isPending} onClick={() => start.mutate(k.id)}>
+                    <RotateCw size={12} /> Start
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {done.length > 0 && (
+            <div className="ks-comptbl" style={{ marginTop: 16 }}>
+              <div className="ks-comptbl__cap">Completed · {done.length}<a className="lnk" href="/activity">full history →</a></div>
+              {done.map((w) => {
+                const total = w.steps?.length ?? 0
+                return (
+                  <div key={w.id} className="ks-comptbl__row" style={{ cursor: 'pointer' }} onClick={() => setSelId(w.id)}>
+                    <span className="ok"><Check size={14} /></span>
+                    <span className="nm">{displayName(w.discoveredKey?.keyName ?? 'Rotation')}</span>
+                    <span className="meta">{platOf(w.discoveredKey?.platform ?? '').label} · {total}/{total} steps</span>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="ks-page--wide">
@@ -277,25 +352,6 @@ function RotationsInner() {
 
         <div className="ks-rotmain">
           {startErr && <div className="ks-drawer__err" style={{ margin: '0 0 18px' }} role="alert">{startErr}</div>}
-          {!sel && (
-            <div className="ks-panel" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 520 }}>
-              <div className="ks-empty">
-                <span className="ks-empty__ico">{allClear ? <Check size={26} strokeWidth={1.75} /> : <RotateCw size={26} strokeWidth={1.75} />}</span>
-                {allClear ? (
-                  <>
-                    <div className="ks-empty__t">All caught up</div>
-                    <div className="ks-empty__s">Every rotation is complete, nothing needs your attention. A finished rotation lives on its key (marked rotated) and in your activity log, so it is on the record even though the queue is clear.</div>
-                    <a href="/activity" className="ks-btn" style={{ marginTop: 18, textDecoration: 'none' }}>View rotation history →</a>
-                  </>
-                ) : (
-                  <>
-                    <div className="ks-empty__t">{dueKeys.length} {dueKeys.length === 1 ? 'key is' : 'keys are'} due</div>
-                    <div className="ks-empty__s">Pick a key on the left and press Start to begin its guided, step-by-step rotation. Keystrok never rotates a key on its own.</div>
-                  </>
-                )}
-              </div>
-            </div>
-          )}
           {sel && (
             <>
               <div className="ks-rotmain__hd">
