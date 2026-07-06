@@ -2,38 +2,27 @@
 
 import { useEffect, useState } from 'react'
 import { Monitor, Sun, Moon } from 'lucide-react'
+import { type ThemePref, getThemePref, resolveTheme, setThemePref } from '@/lib/theme'
 
-type Pref = 'system' | 'light' | 'dark'
-
-// Theme preference: match-system by default, or force light/dark. Token-only
-// switch, sets data-theme on <html> (a no-flash script does the same at boot).
-// Stored in localStorage (a client preference; self-host is single-workspace).
-function resolve(pref: Pref): 'light' | 'dark' {
-  if (pref === 'light' || pref === 'dark') return pref
-  return typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'
-}
-
+// Full theme control: match-system by default, or force light/dark. Shares state
+// with the header toggle via lib/theme (both write the same pref + 'ks-theme' event).
 export function AppearanceSettings() {
-  const [pref, setPref] = useState<Pref>('system')
+  const [pref, setPref] = useState<ThemePref>('system')
 
   useEffect(() => {
-    const saved = (localStorage.getItem('ks-theme') as Pref | null) ?? 'system'
-    setPref(saved)
-    // keep in sync with the OS when following system
+    setPref(getThemePref())
+    const sync = () => setPref(getThemePref())
+    window.addEventListener('ks-theme', sync)
+    // follow the OS while on 'system'
     const mq = window.matchMedia('(prefers-color-scheme: light)')
-    const onChange = () => { if ((localStorage.getItem('ks-theme') ?? 'system') === 'system') document.documentElement.setAttribute('data-theme', resolve('system')) }
+    const onChange = () => { if (getThemePref() === 'system') document.documentElement.setAttribute('data-theme', resolveTheme('system')) }
     mq.addEventListener('change', onChange)
-    return () => mq.removeEventListener('change', onChange)
+    return () => { window.removeEventListener('ks-theme', sync); mq.removeEventListener('change', onChange) }
   }, [])
 
-  const choose = (p: Pref) => {
-    setPref(p)
-    if (p === 'system') localStorage.removeItem('ks-theme')
-    else localStorage.setItem('ks-theme', p)
-    document.documentElement.setAttribute('data-theme', resolve(p))
-  }
+  const choose = (p: ThemePref) => { setPref(p); setThemePref(p) }
 
-  const opts: { p: Pref; label: string; Icon: typeof Sun }[] = [
+  const opts: { p: ThemePref; label: string; Icon: typeof Sun }[] = [
     { p: 'system', label: 'System', Icon: Monitor },
     { p: 'light', label: 'Light', Icon: Sun },
     { p: 'dark', label: 'Dark', Icon: Moon },

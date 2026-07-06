@@ -84,6 +84,10 @@
 .ks-top__scanbtn { font-family: var(--font-mono); font-size: 10.5px; color: var(--tx-2); border: 1px solid var(--div-2); border-radius: 2px; padding: 3px 8px; background: var(--panel); }
 .ks-top__scan.is-stale .ks-top__scanbtn { color: var(--med); border-color: rgba(251, 191, 76, 0.35); background: transparent; }
 
+/* header theme quick-toggle (light<->dark), available to every user */
+.ks-top__theme { flex: none; width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--div); border-radius: 2px; background: transparent; color: var(--tx-mut); cursor: pointer; transition: color .12s, border-color .12s; }
+.ks-top__theme:hover { color: var(--tx); border-color: var(--div-2); }
+
 .ks-content { flex: 1; min-height: 0; overflow-y: auto; container-type: inline-size; container-name: page; }
 .ks-page { width: 100%; margin: 0; padding: clamp(16px, 2vw, 24px) clamp(16px, 2.2vw, 28px) 40px; }
 

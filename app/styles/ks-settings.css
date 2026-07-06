@@ -1,4 +1,18 @@
-/* Instance settings (Alerts today). Square, mono-labelled, token-driven. */
+/* Settings IA: a left rail of grouped sections + the active section's content.
+ * Replaces the one-long-scroll stack. */
+.kb .ks-set { display: grid; grid-template-columns: 208px minmax(0, 1fr); gap: 28px; padding: clamp(16px, 2vw, 24px) clamp(16px, 2.2vw, 28px) 40px; align-items: start; }
+.kb .ks-set__rail { display: flex; flex-direction: column; gap: 18px; position: sticky; top: 0; }
+.kb .ks-set__railgroup { display: flex; flex-direction: column; gap: 2px; }
+.kb .ks-set__raill { font-family: var(--font-mono); font-size: 9.5px; letter-spacing: 0.13em; text-transform: uppercase; color: var(--tx-mut); padding: 0 10px 6px; }
+.kb .ks-set__railitem { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border: none; background: none; border-radius: 2px; font-family: var(--font-sans); font-size: 13px; color: var(--tx-mut); cursor: pointer; text-align: left; transition: color .12s, background .12s; }
+.kb .ks-set__railitem:hover { color: var(--tx); background: var(--hover); }
+.kb .ks-set__railitem.active { color: var(--tx); background: var(--hover); box-shadow: inset 2px 0 0 var(--tx); }
+.kb .ks-set__railitem svg { flex: none; }
+.kb .ks-set__content { min-width: 0; max-width: 640px; }
+.kb .ks-set__content > .ks-panel { margin-top: 0 !important; }
+@container page (max-width: 640px) { .kb .ks-set { grid-template-columns: minmax(0, 1fr); } .kb .ks-set__rail { position: static; flex-direction: row; flex-wrap: wrap; } }
+
+/* Instance settings sections. Square, mono-labelled, token-driven. */
 .kb .ks-set__row { display: flex; align-items: flex-start; gap: 18px; }
 .kb .ks-set__row > div:first-child { flex: 1; }
 .kb .ks-set__k { font-size: 13px; font-weight: 600; color: var(--tx); }

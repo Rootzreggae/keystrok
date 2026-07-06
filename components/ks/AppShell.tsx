@@ -8,6 +8,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Home, Key, RefreshCw, Search, Server, Activity, Zap, LogOut, Clock, Menu, X, ChevronLeft, ChevronRight, ChevronUp, Users, Settings } from 'lucide-react'
 import { BrandMark } from '@/components/ks'
 import { CommandPalette } from '@/components/ks/CommandPalette'
+import { ThemeToggle } from '@/components/ks/ThemeToggle'
 import { SourceConnect, SourceConnectContext } from '@/components/ks/SourceConnect'
 import { AssistantChat, AssistantConnect, AssistantContext, useAssistantProvider } from '@/components/ks/Assistant'
 import { type ApiKey, needsAction, ago } from '@/lib/keys-display'
@@ -22,7 +23,12 @@ const GROUPS = [
     { name: 'Discovery', href: '/discovery-scanner', icon: Search, badge: 'discovery' },
     { name: 'Platforms', href: '/platforms', icon: Server, badge: 'platforms' },
   ]},
-  { label: 'System', items: [{ name: 'Activity', href: '/activity', icon: Activity, badge: null }] },
+  // Settings is available to everyone (Appearance is a personal pref); Team is
+  // admin-only and injected below.
+  { label: 'System', items: [
+    { name: 'Activity', href: '/activity', icon: Activity, badge: null },
+    { name: 'Settings', href: '/settings', icon: Settings, badge: null },
+  ] },
 ] as const
 
 const TITLES: Record<string, string> = {
@@ -41,7 +47,7 @@ export function AppShell({ email, isAdmin, children }: { email?: string | null; 
   // Team management is admin-only; add it to the System group for admins.
   const groups = isAdmin
     ? GROUPS.map((g) => g.label === 'System'
-        ? { label: g.label, items: [...g.items, { name: 'Team', href: '/team', icon: Users, badge: null }, { name: 'Settings', href: '/settings', icon: Settings, badge: null }] }
+        ? { label: g.label, items: [...g.items, { name: 'Team', href: '/team', icon: Users, badge: null }] }
         : { label: g.label, items: [...g.items] })
     : GROUPS
   const initial = (email?.[0] ?? 'K').toUpperCase()
@@ -183,6 +189,7 @@ export function AppShell({ email, isAdmin, children }: { email?: string | null; 
             <span>{scanAt ? `${scanStale ? 'last scan' : 'scanned'} ${ago(scanAt)} ago` : 'never scanned'}</span>
             <span className="ks-top__scanbtn">{scanStale ? 'Scan now' : 'Scan'}</span>
           </button>
+          <ThemeToggle />
         </header>
         <main className="ks-content">{children}</main>
       </div>
