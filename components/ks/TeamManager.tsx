@@ -2,8 +2,8 @@
 
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { UserPlus, X, Shield, AlertTriangle } from 'lucide-react'
-import { Pill } from '@/components/ks'
+import { UserPlus, X, Shield, AlertTriangle, Lock, ChevronDown } from 'lucide-react'
+import { ago } from '@/lib/keys-display'
 
 type Role = 'admin' | 'member'
 interface Member { id: string; email: string; role: Role; createdAt: string; you: boolean }
@@ -14,6 +14,7 @@ const joined = (iso: string) => new Date(iso).toLocaleDateString('en-GB', { day:
 const Avatar = ({ email, pending }: { email: string; pending?: boolean }) => (
   <span className={'ks-mbr__av' + (pending ? ' ks-mbr__av--pending' : '')}>{(email[0] || '?').toUpperCase()}</span>
 )
+const Chip = ({ children }: { children: React.ReactNode }) => <span className="ks-mbr__chip">{children}</span>
 
 export function TeamManager() {
   const qc = useQueryClient()
@@ -74,10 +75,10 @@ export function TeamManager() {
 
   return (
     <div className="ks-teamwrap">
-      <div className="ks-page__hd">
-        <div>
-          <span className="ks-panel__t" style={{ fontSize: 15 }}>Team</span>
-          {!isLoading && <span className="ks-panel__sub" style={{ marginLeft: 10 }}>· {members.length} {members.length === 1 ? 'member' : 'members'} · {adminCount} {adminCount === 1 ? 'admin' : 'admins'}</span>}
+      <div className="ks-team__hd">
+        <div className="ks-team__title">
+          <h2>Team</h2>
+          {!isLoading && <span className="ks-team__meta">{members.length} {members.length === 1 ? 'member' : 'members'} · {adminCount} {adminCount === 1 ? 'admin' : 'admins'}</span>}
         </div>
         {!inviting && (
           <button className="ks-btn ks-btn--primary" onClick={() => { setErr(null); setInviting(true) }}>
@@ -130,26 +131,24 @@ export function TeamManager() {
 
       <div className="ks-panel">
         <div className="ks-panel__hd"><span className="ks-panel__t">Members</span><span className="ks-panel__sub">· {members.length}</span></div>
-        <table className="ks-tbl ks-mbr__tbl">
-          <thead><tr><th>Member</th><th style={{ width: 150 }}>Role</th><th style={{ width: 110 }}>Joined</th><th style={{ width: 96 }}></th></tr></thead>
-          <tbody>
-            {members.map((m) => {
-              const lastAdmin = m.role === 'admin' && adminCount === 1
-              const rowConfirm = confirm && confirm.id === m.id
-              return (
-                <tr key={m.id}>
-                  <td>
-                    <div className="ks-mbr__id">
-                      <Avatar email={m.email} />
-                      <span className="ks-mbr__email">{m.email}</span>
-                      {m.you && <Pill tone="mut">you</Pill>}
-                    </div>
-                  </td>
-                  <td>
+        {members.map((m) => {
+          const lastAdmin = m.role === 'admin' && adminCount === 1
+          const rowConfirm = confirm && confirm.id === m.id
+          return (
+            <div className="ks-mbr__row" key={m.id}>
+              <Avatar email={m.email} />
+              <span className="ks-mbr__email">{m.email}</span>
+              {m.you && <Chip>you</Chip>}
+              <span className="ks-mbr__sp" />
+              <div className="ks-mbr__right">
+                {lastAdmin ? (
+                  <span className="ks-mbr__rolelock"><Lock size={11} /> Admin</span>
+                ) : (
+                  <span className="ks-mbr__rolewrap">
                     <select
-                      className="ks-input ks-mbr__role"
+                      className="ks-mbr__role"
                       value={rowConfirm && confirm?.kind === 'role' ? confirm.role : m.role}
-                      disabled={lastAdmin || m.you}
+                      disabled={m.you}
                       onChange={(e) => {
                         const role = e.target.value as Role
                         if (role !== m.role) setConfirm({ kind: 'role', id: m.id, email: m.email, role })
@@ -159,17 +158,18 @@ export function TeamManager() {
                       <option value="admin">Admin</option>
                       <option value="member">Member</option>
                     </select>
-                  </td>
-                  <td><span className="ks-mbr__meta">{joined(m.createdAt)}</span></td>
-                  <td>
-                    {m.you ? <span className="ks-mbr__meta" style={{ opacity: 0.5 }}>—</span>
-                      : <button className="ks-btn ks-btn--sm ks-mbr__rm" disabled={lastAdmin} title={lastAdmin ? 'The team must keep at least one admin' : 'Remove from team'} onClick={() => setConfirm({ kind: 'remove', id: m.id, email: m.email })}>Remove</button>}
-                  </td>
-                </tr>
-              )
-            })}
-          </tbody>
-        </table>
+                    {!m.you && <ChevronDown size={12} className="ks-mbr__rolechev" />}
+                  </span>
+                )}
+                {lastAdmin && <span className="ks-mbr__reason">last admin · locked</span>}
+                <span className="ks-mbr__joined">joined {joined(m.createdAt)}</span>
+                {!lastAdmin && !m.you && (
+                  <button className="ks-btn ks-btn--sm ks-mbr__rm" onClick={() => setConfirm({ kind: 'remove', id: m.id, email: m.email })}>Remove</button>
+                )}
+              </div>
+            </div>
+          )
+        })}
 
         {confirm && (
           <div className="ks-mbr__confirm">
@@ -196,25 +196,30 @@ export function TeamManager() {
         )}
       </div>
 
+      {/* Tip sits BETWEEN the cards, so a growing invites list never pushes it off-page. */}
+      <div className="ks-mbr__tip">
+        <Shield size={12} />
+        <span>Self-hosted, this instance is your whole team. The team always keeps at least one admin, so the last admin&apos;s role is locked.</span>
+      </div>
+
       {invites.length > 0 && (
         <div className="ks-panel">
           <div className="ks-panel__hd"><span className="ks-panel__t">Pending invites</span><span className="ks-panel__sub">· {invites.length}</span></div>
           {invites.map((iv) => (
-            <div className="ks-mbr__inviterow" key={iv.id}>
+            <div className="ks-mbr__row" key={iv.id}>
               <Avatar email={iv.email} pending />
               <span className="ks-mbr__email">{iv.email}</span>
-              <Pill tone="mut">{iv.role}</Pill>
-              <span className="ks-mbr__meta" style={{ marginLeft: 'auto' }}>invited {joined(iv.createdAt)}</span>
-              <button className="ks-btn ks-btn--sm" onClick={() => resendInvite(iv.email)}>Resend</button>
-              <button className="ks-btn ks-btn--sm ks-mbr__rm" onClick={() => revokeInvite(iv.email)}>Revoke</button>
+              <Chip>{iv.role}</Chip>
+              <span className="ks-mbr__sp" />
+              <div className="ks-mbr__right">
+                <span className="ks-mbr__joined">invited {ago(iv.createdAt)} ago</span>
+                <button className="ks-mbr__resend" onClick={() => resendInvite(iv.email)}>Resend</button>
+                <button className="ks-mbr__revoke" onClick={() => revokeInvite(iv.email)}>Revoke</button>
+              </div>
             </div>
           ))}
         </div>
       )}
-
-      <div className="ks-mbr__foot">
-        <Shield size={13} /> Self-hosted, so this instance is your whole team. The team always keeps at least one admin.
-      </div>
     </div>
   )
 }

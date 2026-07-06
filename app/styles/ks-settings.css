@@ -1,19 +1,21 @@
 /* Settings IA: a left rail of grouped sections + the active section's content.
  * Replaces the one-long-scroll stack. */
-.kb .ks-set { display: grid; grid-template-columns: 208px minmax(0, 1fr); gap: 28px; padding: clamp(16px, 2vw, 24px) clamp(16px, 2.2vw, 28px) 40px; align-items: start; }
-.kb .ks-set__rail { display: flex; flex-direction: column; gap: 18px; position: sticky; top: 0; }
+/* rail has NO fill: chrome lightens inward (sidebar bg-2 -> rail border-only -> content). */
+.kb .ks-set { display: grid; grid-template-columns: 208px minmax(0, 1fr); gap: 26px; padding: clamp(16px, 2vw, 24px) clamp(16px, 2.2vw, 28px) 40px; align-items: stretch; }
+.kb .ks-set__rail { display: flex; flex-direction: column; padding: 3px 14px 0 0; border-right: 1px solid var(--div); }
 .kb .ks-set__railgroup { display: flex; flex-direction: column; gap: 2px; }
-.kb .ks-set__raill { font-family: var(--font-mono); font-size: 9.5px; letter-spacing: 0.13em; text-transform: uppercase; color: var(--tx-mut); padding: 0 10px 6px; }
-.kb .ks-set__railitem { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border: none; background: none; border-radius: 2px; font-family: var(--font-sans); font-size: 13px; color: var(--tx-mut); cursor: pointer; text-align: left; transition: color .12s, background .12s; }
-.kb .ks-set__railitem:hover { color: var(--tx); background: var(--hover); }
-.kb .ks-set__railitem.active { color: var(--tx); background: var(--hover); box-shadow: inset 2px 0 0 var(--tx); }
-.kb .ks-set__railitem svg { flex: none; }
-.kb .ks-set__content { min-width: 0; max-width: 720px; }
+.kb .ks-set__railgroup + .ks-set__railgroup { margin-top: 16px; }
+.kb .ks-set__raill { font-family: var(--font-mono); font-size: 9.5px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--tx-dim); padding: 4px 9px 7px; }
+.kb .ks-set__railitem { display: flex; align-items: center; gap: 9px; padding: 7px 9px; border: none; background: none; border-radius: 2px; font-family: var(--font-sans); font-size: 12.5px; color: var(--tx-mut); cursor: pointer; text-align: left; white-space: nowrap; transition: color .12s, background .12s; }
+.kb .ks-set__railitem svg { flex: none; opacity: 0.85; }
+.kb .ks-set__railitem:hover { color: var(--tx); }
+.kb .ks-set__railitem.active { color: var(--tx); background: var(--elev); box-shadow: inset 2px 0 0 var(--tx); }
+.kb .ks-set__content { min-width: 0; max-width: 760px; }
 .kb .ks-set__content > .ks-panel { margin-top: 0 !important; }
-/* Team, folded in from its own page: stack its panels with the same rhythm. */
+/* Team, folded in from its own page: stack its cards with the page rhythm. */
 .kb .ks-teamwrap { display: flex; flex-direction: column; gap: 16px; }
 .kb .ks-teamwrap > .ks-panel { margin-top: 0 !important; }
-@container page (max-width: 640px) { .kb .ks-set { grid-template-columns: minmax(0, 1fr); } .kb .ks-set__rail { position: static; flex-direction: row; flex-wrap: wrap; } }
+@container page (max-width: 640px) { .kb .ks-set { grid-template-columns: minmax(0, 1fr); } .kb .ks-set__rail { border-right: none; border-bottom: 1px solid var(--div); flex-direction: row; flex-wrap: wrap; padding: 0 0 10px; } .kb .ks-set__railgroup + .ks-set__railgroup { margin-top: 0; margin-left: 8px; } }
 
 /* Instance settings sections. Square, mono-labelled, token-driven. */
 .kb .ks-set__row { display: flex; align-items: flex-start; gap: 18px; }

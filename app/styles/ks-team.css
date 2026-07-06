@@ -1,29 +1,55 @@
-/* Team / Members settings (admin-only). */
-.kb .ks-page__hd { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+/* Team / Members, inside Settings (Workspace group). Flat cards, flex rows,
+ * neutral-ink controls, square avatars. Per the Settings/Team design spec. */
 
-.kb .ks-invite { margin-bottom: 18px; }
+/* title row */
+.kb .ks-team__hd { display: flex; align-items: baseline; gap: 12px; }
+.kb .ks-team__title { display: flex; align-items: baseline; gap: 10px; flex: 1; min-width: 0; }
+.kb .ks-team__title h2 { margin: 0; font-family: var(--font-sans); font-size: 16px; font-weight: 650; color: var(--tx); }
+.kb .ks-team__meta { font-family: var(--font-mono); font-size: 11px; color: var(--tx-dim); white-space: nowrap; }
+
+/* invite form */
 .kb .ks-invite__body { padding: 16px 18px; }
-.kb .ks-invite__row { display: flex; gap: 12px; align-items: flex-end; }
+.kb .ks-invite__row { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; }
 .kb .ks-invite__lbl { display: block; font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--tx-dim); margin-bottom: 7px; }
 .kb .ks-invite__note { margin-top: 13px; font-size: 12px; color: var(--tx-mut); line-height: 1.55; }
 
-.kb .ks-mbr__tbl tbody tr { cursor: default; }
-.kb .ks-mbr__tbl tbody tr:hover { background: transparent; }
-.kb .ks-mbr__id { display: flex; align-items: center; gap: 11px; }
-.kb .ks-mbr__av { width: 26px; height: 26px; border-radius: 50%; flex: none; display: inline-flex; align-items: center; justify-content: center; font-family: var(--font-mono); font-size: 11px; font-weight: 600; color: var(--tx); background: var(--elev); border: 1px solid var(--div-2); }
-.kb .ks-mbr__av--pending { background: transparent; color: var(--tx-dim); border-style: dashed; }
-.kb .ks-mbr__email { font-family: var(--font-mono); font-size: 12.5px; color: var(--tx); }
-.kb .ks-mbr__meta { font-family: var(--font-mono); font-size: 11.5px; color: var(--tx-dim); }
-.kb .ks-mbr__role { height: 28px; width: 100%; font-size: 12px; }
-.kb .ks-mbr__role:disabled { opacity: 0.55; cursor: not-allowed; }
+/* member + invite rows: flex, divider between */
+.kb .ks-mbr__row { display: flex; align-items: center; gap: 11px; padding: 12px 16px; border-bottom: 1px solid var(--div); }
+.kb .ks-mbr__row:last-child { border-bottom: none; }
+.kb .ks-mbr__sp { flex: 1; }
+.kb .ks-mbr__right { display: flex; align-items: center; gap: 12px; flex: none; }
+.kb .ks-mbr__right > * { white-space: nowrap; }
+
+/* avatar: 24px square, inset */
+.kb .ks-mbr__av { width: 24px; height: 24px; border-radius: 0; flex: none; display: inline-flex; align-items: center; justify-content: center; font-family: var(--font-mono); font-size: 10px; font-weight: 600; color: var(--tx); background: var(--inset); border: 1px solid var(--div-2); }
+.kb .ks-mbr__av--pending { color: var(--tx-dim); border-style: dashed; }
+
+.kb .ks-mbr__email { font-family: var(--font-mono); font-size: 12px; color: var(--tx); overflow: hidden; text-overflow: ellipsis; }
+.kb .ks-mbr__chip { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.06em; background: var(--inset); border: 1px solid var(--div-2); border-radius: 2px; padding: 2px 5px; color: var(--tx-mut); flex: none; }
+
+/* role control: locked (last admin) vs select-with-chevron (others) */
+.kb .ks-mbr__rolelock { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 10px; border: 1px solid var(--div-2); border-radius: 2px; background: var(--inset); font-family: var(--font-sans); font-size: 11.5px; color: var(--tx-mut); }
+.kb .ks-mbr__rolewrap { position: relative; display: inline-flex; align-items: center; }
+.kb .ks-mbr__role { height: 26px; padding: 0 26px 0 10px; border: 1px solid var(--div-2); border-radius: 2px; background: var(--inset); font-family: var(--font-sans); font-size: 11.5px; color: var(--tx-mut); -webkit-appearance: none; appearance: none; cursor: pointer; }
+.kb .ks-mbr__role:disabled { cursor: default; opacity: 0.7; padding-right: 10px; }
+.kb .ks-mbr__rolechev { position: absolute; right: 8px; color: var(--tx-mut); pointer-events: none; }
+.kb .ks-mbr__reason { font-family: var(--font-mono); font-size: 10px; color: var(--tx-dim); }
+.kb .ks-mbr__joined { font-family: var(--font-mono); font-size: 10.5px; color: var(--tx-dim); }
+
+/* member remove (demoted destructive) */
 .kb .ks-mbr__rm:not(:disabled):hover { color: var(--crit); border-color: var(--crit-line); background: var(--crit-dim); }
-.kb .ks-mbr__rm:disabled { opacity: 0.4; cursor: not-allowed; }
 
-.kb .ks-mbr__inviterow { display: flex; align-items: center; gap: 11px; padding: 12px 18px; border-bottom: 1px solid var(--div); }
-.kb .ks-mbr__inviterow:last-child { border-bottom: none; }
+/* invite actions: safe (Resend, ghost) and destructive (Revoke, demoted) not identical */
+.kb .ks-mbr__resend { height: 26px; padding: 0 11px; border: 1px solid var(--div-2); border-radius: 2px; background: none; font-family: var(--font-sans); font-size: 12px; color: var(--tx); cursor: pointer; transition: border-color .12s; }
+.kb .ks-mbr__resend:hover { border-color: var(--div-3); }
+.kb .ks-mbr__revoke { height: 26px; padding: 0 11px; border: 1px solid var(--div); border-radius: 2px; background: none; font-family: var(--font-sans); font-size: 12px; color: var(--tx-dim); cursor: pointer; transition: color .12s, border-color .12s, background .12s; }
+.kb .ks-mbr__revoke:hover { color: var(--crit); border-color: var(--crit-line); background: var(--crit-dim); }
 
-.kb .ks-mbr__confirm { display: flex; align-items: center; gap: 16px; padding: 13px 18px; border-top: 1px solid var(--div-2); background: var(--bg-2); font-size: 12.5px; color: var(--tx-2); line-height: 1.5; }
+/* confirm bar for a staged role change / removal */
+.kb .ks-mbr__confirm { display: flex; align-items: center; gap: 16px; padding: 13px 16px; border-top: 1px solid var(--div-2); background: var(--bg-2); font-size: 12.5px; color: var(--tx-2); line-height: 1.5; }
 .kb .ks-mbr__confirm b { color: var(--tx); font-weight: 600; }
 .kb .ks-mbr__confirm-cta { display: flex; gap: 8px; margin-left: auto; flex: none; }
 
-.kb .ks-mbr__foot { display: flex; align-items: center; gap: 8px; margin-top: 18px; font-family: var(--font-mono); font-size: 11px; color: var(--tx-dim); }
+/* self-hosted tip: sits BETWEEN the cards, readable measure, wraps to two lines */
+.kb .ks-mbr__tip { display: flex; align-items: flex-start; gap: 8px; max-width: 560px; font-family: var(--font-mono); font-size: 10.5px; color: var(--tx-dim); line-height: 1.6; }
+.kb .ks-mbr__tip svg { flex: none; margin-top: 2px; }
