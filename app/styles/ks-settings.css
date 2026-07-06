@@ -1,7 +1,10 @@
 /* Settings IA: a left rail of grouped sections + the active section's content.
  * Replaces the one-long-scroll stack. */
-/* rail has NO fill: chrome lightens inward (sidebar bg-2 -> rail border-only -> content). */
-.kb .ks-set { display: grid; grid-template-columns: 208px minmax(0, 1fr); gap: 26px; padding: clamp(16px, 2vw, 24px) clamp(16px, 2.2vw, 28px) 40px; align-items: stretch; }
+/* rail has NO fill: chrome lightens inward (sidebar bg-2 -> rail border-only -> content).
+ * min-height:100% so the rail's right border runs the full viewport height, not
+ * just the (often short) content height. Fluid width: the spec's 208/760 are
+ * proportions, not walls, the content breathes into the available space. */
+.kb .ks-set { display: grid; grid-template-columns: clamp(180px, 15vw, 224px) minmax(0, 1fr); gap: clamp(20px, 2.4vw, 40px); padding: clamp(16px, 2vw, 24px) clamp(16px, 2.2vw, 30px) 40px; align-items: stretch; min-height: 100%; }
 .kb .ks-set__rail { display: flex; flex-direction: column; padding: 3px 14px 0 0; border-right: 1px solid var(--div); }
 .kb .ks-set__railgroup { display: flex; flex-direction: column; gap: 2px; }
 .kb .ks-set__railgroup + .ks-set__railgroup { margin-top: 16px; }
@@ -10,7 +13,8 @@
 .kb .ks-set__railitem svg { flex: none; opacity: 0.85; }
 .kb .ks-set__railitem:hover { color: var(--tx); }
 .kb .ks-set__railitem.active { color: var(--tx); background: var(--elev); box-shadow: inset 2px 0 0 var(--tx); }
-.kb .ks-set__content { min-width: 0; max-width: 760px; }
+/* fluid: fills the column, capped generously so ultrawide doesn't over-spread rows */
+.kb .ks-set__content { min-width: 0; width: 100%; max-width: clamp(760px, 72vw, 1040px); }
 .kb .ks-set__content > .ks-panel { margin-top: 0 !important; }
 /* Team, folded in from its own page: stack its cards with the page rhythm. */
 .kb .ks-teamwrap { display: flex; flex-direction: column; gap: 16px; }
