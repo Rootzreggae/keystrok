@@ -28,15 +28,15 @@ assert.equal(p.mttrDays, 10)
 // open exposure-days = 2 + 40 = 42 (FP excluded, resolved excluded)
 assert.equal(p.openExposureDays, 42)
 
-// trend: newest bucket (this week) has both open keys still open -> 2
+// trend now measures exposure-days burned per week. Newest week: the 2d-old key
+// burns 2, the 40d-old key burns 7 = 9. Oldest week (49-56d ago): nothing at risk yet -> 0.
 assert.equal(p.trend.length, 8)
-assert.equal(p.trend.at(-1)!.open, 2)
-// 8 weeks ago (56d), only the 40d key wasn't at risk yet, and the rotated key (found 30d ago) also not yet -> 0
-assert.equal(p.trend[0].open, 0)
+assert.equal(p.trend.at(-1)!.expDays, 9)
+assert.equal(p.trend[0].expDays, 0)
 
 // resolved-by-status but no rotatedAt: excluded from open backlog, not counted as open
 const noTs = computePosture([{ foundAt: daysAgo(10), status: 'rotated', severity: 'high' }], NOW, 4)
-assert.equal(noTs.trend.at(-1)!.open, 0)
+assert.equal(noTs.trend.at(-1)!.expDays, 0)
 assert.equal(noTs.compliance.total, 0)
 
 // rotated-but-still-live: NOT resolved. Counts as open + non-compliant, drops
@@ -50,7 +50,7 @@ assert.equal(pf.compliance.within, 0)   // demonstrated violation, never within 
 assert.equal(pf.compliance.pct, 0)
 assert.equal(pf.mttrDays, null)          // not credited as a rotation
 assert.equal(pf.openExposureDays, 10)    // still burning from foundAt
-assert.equal(pf.trend.at(-1)!.open, 1)   // still open backlog
+assert.equal(pf.trend.at(-1)!.expDays, 7)   // still open backlog
 
 // empty input: no open keys -> pct null, mttr null, no throw
 const empty = computePosture([], NOW)

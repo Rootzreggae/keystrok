@@ -15,7 +15,7 @@ export interface PostureKey {
   severity: string
 }
 
-export interface TrendPoint { weekEnd: string; open: number }
+export interface TrendPoint { weekEnd: string; expDays: number }
 export interface Posture {
   compliance: { within: number; total: number; pct: number | null } // open keys inside their rotation SLA
   mttrDays: number | null   // mean time to rotate, over resolved keys
@@ -57,22 +57,26 @@ export function computePosture(keys: PostureKey[], now: Date = new Date(), weeks
   // Exposure still accruing: for each open key, days since it went at-risk.
   const openExposureDays = Math.round(open.reduce((s, k) => s + Math.max(0, (now.getTime() - riskStart(k, now).getTime()) / DAY), 0))
 
-  // Retroactive backlog trend: at each week boundary, how many keys were at-risk
-  // and not yet resolved. ponytail: riskStart is evaluated at `now`, a fine
-  // approximation for past buckets (a set exposure date doesn't move).
+  // Retroactive exposure trend: exposure-days burned each week, reconstructed
+  // from timestamps (overlap of each key's at-risk interval with the week).
+  // ponytail: riskStart is evaluated at `now`, a fine approximation for past
+  // buckets (a set exposure date doesn't move).
+  const WEEK = 7 * DAY
   const trend: TrendPoint[] = []
   for (let i = weeks - 1; i >= 0; i--) {
-    const end = now.getTime() - i * 7 * DAY
-    let count = 0
+    const wEnd = now.getTime() - i * WEEK
+    const wStart = wEnd - WEEK
+    let expDays = 0
     for (const k of active) {
       const rs = riskStart(k, now).getTime()
-      // A failed rotation never closes (open forever). Otherwise: rotatedAt if we
-      // have it; resolved-by-status with no timestamp collapses to rs (never shows
-      // as open backlog), consistent with `open`.
-      const resolvedAt = rotationFailed(k) ? Infinity : k.rotatedAt ? k.rotatedAt.getTime() : isResolved(k) ? rs : Infinity
-      if (rs <= end && resolvedAt > end) count++
+      // When exposure stopped: a failed rotation never stops; a real rotation at
+      // rotatedAt; resolved-without-timestamp is treated as instantly closed;
+      // a still-open key runs to now.
+      const stop = rotationFailed(k) ? now.getTime() : k.rotatedAt ? k.rotatedAt.getTime() : isResolved(k) ? rs : now.getTime()
+      const overlap = Math.min(wEnd, stop) - Math.max(wStart, rs)
+      if (overlap > 0) expDays += overlap / DAY
     }
-    trend.push({ weekEnd: new Date(end).toISOString().slice(0, 10), open: count })
+    trend.push({ weekEnd: new Date(wEnd).toISOString().slice(0, 10), expDays: Math.round(expDays) })
   }
 
   return { compliance, mttrDays, resolvedCount: resolved.length, rotationsFailed, openExposureDays, trend }

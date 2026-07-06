@@ -62,9 +62,13 @@ export const displayName = (name: string) => name.split(/ Key | - /)[0]
 export const cleanLocation = (loc?: string | null) =>
   (loc ?? '-').replace(/\/?\S*\.keystrok\/clones\/[^/\s]+\//g, '')
 
-/** Discovery-anchored urgency text, never a fake date. Mirrors the handoff urg(). */
+/** Discovery-anchored urgency text, never a fake date. Mirrors the handoff urg().
+ *  A rotated key that a post-rotation check still found live (rotation_failed) is
+ *  NOT resolved: it stays exposed, so it re-enters the open population and reads
+ *  as overdue like any other at-risk key. Keeps the ledger, needs-action, and
+ *  hygiene SLOs agreeing on one definition of "still open". */
 export function urgency(k: ApiKey) {
-  if (k.status === 'rotated') {
+  if (k.status === 'rotated' && !k.rotation_failed) {
     const ago = k.rotatedAt ? foundAgoDays(new Date(k.rotatedAt)) : null
     return { txt: ago != null ? `rotated ${ago}d ago` : 'rotated', color: 'var(--ok)', overdue: false, rank: 3 }
   }
@@ -75,9 +79,10 @@ export function urgency(k: ApiKey) {
   return { txt: `${dl}d left`, color: 'var(--tx-mut)', overdue: false, rank: 2 }
 }
 
-/** A key needs action if overdue, in the soon window, or a still-open critical. */
+/** A key needs action if overdue, in the soon window, or a still-open critical.
+ *  A failed rotation (rotated but still live) counts as open, not done. */
 export function needsAction(k: ApiKey) {
-  if (k.status === 'rotated') return false
+  if (k.status === 'rotated' && !k.rotation_failed) return false
   const u = urgency(k)
   return u.overdue || u.rank === 1 || k.severity === 'critical'
 }

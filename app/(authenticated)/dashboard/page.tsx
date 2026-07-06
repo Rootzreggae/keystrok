@@ -6,7 +6,7 @@ import { useState } from 'react'
 import { ArrowRight, RotateCw, Shield, Github, Search, CheckCircle2, RefreshCw, X, Server, FileText, type LucideIcon } from 'lucide-react'
 import { Mark } from '@/components/ks'
 import { KeyDrawer } from '@/components/ks/KeyDrawer'
-import { PostureStrip } from '@/components/ks/PostureStrip'
+import { HomeBand } from '@/components/ks/HomeBand'
 import { useSourceConnect } from '@/components/ks/SourceConnect'
 import { type ApiKey, platOf, SEVL, sevColor, displayName, urgency, needsAction, ago, cleanLocation } from '@/lib/keys-display'
 
@@ -90,6 +90,15 @@ export default function HomeScreen() {
     .sort((a, b) => urgency(a).rank - urgency(b).rank || a.daysUntilExpiry - b.daysUntilExpiry)
     .slice(0, 5)
   const inProgress = running[0]
+  // Dedupe consecutive identical activity lines into one row with a ×N count.
+  const activityRows = activity
+    .reduce<Array<Activity & { count: number }>>((acc, e) => {
+      const prev = acc[acc.length - 1]
+      if (prev && (prev.description ?? '') === (e.description ?? '')) prev.count++
+      else acc.push({ ...e, count: 1 })
+      return acc
+    }, [])
+    .slice(0, 5)
 
   // Empty ledger has two distinct meanings. Don't conflate them.
   if (keysData && keys.length === 0) {
@@ -137,13 +146,13 @@ export default function HomeScreen() {
 
   return (
     <div className="ks-home">
-      <PostureStrip />
-      <div className="ks-home__statbar">
-        <div className="ks-home__statcell"><div className={'ks-stat__n' + (counts.needAction ? ' warn' : ' zero')}>{counts.needAction}</div><div className="ks-stat__l">Need action</div></div>
-        <div className="ks-home__statcell"><div className={'ks-stat__n' + (counts.overdue ? ' crit' : ' zero')}>{counts.overdue}</div><div className="ks-stat__l">Overdue</div></div>
-        <div className="ks-home__statcell"><div className={'ks-stat__n' + (counts.rotating ? ' active' : ' zero')}>{counts.rotating}</div><div className="ks-stat__l">Rotating</div></div>
-        <div className="ks-home__statcell"><div className="ks-stat__n muted">{counts.total}</div><div className="ks-stat__l">Tracked</div></div>
-      </div>
+      <HomeBand
+        needAction={counts.needAction}
+        overdue={counts.overdue}
+        rotating={counts.rotating}
+        total={counts.total}
+        onView={() => router.push('/inventory?filter=needs-action')}
+      />
 
       <div className="ks-home__grid">
         {/* Needs action queue */}
@@ -171,7 +180,9 @@ export default function HomeScreen() {
                     <div className="ks-aqrow__name">{displayName(k.name)}</div>
                     <div className="ks-aqrow__meta">{plat.label} · {SEVL[k.severity] ?? k.severity} · found {ago(k.created_at)} ago</div>
                   </div>
-                  <span className="ks-aqrow__u" style={{ color: u.color }}>{u.txt}</span>
+                  {u.overdue
+                    ? <span className="ks-pill-sla">SLA expired</span>
+                    : <span className="ks-aqrow__u" style={{ color: u.color }}>{u.txt}</span>}
                   <button
                     className="ks-btn ks-btn--sm ks-aqrow__cta"
                     onClick={(e) => { e.stopPropagation(); router.push('/rotation-workflows') }}
@@ -186,41 +197,38 @@ export default function HomeScreen() {
 
         {/* Right column */}
         <div className="ks-home__col">
+          {/* "In progress" only renders when a rotation exists; "0 rotating" already covers the empty case. */}
+          {inProgress && (
           <div className="ks-panel">
             <div className="ks-panel__hd">
               <span className="ks-panel__t">In progress</span>
-              {inProgress && <span className="ks-panel__sub" style={{ marginLeft: 'auto' }}>rotation</span>}
+              <span className="ks-panel__sub" style={{ marginLeft: 'auto' }}>rotation</span>
             </div>
-            {inProgress ? (
-              <div className="ks-rotmini">
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <Mark>{platOf(inProgress.discoveredKey?.platform ?? '').code}</Mark>
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 13, fontWeight: 600, color: 'var(--tx)' }}>
-                    {displayName(inProgress.discoveredKey?.keyName ?? 'Rotation')}
-                  </span>
-                </div>
-                <div className="ks-rotmini__steps">
-                  {(inProgress.steps ?? []).map((s) => (
-                    <span key={s.stepNumber} className={'ks-rotmini__seg' + (s.status === 'completed' ? ' done' : isRunning(s.status) ? ' active' : '')} />
-                  ))}
-                </div>
-                <div className="ks-rotmini__lbl">
-                  <span>{(inProgress.steps ?? []).filter((s) => s.status === 'completed').length} of {(inProgress.steps ?? []).length} done</span>
-                </div>
-                <button
-                  className="ks-btn ks-btn--primary ks-btn--sm"
-                  style={{ width: '100%', justifyContent: 'center', marginTop: 14 }}
-                  onClick={() => router.push(`/rotation-workflows?workflow=${inProgress.id}`)}
-                >
-                  <ArrowRight size={13} /> Resume guided rotation
-                </button>
+            <div className="ks-rotmini">
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <Mark>{platOf(inProgress.discoveredKey?.platform ?? '').code}</Mark>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 13, fontWeight: 600, color: 'var(--tx)' }}>
+                  {displayName(inProgress.discoveredKey?.keyName ?? 'Rotation')}
+                </span>
               </div>
-            ) : (
-              <div style={{ padding: '24px 18px', fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--tx-dim)' }}>
-                No rotation in progress.
+              <div className="ks-rotmini__steps">
+                {(inProgress.steps ?? []).map((s) => (
+                  <span key={s.stepNumber} className={'ks-rotmini__seg' + (s.status === 'completed' ? ' done' : isRunning(s.status) ? ' active' : '')} />
+                ))}
               </div>
-            )}
+              <div className="ks-rotmini__lbl">
+                <span>{(inProgress.steps ?? []).filter((s) => s.status === 'completed').length} of {(inProgress.steps ?? []).length} done</span>
+              </div>
+              <button
+                className="ks-btn ks-btn--primary ks-btn--sm"
+                style={{ width: '100%', justifyContent: 'center', marginTop: 14 }}
+                onClick={() => router.push(`/rotation-workflows?workflow=${inProgress.id}`)}
+              >
+                <ArrowRight size={13} /> Resume guided rotation
+              </button>
+            </div>
           </div>
+          )}
 
           <div className="ks-panel">
             <div className="ks-panel__hd">
@@ -233,12 +241,13 @@ export default function HomeScreen() {
               {activity.length === 0 && (
                 <div style={{ padding: '24px 18px', fontFamily: 'var(--font-mono)', fontSize: 11.5, color: 'var(--tx-dim)' }}>No activity yet.</div>
               )}
-              {activity.slice(0, 5).map((e) => {
+              {activityRows.map((e) => {
                 const Icon = actIcon(e.action)
                 return (
                   <div className="ks-minirow" key={e.id}>
                     <span className="ks-minirow__dot"><Icon size={13} strokeWidth={1.75} /></span>
                     <span className="ks-minirow__txt">{cleanLocation(e.description ?? 'Activity')}</span>
+                    {e.count > 1 && <span className="ks-minirow__x">×{e.count}</span>}
                     <span className="ks-minirow__when">{ago(e.createdAt)}</span>
                   </div>
                 )
