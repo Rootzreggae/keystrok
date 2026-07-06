@@ -59,6 +59,7 @@ export function KeysTimeline({ keys, onSelect }: { keys: ApiKey[]; onSelect: (k:
       <div className="ks-tl__row">
         <div className="ks-tl__gutter" />
         <div className="ks-tl__track ks-tl__track--axis">
+          <span className="ks-tl__odtick">Overdue</span>
           <span className="ks-tl__now" style={{ left: pct(0) + '%' }}>NOW</span>
           {cfg.ticks.map((d) => <span key={d} className="ks-tl__tick" style={{ left: pct(d) + '%' }}>+{d}d</span>)}
         </div>
@@ -74,24 +75,39 @@ export function KeysTimeline({ keys, onSelect }: { keys: ApiKey[]; onSelect: (k:
           </div>
         </div>
 
-        {lanes.map((lane) => (
+        {lanes.map((lane) => {
+          // Empty lane collapses to a thin single-line header, no track space.
+          if (lane.items.length === 0) return (
+            <div className="ks-tl__row ks-tl__lane ks-tl__lane--empty" key={lane.sev}>
+              <div className="ks-tl__gutter ks-tl__lbl">
+                <Dot sev={lane.sev as 'critical'} /> {SEVL[lane.sev] ?? lane.sev}
+                <span className="ks-tl__empty">· no keys</span>
+              </div>
+              <div className="ks-tl__track" />
+            </div>
+          )
+          return (
           <div className="ks-tl__row ks-tl__lane" key={lane.sev}>
             <div className="ks-tl__gutter ks-tl__lbl">
               <Dot sev={lane.sev as 'critical'} /> {SEVL[lane.sev] ?? lane.sev}
-              {lane.items.length === 0 && <span className="ks-tl__empty">no keys</span>}
             </div>
             <div className="ks-tl__track" style={{ minHeight: Math.max(lane.rows * ROW_H, 92) }}>
               {lane.items.map((it) => {
                 const u = urgency(it.k)
+                const overdue = it.day < 0 // cluster in the bucket, right-anchored at NOW
                 const beyond = it.day >= horizon // at or past the horizon → flush right
+                const style = overdue
+                  ? { right: `calc(${100 - pct(0)}% + 8px)`, top: it.row * ROW_H }
+                  : beyond
+                    ? { right: 6, top: it.row * ROW_H }
+                    : { left: `min(${pct(it.day)}%, calc(100% - 250px))`, top: it.row * ROW_H }
                 return (
                   <button
                     key={it.k.id}
                     className="ks-tl__chip"
                     data-sev={lane.sev}
-                    style={beyond
-                      ? { right: 6, top: it.row * ROW_H }
-                      : { left: `min(${pct(it.day)}%, calc(100% - 250px))`, top: it.row * ROW_H }}
+                    data-overdue={overdue ? '' : undefined}
+                    style={style}
                     title={`${displayName(it.k.name)} · ${u.txt}`}
                     onClick={() => onSelect(it.k)}
                   >
@@ -103,7 +119,8 @@ export function KeysTimeline({ keys, onSelect }: { keys: ApiKey[]; onSelect: (k:
               })}
             </div>
           </div>
-        ))}
+          )
+        })}
       </div>
     </div>
   )

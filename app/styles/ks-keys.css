@@ -50,7 +50,10 @@
 .kb .ks-tl__lanes { position: relative; }
 .kb .ks-tl__overlay { position: absolute; inset: 0; pointer-events: none; z-index: 0; }
 .kb .ks-tl__overlaytrack { position: relative; }
-.kb .ks-tl__od { position: absolute; top: 0; bottom: 0; left: 0; background: var(--crit-dim); }
+/* overdue is a BUCKET, not a time axis: hatched fill, dashed NOW edge. Overdue-
+ * by-how-long is not linear with the future scale, so it doesn't get scale space. */
+.kb .ks-tl__od { position: absolute; top: 0; bottom: 0; left: 0; background-image: repeating-linear-gradient(-45deg, rgba(255, 255, 255, 0.022) 0 8px, transparent 8px 16px); border-right: 1px dashed var(--crit-line); }
+.kb .ks-tl__odtick { position: absolute; left: 6px; top: 7px; font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--crit); }
 .kb .ks-tl__nowline { position: absolute; top: 0; bottom: 0; width: 2px; transform: translateX(-1px); background: var(--tx); }
 .kb .ks-tl__grid { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--div); }
 
@@ -61,6 +64,12 @@
 
 .kb .ks-tl__chip { position: absolute; display: inline-flex; align-items: center; gap: 7px; height: 33px; padding: 0 10px; background: var(--elev); border: 1px solid var(--div-2); border-radius: 2px; cursor: pointer; white-space: nowrap; transition: background .1s, border-color .1s; }
 .kb .ks-tl__chip:hover { background: var(--bg-2); border-color: var(--div-3); }
+.kb .ks-tl__chip[data-overdue] { border-color: var(--crit-line); background: rgba(251, 113, 133, 0.10); }
+.kb .ks-tl__chip[data-overdue] .ks-tl__cdays { color: var(--crit); }
+/* empty lane collapses to a thin single-line header, no track space */
+.kb .ks-tl__lane--empty { padding: 9px 0; }
+.kb .ks-tl__lane--empty .ks-tl__track { min-height: 0; }
+.kb .ks-tl__lane--empty .ks-tl__lbl { white-space: nowrap; }
 .kb .ks-tl__chip[data-sev="critical"] { border-color: var(--crit-line); }
 .kb .ks-tl__chip[data-sev="high"] { border-color: var(--high-line); }
 .kb .ks-tl__chip[data-sev="medium"] { border-color: rgba(251, 191, 76, 0.34); }
