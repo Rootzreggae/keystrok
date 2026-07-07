@@ -22,8 +22,9 @@ function livenessPill(k: ApiKey) {
 
 export default function KeysScreen() {
   const params = useSearchParams()
-  const [lens, setLens] = useState<'table' | 'timeline'>('table')
-  // Home's "Needs action" cell deep-links here with ?filter=needs-action.
+  const [lens, setLens] = useState<'table' | 'timeline'>(params.get('lens') === 'timeline' ? 'timeline' : 'table')
+  // Home's "Needs action" cell deep-links here with ?filter=needs-action; the
+  // exposure-days sparkline deep-links with ?lens=timeline to explain the trend.
   const [needsOnly, setNeedsOnly] = useState(params.get('filter') === 'needs-action')
   const [overdueOnly, setOverdueOnly] = useState(false)
   const [filterOpen, setFilterOpen] = useState(false)

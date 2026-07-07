@@ -91,7 +91,8 @@ function Trend({ trend }: { trend: Posture['trend'] }) {
   const max = Math.max(1, ...trend.map((t) => t.expDays))
   const H = 34
   return (
-    <div className="ks-band__trend">
+    <a className="ks-band__trend" href="/inventory?filter=needs-action&lens=timeline"
+       title="See the at-risk keys accruing these exposure-days">
       <div className="ks-band__bars" role="img" aria-label="Exposure-days burned, last 12 weeks">
         {trend.map((t, i) => (
           <i key={t.weekEnd} className={i >= trend.length - 3 ? 'hot' : ''}
@@ -99,7 +100,7 @@ function Trend({ trend }: { trend: Posture['trend'] }) {
              style={{ height: t.expDays === 0 ? 1 : Math.max(2, Math.round((t.expDays / max) * H)) }} />
         ))}
       </div>
-      <div className="ks-band__trendcap">exposure-days<br />weekly · 12w ▲</div>
-    </div>
+      <div className="ks-band__trendcap">exposure-days<br />weekly · 12w →</div>
+    </a>
   )
 }

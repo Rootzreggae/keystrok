@@ -31,9 +31,11 @@
 .kb .ks-band__m .k { font-family: var(--font-mono); font-size: 10.5px; color: var(--tx-mut); margin-top: 4px; }
 .kb .ks-band__m .k .ok { color: var(--a); }
 .kb .ks-band__m .k .warn { color: var(--warn-ink); }
-.kb .ks-band__trend { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+.kb a.ks-band__trend { margin: -6px -8px -6px auto; padding: 6px 8px; display: flex; align-items: center; gap: 12px; text-decoration: none; cursor: pointer; border-radius: 2px; transition: background .12s; }
+.kb a.ks-band__trend:hover { background: var(--hover); }
+.kb a.ks-band__trend:hover .ks-band__trendcap { color: var(--tx-2); }
 .kb .ks-band__bars { display: flex; align-items: flex-end; gap: 3px; height: 34px; border-bottom: 1px solid var(--div-2); padding-bottom: 1px; }
-.kb .ks-band__bars i { width: 10px; background: var(--div-2); cursor: help; transition: background .12s; }
+.kb .ks-band__bars i { width: 10px; background: var(--div-2); transition: background .12s; }
 .kb .ks-band__bars i:hover { background: var(--tx-mut); }
 .kb .ks-band__bars i.hot { background: var(--high); }
 .kb .ks-band__bars i.hot:hover { filter: brightness(1.15); }
