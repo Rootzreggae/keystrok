@@ -25,6 +25,15 @@
 .kb .ks-disc__bulk:disabled { opacity: 0.6; cursor: default; }
 .kb .ks-disc__bulk svg { flex: none; }
 
+/* undo bar: transient, sits under the header after a bulk dismiss */
+.kb .ks-disc__undo { display: flex; align-items: center; gap: 12px; padding: 10px 18px; background: var(--bg-2); border-bottom: 1px solid var(--div); font-size: 12.5px; color: var(--tx-mut); }
+.kb .ks-disc__undot { font-family: var(--font-mono); }
+.kb .ks-disc__undobtn { font-family: var(--font-sans); font-size: 12px; font-weight: 600; color: var(--tx); background: none; border: 1px solid var(--div-2); border-radius: 2px; padding: 4px 12px; cursor: pointer; transition: border-color .12s, background .12s; }
+.kb .ks-disc__undobtn:hover { border-color: var(--tx-2); background: var(--elev); }
+.kb .ks-disc__undobtn:disabled { opacity: 0.6; cursor: default; }
+.kb .ks-disc__undox { margin-left: auto; background: none; border: none; color: var(--tx-dim); font-size: 16px; line-height: 1; cursor: pointer; padding: 2px 4px; }
+.kb .ks-disc__undox:hover { color: var(--tx-2); }
+
 /* the "N new" count pill: rounded count badge, pushed to the far right */
 .kb .ks-disc__count { border-radius: 99px; margin-left: auto; }
 

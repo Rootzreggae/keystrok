@@ -149,7 +149,7 @@ export default function DiscoveryScreen() {
       const failed = oks.filter((ok) => !ok).length
       if (failed) throw new Error(`${failed} of ${ids.length} could not be dismissed`)
     },
-    onSuccess: () => { setSel(new Set()); qc.invalidateQueries({ queryKey: ['findings'] }) },
+    onSuccess: (_d, ids) => { setSel(new Set()); setUndo(ids); qc.invalidateQueries({ queryKey: ['findings'] }) },
     onError: (e: Error) => { qc.invalidateQueries({ queryKey: ['findings'] }); alert(e.message) },
   })
   const bulkDismiss = () => {
@@ -158,6 +158,23 @@ export default function DiscoveryScreen() {
     if (!confirm(`Dismiss ${ids.length} finding${ids.length === 1 ? '' : 's'}? They move to triaged and reappear only if a rescan finds them again.`)) return
     dismissMany.mutate(ids)
   }
+
+  // Undo the last dismissed batch. The bar auto-expires so it does not linger.
+  const [undo, setUndo] = useState<string[]>([])
+  useEffect(() => {
+    if (undo.length === 0) return
+    const t = setTimeout(() => setUndo([]), 12000)
+    return () => clearTimeout(t)
+  }, [undo])
+  const restoreMany = useMutation({
+    mutationFn: async (ids: string[]) => {
+      const oks = await Promise.all(ids.map((id) => fetch(`/api/discovery/findings/${id}/restore`, { method: 'POST' }).then((r) => r.ok).catch(() => false)))
+      const failed = oks.filter((ok) => !ok).length
+      if (failed) throw new Error(`${failed} of ${ids.length} could not be restored`)
+    },
+    onSuccess: () => { setUndo([]); qc.invalidateQueries({ queryKey: ['findings'] }) },
+    onError: (e: Error) => { qc.invalidateQueries({ queryKey: ['findings'] }); alert(e.message) },
+  })
 
   return (
     <div className="ks-page">
@@ -181,6 +198,13 @@ export default function DiscoveryScreen() {
                 </button>
               )}
             </div>
+            {undo.length > 0 && (
+              <div className="ks-disc__undo">
+                <span className="ks-disc__undot">Dismissed {undo.length} finding{undo.length === 1 ? '' : 's'}</span>
+                <button className="ks-disc__undobtn" onClick={() => restoreMany.mutate(undo)} disabled={restoreMany.isPending}>Undo</button>
+                <button className="ks-disc__undox" onClick={() => setUndo([])} aria-label="Dismiss">&times;</button>
+              </div>
+            )}
             {inboxLoading || allLoading ? (
               <InlineLoading />
             ) : inbox.length === 0 ? (
