@@ -6,7 +6,10 @@
  * so the filter rail fills its track edge-to-edge (top/right/bottom) like a real
  * sidebar. */
 .kb .ks-actpage { display: grid; grid-template-columns: minmax(0, 1fr) clamp(196px, 16vw, 240px); align-items: stretch; min-height: 100%; }
-.kb .ks-actpage__main { min-width: 0; padding: clamp(16px, 2vw, 24px) clamp(20px, 2.4vw, 36px) 40px clamp(16px, 2.2vw, 30px); }
+/* readable cap, centered in the column: symmetric breathing room between the
+ * main sidebar and the filter rail. A cap (not viewport padding) so the log
+ * rows never over-spread, at any width. */
+.kb .ks-actpage__main { min-width: 0; width: min(1040px, 100%); margin-inline: auto; padding: clamp(16px, 2vw, 24px) clamp(20px, 2.2vw, 32px) 40px; }
 /* filter rail as chrome: full-height fill (recessed --bg-2, subordinate to the
  * main sidebar's --bg) + border, framing the content well. Its inner content is
  * sticky, so the filters stay reachable no matter how far the log scrolls. */
