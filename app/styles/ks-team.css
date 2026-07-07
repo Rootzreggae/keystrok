@@ -50,6 +50,8 @@
 .kb .ks-mbr__confirm b { color: var(--tx); font-weight: 600; }
 .kb .ks-mbr__confirm-cta { display: flex; gap: 8px; margin-left: auto; flex: none; }
 
-/* self-hosted tip: sits BETWEEN the cards, readable measure, wraps to two lines */
-.kb .ks-mbr__tip { display: flex; align-items: flex-start; gap: 8px; max-width: 560px; font-family: var(--font-mono); font-size: 10.5px; color: var(--tx-dim); line-height: 1.6; }
+/* self-hosted tip: sits BETWEEN the cards. Readable measure in ch (a real line-
+ * length bound that scales with the font), not a fixed px. Extra vertical margin
+ * so the two cards read as clearly separate, not one continuous block. */
+.kb .ks-mbr__tip { display: flex; align-items: flex-start; gap: 8px; max-width: min(74ch, 100%); margin: 10px 2px; font-family: var(--font-mono); font-size: 10.5px; color: var(--tx-dim); line-height: 1.6; }
 .kb .ks-mbr__tip svg { flex: none; margin-top: 2px; }
