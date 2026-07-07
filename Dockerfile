@@ -1,4 +1,9 @@
 # syntax=docker/dockerfile:1
+# check=skip=SecretsUsedInArgOrEnv
+# ^ the builder stage sets NEXTAUTH_SECRET / ENCRYPTION_KEY to inert placeholders
+# so `next build` can evaluate env, they are build-only, live only in the
+# discarded builder stage, and never reach the final runtime image (which sets
+# no such ENV). Real secrets are injected at runtime via the container env.
 
 # Keystrok production image. Debian (glibc) base so Prisma's default query
 # engine works without musl/binaryTargets juggling. Multi-stage: install +
@@ -19,12 +24,13 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends openssl ca-certificates && rm -rf /var/lib/apt/lists/*
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-# Placeholder env so the build never touches real secrets/DB. Real values are
-# supplied at runtime via the container environment.
+# Inert placeholder env so the build can evaluate env without real secrets/DB.
+# Values are deliberately zero-entropy (not real keys) and never leave this
+# discarded builder stage; real values are supplied at runtime via the env.
 ENV NEXT_TELEMETRY_DISABLED=1 \
     DATABASE_URL=postgresql://build:build@localhost:5432/build \
-    NEXTAUTH_SECRET=build-placeholder \
-    ENCRYPTION_KEY=1yBi9pq+nrig8RfrulFUOi7OjusEbQkbeXLMc07Ru0Y=
+    NEXTAUTH_SECRET=build-time-placeholder-not-a-secret \
+    ENCRYPTION_KEY=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
 RUN npx prisma generate && npm run build
 
 # ---- runner: minimal runtime ------------------------------------------------
