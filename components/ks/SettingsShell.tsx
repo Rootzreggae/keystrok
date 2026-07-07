@@ -40,16 +40,18 @@ export function SettingsShell({ isAdmin }: { isAdmin: boolean }) {
   return (
     <div className="ks-set">
       <nav className="ks-set__rail">
-        {groups.map((g) => (
-          <div className="ks-set__railgroup" key={g.label}>
-            <div className="ks-set__raill">{g.label}</div>
-            {g.sections.map((s) => (
-              <button key={s.id} className={'ks-set__railitem' + (active === s.id ? ' active' : '')} onClick={() => setActive(s.id)}>
-                <s.Icon size={15} /> {s.label}
-              </button>
-            ))}
-          </div>
-        ))}
+        <div className="ks-set__railinner">
+          {groups.map((g) => (
+            <div className="ks-set__railgroup" key={g.label}>
+              <div className="ks-set__raill">{g.label}</div>
+              {g.sections.map((s) => (
+                <button key={s.id} className={'ks-set__railitem' + (active === s.id ? ' active' : '')} onClick={() => setActive(s.id)}>
+                  <s.Icon size={15} /> {s.label}
+                </button>
+              ))}
+            </div>
+          ))}
+        </div>
       </nav>
       <div className="ks-set__content">
         {current && <current.Comp />}

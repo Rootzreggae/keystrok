@@ -1,15 +1,11 @@
-/* Settings IA: a left rail of grouped sections + the active section's content.
- * Replaces the one-long-scroll stack. */
-/* rail has NO fill: chrome lightens inward (sidebar bg-2 -> rail border-only -> content).
- * min-height:100% so the rail's right border runs the full viewport height, not
- * just the (often short) content height. Fluid width: the spec's 208/760 are
- * proportions, not walls, the content breathes into the available space. */
-/* Settings: sub-nav is NAVIGATION, so the rail stays left and hugs the main
- * sidebar (not centered — that detaches it and opens a dead gap). The content is
- * a form column with a readable cap; the right margin is conventional for a
- * left-nav settings page (GitHub/Linear), and the left anchor keeps it balanced. */
-.kb .ks-set { display: grid; grid-template-columns: clamp(180px, 15vw, 224px) minmax(0, 1fr); gap: clamp(20px, 2.4vw, 40px); padding: clamp(16px, 2vw, 24px) clamp(16px, 2.2vw, 30px) 40px; align-items: stretch; min-height: 100%; }
-.kb .ks-set__rail { display: flex; flex-direction: column; padding: 3px 14px 0 0; border-right: 1px solid var(--div); }
+/* Settings IA: a left nav rail + the active section's content. Same chrome
+ * grammar as Activity: the rail is a filled (--bg-2, subordinate to the main
+ * sidebar's --bg) full-height panel with a sticky inner, so it reads as an
+ * intentional nav panel; the content is a capped, centered well. No padding on
+ * the grid so the rail fills its track edge-to-edge like a real sidebar. */
+.kb .ks-set { display: grid; grid-template-columns: clamp(184px, 15vw, 228px) minmax(0, 1fr); align-items: stretch; min-height: 100%; }
+.kb .ks-set__rail { background: var(--bg-2); border-right: 1px solid var(--div); display: flex; flex-direction: column; }
+.kb .ks-set__railinner { position: sticky; top: 0; padding: clamp(16px, 2vw, 24px) clamp(16px, 1.6vw, 22px) 24px; display: flex; flex-direction: column; }
 .kb .ks-set__railgroup { display: flex; flex-direction: column; gap: 2px; }
 .kb .ks-set__railgroup + .ks-set__railgroup { margin-top: 16px; }
 .kb .ks-set__raill { font-family: var(--font-mono); font-size: 9.5px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--tx-dim); padding: 4px 9px 7px; }
@@ -17,13 +13,19 @@
 .kb .ks-set__railitem svg { flex: none; opacity: 0.85; }
 .kb .ks-set__railitem:hover { color: var(--tx); }
 .kb .ks-set__railitem.active { color: var(--tx); background: var(--elev); box-shadow: inset 2px 0 0 var(--tx); }
-/* form column: readable cap, left-anchored under the nav rail */
-.kb .ks-set__content { min-width: 0; width: 100%; max-width: 900px; }
+/* form column: readable cap, centered in its track (symmetric breathing room) */
+.kb .ks-set__content { min-width: 0; width: min(900px, 100%); margin-inline: auto; padding: clamp(16px, 2vw, 24px) clamp(20px, 2.2vw, 32px) 40px; }
 .kb .ks-set__content > .ks-panel { margin-top: 0 !important; }
 /* Team, folded in from its own page: stack its cards with the page rhythm. */
 .kb .ks-teamwrap { display: flex; flex-direction: column; gap: 16px; }
 .kb .ks-teamwrap > .ks-panel { margin-top: 0 !important; }
-@container page (max-width: 640px) { .kb .ks-set { grid-template-columns: minmax(0, 1fr); } .kb .ks-set__rail { border-right: none; border-bottom: 1px solid var(--div); flex-direction: row; flex-wrap: wrap; padding: 0 0 10px; } .kb .ks-set__railgroup + .ks-set__railgroup { margin-top: 0; margin-left: 8px; } }
+@container page (max-width: 640px) {
+  .kb .ks-set { grid-template-columns: minmax(0, 1fr); }
+  .kb .ks-set__rail { background: none; border-right: none; border-bottom: 1px solid var(--div); }
+  .kb .ks-set__railinner { position: static; flex-direction: row; flex-wrap: wrap; align-items: center; gap: 4px 14px; padding: clamp(16px, 2vw, 24px) clamp(20px, 2.2vw, 32px) 12px; }
+  .kb .ks-set__railgroup { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+  .kb .ks-set__railgroup + .ks-set__railgroup { margin-top: 0; margin-left: 8px; }
+}
 
 /* Instance settings sections. Square, mono-labelled, token-driven. */
 .kb .ks-set__row { display: flex; align-items: flex-start; gap: 18px; }
