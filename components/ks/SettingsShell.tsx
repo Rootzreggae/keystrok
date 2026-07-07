@@ -39,6 +39,10 @@ export function SettingsShell({ isAdmin }: { isAdmin: boolean }) {
 
   return (
     <div className="ks-set">
+      {/* content fills between the main sidebar (left) and the nav rail (right) */}
+      <div className="ks-set__content">
+        {current && <current.Comp />}
+      </div>
       <nav className="ks-set__rail">
         <div className="ks-set__railinner">
           {groups.map((g) => (
@@ -53,9 +57,6 @@ export function SettingsShell({ isAdmin }: { isAdmin: boolean }) {
           ))}
         </div>
       </nav>
-      <div className="ks-set__content">
-        {current && <current.Comp />}
-      </div>
     </div>
   )
 }

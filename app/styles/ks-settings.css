@@ -1,10 +1,10 @@
-/* Settings IA: a left nav rail + the active section's content. Same chrome
- * grammar as Activity: the rail is a filled (--bg-2, subordinate to the main
- * sidebar's --bg) full-height panel with a sticky inner, so it reads as an
- * intentional nav panel; the content is a capped, centered well. No padding on
- * the grid so the rail fills its track edge-to-edge like a real sidebar. */
-.kb .ks-set { display: grid; grid-template-columns: clamp(184px, 15vw, 228px) minmax(0, 1fr); align-items: stretch; min-height: 100%; }
-.kb .ks-set__rail { background: var(--bg-2); border-right: 1px solid var(--div); display: flex; flex-direction: column; }
+/* Settings IA: same grammar as Activity. Every secondary/contextual rail in the
+ * app sits on the RIGHT (the main sidebar is the only left nav), so the content
+ * is always the centered hero flanked by chrome on both sides. The rail is a
+ * filled (--bg-2) full-height panel with a sticky inner. No grid padding so the
+ * rail fills edge-to-edge like a real sidebar. */
+.kb .ks-set { display: grid; grid-template-columns: minmax(0, 1fr) clamp(184px, 15vw, 228px); align-items: stretch; min-height: 100%; }
+.kb .ks-set__rail { background: var(--bg-2); border-left: 1px solid var(--div); display: flex; flex-direction: column; }
 .kb .ks-set__railinner { position: sticky; top: 0; padding: clamp(16px, 2vw, 24px) clamp(16px, 1.6vw, 22px) 24px; display: flex; flex-direction: column; }
 .kb .ks-set__railgroup { display: flex; flex-direction: column; gap: 2px; }
 .kb .ks-set__railgroup + .ks-set__railgroup { margin-top: 16px; }
@@ -21,7 +21,7 @@
 .kb .ks-teamwrap > .ks-panel { margin-top: 0 !important; }
 @container page (max-width: 640px) {
   .kb .ks-set { grid-template-columns: minmax(0, 1fr); }
-  .kb .ks-set__rail { background: none; border-right: none; border-bottom: 1px solid var(--div); }
+  .kb .ks-set__rail { order: -1; background: none; border-left: none; border-bottom: 1px solid var(--div); }
   .kb .ks-set__railinner { position: static; flex-direction: row; flex-wrap: wrap; align-items: center; gap: 4px 14px; padding: clamp(16px, 2vw, 24px) clamp(20px, 2.2vw, 32px) 12px; }
   .kb .ks-set__railgroup { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
   .kb .ks-set__railgroup + .ks-set__railgroup { margin-top: 0; margin-left: 8px; }
