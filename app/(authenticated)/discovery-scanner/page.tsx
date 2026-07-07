@@ -134,6 +134,31 @@ export default function DiscoveryScreen() {
     onError: (e: Error) => alert(e.message),
   })
 
+  // Bulk triage: dismissing is the SAFE batch action (ignore-this-isn't-a-secret,
+  // reversible by rescan), so it gets checkboxes + select-all. Promote stays
+  // one-by-one — it writes a key into the tracked inventory, must be deliberate.
+  // No bulk endpoint: fan out the single dismiss (fine at triage-queue scale).
+  const [sel, setSel] = useState<Set<string>>(new Set())
+  const toggle = (id: string) => setSel((p) => { const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id); return n })
+  const selCount = inbox.filter((f) => sel.has(f.id)).length
+  const allSelected = inbox.length > 0 && selCount === inbox.length
+  const toggleAll = () => setSel(allSelected ? new Set() : new Set(inbox.map((f) => f.id)))
+  const dismissMany = useMutation({
+    mutationFn: async (ids: string[]) => {
+      const oks = await Promise.all(ids.map((id) => fetch(`/api/discovery/findings/${id}/dismiss`, { method: 'POST' }).then((r) => r.ok).catch(() => false)))
+      const failed = oks.filter((ok) => !ok).length
+      if (failed) throw new Error(`${failed} of ${ids.length} could not be dismissed`)
+    },
+    onSuccess: () => { setSel(new Set()); qc.invalidateQueries({ queryKey: ['findings'] }) },
+    onError: (e: Error) => { qc.invalidateQueries({ queryKey: ['findings'] }); alert(e.message) },
+  })
+  const bulkDismiss = () => {
+    const ids = inbox.filter((f) => sel.has(f.id)).map((f) => f.id)
+    if (ids.length === 0) return
+    if (!confirm(`Dismiss ${ids.length} finding${ids.length === 1 ? '' : 's'}? They move to triaged and reappear only if a rescan finds them again.`)) return
+    dismissMany.mutate(ids)
+  }
+
   return (
     <div className="ks-page">
       <div className="ks-disc">
@@ -141,9 +166,20 @@ export default function DiscoveryScreen() {
           {/* Findings to triage */}
           <div className="ks-panel">
             <div className="ks-panel__hd">
+              {inbox.length > 0 && (
+                <label className="ks-disc__selall" title={allSelected ? 'Clear selection' : 'Select all'}>
+                  <input type="checkbox" checked={allSelected} onChange={toggleAll}
+                    ref={(el) => { if (el) el.indeterminate = selCount > 0 && !allSelected }} aria-label="Select all findings" />
+                </label>
+              )}
               <span className="ks-panel__t">Findings to triage</span>
               {inbox.length > 0 && (() => { const a = ago(inbox[0].createdAt ?? ''); return <span className="ks-panel__sub">· last scan {a === 'now' ? 'just now' : a + ' ago'}</span> })()}
               {inbox.length > 0 && <Pill tone="crit" className="ks-disc__count">{inbox.length} new</Pill>}
+              {selCount > 0 && (
+                <button className="ks-disc__bulk" onClick={bulkDismiss} disabled={dismissMany.isPending}>
+                  <X size={13} /> Dismiss {selCount} selected
+                </button>
+              )}
             </div>
             {inboxLoading || allLoading ? (
               <InlineLoading />
@@ -169,7 +205,10 @@ export default function DiscoveryScreen() {
               inbox.map((f) => {
                 const plat = platOf(f.platform || f.keyType)
                 return (
-                  <div className="ks-finding ks-finding--click" key={f.id} onClick={() => setSelected(f)}>
+                  <div className={'ks-finding ks-finding--click' + (sel.has(f.id) ? ' is-picked' : '')} key={f.id} onClick={() => setSelected(f)}>
+                    <label className="ks-finding__pick" onClick={(e) => e.stopPropagation()}>
+                      <input type="checkbox" checked={sel.has(f.id)} onChange={() => toggle(f.id)} aria-label={`Select ${f.patternName || f.keyType}`} />
+                    </label>
                     <span className="ks-finding__sev" style={{ background: sevColor(f.severity) }} />
                     <div className="ks-finding__main">
                       <div className="ks-finding__name"><Mark>{plat.code}</Mark> {f.patternName || f.keyType} <Dot sev={f.severity as 'critical'} /></div>

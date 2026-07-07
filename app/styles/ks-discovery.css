@@ -14,6 +14,17 @@
 .kb .ks-finding__src { font-family: var(--font-mono); font-size: 11px; color: var(--tx-dim); margin-top: 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .kb .ks-finding__cta { display: flex; flex-direction: column; gap: 8px; flex: none; justify-content: center; }
 
+/* bulk triage: checkbox column + select-all + a red "dismiss selected" action */
+.kb .ks-finding__pick { flex: none; align-self: stretch; display: flex; align-items: center; cursor: pointer; }
+.kb .ks-finding__pick input, .kb .ks-disc__selall input { width: 15px; height: 15px; margin: 0; accent-color: var(--crit); cursor: pointer; }
+.kb .ks-finding.is-picked { background: var(--crit-dim); }
+.kb .ks-finding.is-picked .ks-finding__sev { opacity: 0.5; }
+.kb .ks-disc__selall { flex: none; display: flex; align-items: center; cursor: pointer; }
+.kb .ks-disc__bulk { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-sans); font-size: 12px; font-weight: 600; color: var(--crit); background: var(--crit-dim); border: 1px solid var(--crit-line); border-radius: 2px; padding: 5px 10px; cursor: pointer; white-space: nowrap; transition: border-color .12s, background .12s; }
+.kb .ks-disc__bulk:hover { border-color: var(--crit); background: var(--crit-line); }
+.kb .ks-disc__bulk:disabled { opacity: 0.6; cursor: default; }
+.kb .ks-disc__bulk svg { flex: none; }
+
 /* the "N new" count pill: rounded count badge, pushed to the far right */
 .kb .ks-disc__count { border-radius: 99px; margin-left: auto; }
 
