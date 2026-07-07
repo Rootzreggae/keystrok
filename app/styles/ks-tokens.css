@@ -14,12 +14,15 @@
 .kb {
   /* surfaces: charcoal, not near-black. desk deepened one step (design round 2)
    * so the elevated tier reads. --bg-0 is the deepest; sidebar sits on --bg. */
-  --bg-0: #131519;
-  --bg: #14171d;
-  --bg-2: #181c23;
-  --panel: #21262f;
-  --elev: #272d38;
-  --inset: #15181e;
+  /* surface stack as a pit: content is the recessed floor (--bg-0), the chrome
+   * is raised above it. sidebar + header = primary chrome (--bg, brightest of the
+   * frame); the contextual rails = secondary chrome (--bg-2, a hair below). */
+  --bg-0: #0d0f14;   /* content pit (deepest) */
+  --bg: #1c212b;     /* main sidebar + header (primary chrome) */
+  --bg-2: #171b23;   /* contextual rails (secondary chrome) */
+  --panel: #21262f;  /* cards: raised islands in the pit */
+  --elev: #272d38;   /* stepped-up / interactive */
+  --inset: #12151b;  /* recessed within a panel */
 
   /* dividers (white alpha) */
   --div: rgba(255, 255, 255, 0.07);
@@ -80,12 +83,12 @@
  * system) is light. Dark stays the identity + default; light is opt-in.
  * Scoped through .kb so the landing page is untouched. Design round 2. */
 html[data-theme="light"] .kb {
-  --bg-0: #d9dce3;
-  --bg: #eaecf1;
-  --bg-2: #e0e3ea;   /* recessed / rail */
+  --bg-0: #d6dae2;   /* content pit (recessed floor; raised=lighter in light) */
+  --bg: #eef1f5;     /* main sidebar + header (primary chrome, brightest frame) */
+  --bg-2: #e4e7ed;   /* contextual rails (secondary chrome) */
   --panel: #ffffff;
   --elev: #ffffff;
-  --inset: #e4e7ed;
+  --inset: #dfe2e9;
 
   /* dividers become ink-based (white alpha is invisible on light) */
   --div: rgba(16, 24, 40, 0.10);

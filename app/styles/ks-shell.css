@@ -67,7 +67,7 @@
 
 /* Main column */
 .ks-main { flex: 1; min-width: 0; display: flex; flex-direction: column; overflow: hidden; background: var(--bg-0); }
-.ks-top { height: 56px; flex: none; display: flex; align-items: center; gap: 16px; padding: 0 24px; border-bottom: 1px solid var(--div); }
+.ks-top { height: 56px; flex: none; display: flex; align-items: center; gap: 16px; padding: 0 24px; background: var(--bg); border-bottom: 1px solid var(--div); }
 .ks-top__menu { display: none; background: none; border: none; color: var(--tx-mut); cursor: pointer; padding: 4px; }
 .ks-top__menu:hover { color: var(--tx); }
 .ks-top__title { font-family: var(--font-sans); font-weight: 700; font-size: 16px; color: var(--tx); }
