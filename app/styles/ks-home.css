@@ -8,7 +8,12 @@
 
 /* operational row */
 .kb .ks-band__now { display: flex; border: 1px solid var(--edge); background: var(--panel); }
-.kb .ks-band__cell { flex: 1; padding: 18px 20px 16px; border-right: 1px solid var(--div); position: relative; text-align: left; }
+.kb .ks-band__cell { flex: 1; padding: 18px 20px 16px; border-right: 1px solid var(--div); position: relative; text-align: left; transition: background .12s; }
+/* every stat cell is an entry point: reveal a go-arrow + lift on hover */
+.kb a.ks-band__cell { text-decoration: none; cursor: pointer; }
+.kb a.ks-band__cell:hover { background: var(--elev); }
+.kb a.ks-band__cell::after { content: '→'; position: absolute; top: 18px; right: 16px; font-family: var(--font-mono); font-size: 12px; color: var(--tx-mut); opacity: 0; transition: opacity .12s; }
+.kb a.ks-band__cell:hover::after { opacity: 1; }
 .kb .ks-band__cell:last-child { border-right: 0; }
 .kb .ks-band__n { font-family: var(--font-mono); font-size: 30px; font-weight: 650; color: var(--tx); line-height: 1; display: flex; align-items: baseline; gap: 9px; }
 .kb .ks-band__n .affix { font-size: 12px; font-weight: 600; }
@@ -25,6 +30,10 @@
 .kb .ks-band__hyg { display: flex; align-items: stretch; border: 1px solid var(--div); border-top: 0; background: var(--bg-2); padding: 12px 20px; gap: 44px; flex-wrap: wrap; }
 .kb .ks-band__hygcap { font-family: var(--font-mono); font-size: 9.5px; letter-spacing: 0.13em; text-transform: uppercase; color: var(--tx-mut); align-self: center; flex: 0 0 auto; line-height: 1.5; }
 .kb .ks-band__m { display: flex; flex-direction: column; justify-content: center; }
+/* hygiene metrics are entry points too: padded hover target, label brightens */
+.kb a.ks-band__m { margin: -6px -10px; padding: 6px 10px; border-radius: 2px; text-decoration: none; cursor: pointer; transition: background .12s; }
+.kb a.ks-band__m:hover { background: var(--hover); }
+.kb a.ks-band__m:hover .k { color: var(--tx-2); }
 .kb .ks-band__m .v { font-family: var(--font-mono); font-size: 16px; font-weight: 650; color: var(--tx); display: flex; align-items: baseline; gap: 7px; }
 .kb .ks-band__m .v .u { font-size: 11px; font-weight: 400; color: var(--tx-mut); }
 .kb .ks-band__m .v.warn { color: var(--warn-ink); }

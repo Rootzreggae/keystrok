@@ -36,14 +36,14 @@ export function HomeBand({ needAction, overdue, rotating, total, onView }: {
           )}
           <span className="ks-band__go">view →</span>
         </button>
-        <div className={'ks-band__cell' + (rotating === 0 ? ' is-zero' : '')}>
+        <a className={'ks-band__cell' + (rotating === 0 ? ' is-zero' : '')} href="/rotation-workflows" title="Active rotation workflows">
           <div className="ks-band__n">{rotating}</div>
           <div className="ks-band__l">Rotating</div>
-        </div>
-        <div className="ks-band__cell">
+        </a>
+        <a className="ks-band__cell" href="/inventory" title="All tracked keys">
           <div className="ks-band__n">{total}</div>
           <div className="ks-band__l">Tracked</div>
-        </div>
+        </a>
       </div>
       {data && <HygieneBand p={data} />}
     </div>
@@ -62,24 +62,24 @@ function HygieneBand({ p }: { p: Posture }) {
     <div className="ks-band__hyg">
       <span className="ks-band__hygcap">Hygiene<br />12 weeks</span>
 
-      <div className="ks-band__m">
+      <a className="ks-band__m" href="/inventory?filter=needs-action" title="See the keys past their rotation SLA">
         <div className={'v' + (past > 0 ? ' warn' : '')}>{slaVal}{past > 0 && <span className="u">▲</span>}</div>
         <div className="k">{total === 0 ? 'no open keys' : 'open keys past SLA'}</div>
-      </div>
+      </a>
 
-      <div className="ks-band__m">
+      <a className="ks-band__m" href="/rotation-workflows" title="Rotation turnaround, from completed rotations">
         <div className="v">{mttr === null ? 'n/a' : mttr}{mttr !== null && <span className="u">d to rotate</span>}</div>
         <div className="k">
           {mttr === null ? 'no rotations yet'
             : onTarget ? <><span className="ok">✓ on target</span> · ≤ {MTTR_TARGET}d</>
             : <><span className="warn">▲ over target</span> · ≤ {MTTR_TARGET}d</>}
         </div>
-      </div>
+      </a>
 
-      <div className="ks-band__m">
+      <a className="ks-band__m" href="/inventory?filter=needs-action&lens=timeline" title="See the at-risk keys accruing this exposure">
         <div className={'v' + (p.openExposureDays > 0 ? ' warn' : '')}>{p.openExposureDays}{p.openExposureDays > 0 && <span className="u">▲</span>}</div>
         <div className="k">exposure-days open · accruing</div>
-      </div>
+      </a>
 
       <Trend trend={p.trend} />
     </div>
