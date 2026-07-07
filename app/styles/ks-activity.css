@@ -1,5 +1,17 @@
-/* Activity page: filter rail + main column, reusing the Settings rail primitive
- * (.ks-set). Responsive-first, flat, no shadows. Per the Activity redesign spec. */
+/* Activity page: the filter rail is a REFINEMENT of the content (not navigation),
+ * so it sits on the RIGHT — the content fills the space between the main sidebar
+ * and the filter rail, flanked by both, no dead gap. Reuses the rail item/caption
+ * styling from Settings; only the side differs. */
+.kb .ks-actpage { display: grid; grid-template-columns: minmax(0, 1fr) clamp(196px, 16vw, 240px); gap: clamp(20px, 2.4vw, 40px); padding: clamp(16px, 2vw, 24px) clamp(16px, 2.2vw, 30px) 40px; align-items: stretch; min-height: 100%; }
+.kb .ks-actpage__main { min-width: 0; }
+.kb .ks-actpage__rail { border-left: 1px solid var(--div); padding: 3px 0 0 clamp(16px, 1.6vw, 22px); display: flex; flex-direction: column; }
+/* narrow: rail moves above the content, horizontal, so filters stay reachable */
+@container page (max-width: 760px) {
+  .kb .ks-actpage { grid-template-columns: minmax(0, 1fr); }
+  .kb .ks-actpage__rail { order: -1; border-left: none; border-bottom: 1px solid var(--div); padding: 0 0 12px; flex-direction: row; flex-wrap: wrap; align-items: center; gap: 6px 14px; }
+}
+
+/* class color ramp — one mapping, defined once (dots + strip segments) */
 
 /* class color ramp — one mapping, defined once (dots + strip segments) */
 .kb .ks-act__dot { width: 8px; height: 8px; flex: none; border-radius: 0; display: inline-block; }

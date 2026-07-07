@@ -70,28 +70,9 @@ export default function ActivityScreen() {
   }
 
   return (
-    <div className="ks-set">
-      {/* filter rail — reuses the Settings rail primitive */}
-      <nav className="ks-set__rail">
-        <div className="ks-set__railgroup">
-          <div className="ks-set__raill">Event class</div>
-          <button className={'ks-set__railitem ks-act__filt' + (cls === 'all' ? ' active' : '')} onClick={() => setCls('all')}>
-            <span className="ks-act__dot ks-act__dot--all" /> All events <span className="ks-act__cnt">{counts.all}</span>
-          </button>
-          {CLASSES.map((c) => (
-            <button key={c.id} className={'ks-set__railitem ks-act__filt' + (cls === c.id ? ' active' : '')} onClick={() => setCls(c.id)}>
-              <span className={'ks-act__dot ks-act__dot--' + c.id} /> {c.label} <span className="ks-act__cnt">{counts[c.id]}</span>
-            </button>
-          ))}
-        </div>
-        <div className="ks-set__railgroup">
-          <div className="ks-set__raill">Scope</div>
-          <input className="ks-input ks-act__scope" placeholder="filter by key…" value={scope} onChange={(e) => setScope(e.target.value)} spellCheck={false} />
-        </div>
-      </nav>
-
-      {/* main column */}
-      <div className="ks-set__content ks-act">
+    <div className="ks-actpage">
+      {/* main column fills between the main sidebar (left) and the filter rail (right) */}
+      <div className="ks-actpage__main ks-act">
         <div className="ks-act__hd">
           <div className="ks-act__title">
             <h2>Activity</h2>
@@ -141,6 +122,25 @@ export default function ActivityScreen() {
           </>
         )}
       </div>
+
+      {/* filter rail on the RIGHT — reuses the Settings rail item/caption styling */}
+      <nav className="ks-actpage__rail">
+        <div className="ks-set__railgroup">
+          <div className="ks-set__raill">Event class</div>
+          <button className={'ks-set__railitem ks-act__filt' + (cls === 'all' ? ' active' : '')} onClick={() => setCls('all')}>
+            <span className="ks-act__dot ks-act__dot--all" /> All events <span className="ks-act__cnt">{counts.all}</span>
+          </button>
+          {CLASSES.map((c) => (
+            <button key={c.id} className={'ks-set__railitem ks-act__filt' + (cls === c.id ? ' active' : '')} onClick={() => setCls(c.id)}>
+              <span className={'ks-act__dot ks-act__dot--' + c.id} /> {c.label} <span className="ks-act__cnt">{counts[c.id]}</span>
+            </button>
+          ))}
+        </div>
+        <div className="ks-set__railgroup">
+          <div className="ks-set__raill">Scope</div>
+          <input className="ks-input ks-act__scope" placeholder="filter by key…" value={scope} onChange={(e) => setScope(e.target.value)} spellCheck={false} />
+        </div>
+      </nav>
     </div>
   )
 }
