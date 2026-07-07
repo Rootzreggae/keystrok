@@ -38,13 +38,13 @@ export function SettingsShell({ isAdmin }: { isAdmin: boolean }) {
   const current = all.find((s) => s.id === active) ?? all[0]
 
   return (
-    <div className="ks-set">
+    <div className="ks-railpage ks-set">
       {/* content fills between the main sidebar (left) and the nav rail (right) */}
-      <div className="ks-set__content">
+      <div className="ks-railpage__content">
         {current && <current.Comp />}
       </div>
-      <nav className="ks-set__rail">
-        <div className="ks-set__railinner">
+      <nav className="ks-railpage__rail">
+        <div className="ks-railpage__railinner">
           {groups.map((g) => (
             <div className="ks-set__railgroup" key={g.label}>
               <div className="ks-set__raill">{g.label}</div>

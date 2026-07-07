@@ -1,11 +1,6 @@
-/* Settings IA: same grammar as Activity. Every secondary/contextual rail in the
- * app sits on the RIGHT (the main sidebar is the only left nav), so the content
- * is always the centered hero flanked by chrome on both sides. The rail is a
- * filled (--bg-2) full-height panel with a sticky inner. No grid padding so the
- * rail fills edge-to-edge like a real sidebar. */
-.kb .ks-set { display: grid; grid-template-columns: minmax(0, 1fr) clamp(184px, 15vw, 228px); align-items: stretch; min-height: 100%; }
-.kb .ks-set__rail { background: var(--bg-2); border-left: 1px solid var(--div); display: flex; flex-direction: column; }
-.kb .ks-set__railinner { position: sticky; top: 0; padding: clamp(16px, 2vw, 24px) clamp(16px, 1.6vw, 22px) 24px; display: flex; flex-direction: column; }
+/* Settings: the .ks-railpage primitive (see ks-shell.css), narrower content cap.
+ * The nav rail takes the right, same as every contextual rail in the app. */
+.kb .ks-set { --content-cap: 900px; }
 .kb .ks-set__railgroup { display: flex; flex-direction: column; gap: 2px; }
 .kb .ks-set__railgroup + .ks-set__railgroup { margin-top: 16px; }
 .kb .ks-set__raill { font-family: var(--font-mono); font-size: 9.5px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--tx-dim); padding: 4px 9px 7px; }
@@ -13,16 +8,13 @@
 .kb .ks-set__railitem svg { flex: none; opacity: 0.85; }
 .kb .ks-set__railitem:hover { color: var(--tx); }
 .kb .ks-set__railitem.active { color: var(--tx); background: var(--elev); box-shadow: inset 2px 0 0 var(--tx); }
-/* form column: readable cap, centered in its track (symmetric breathing room) */
-.kb .ks-set__content { min-width: 0; width: min(900px, 100%); margin-inline: auto; padding: clamp(16px, 2vw, 24px) clamp(20px, 2.2vw, 32px) 40px; }
-.kb .ks-set__content > .ks-panel { margin-top: 0 !important; }
+.kb .ks-railpage__content > .ks-panel { margin-top: 0 !important; }
 /* Team, folded in from its own page: stack its cards with the page rhythm. */
 .kb .ks-teamwrap { display: flex; flex-direction: column; gap: 16px; }
 .kb .ks-teamwrap > .ks-panel { margin-top: 0 !important; }
-@container page (max-width: 640px) {
-  .kb .ks-set { grid-template-columns: minmax(0, 1fr); }
-  .kb .ks-set__rail { order: -1; background: none; border-left: none; border-bottom: 1px solid var(--div); }
-  .kb .ks-set__railinner { position: static; flex-direction: row; flex-wrap: wrap; align-items: center; gap: 4px 14px; padding: clamp(16px, 2vw, 24px) clamp(20px, 2.2vw, 32px) 12px; }
+/* narrow: rail is a top bar (shared primitive handles it); flow the nav groups
+ * into a single row so the sections stay one compact strip */
+@container page (max-width: 760px) {
   .kb .ks-set__railgroup { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
   .kb .ks-set__railgroup + .ks-set__railgroup { margin-top: 0; margin-left: 8px; }
 }

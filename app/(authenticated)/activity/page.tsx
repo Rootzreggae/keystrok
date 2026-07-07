@@ -70,9 +70,9 @@ export default function ActivityScreen() {
   }
 
   return (
-    <div className="ks-actpage">
+    <div className="ks-railpage ks-actpage">
       {/* main column fills between the main sidebar (left) and the filter rail (right) */}
-      <div className="ks-actpage__main ks-act">
+      <div className="ks-railpage__content ks-act">
         <div className="ks-act__hd">
           <div className="ks-act__title">
             <h2>Activity</h2>
@@ -124,8 +124,8 @@ export default function ActivityScreen() {
       </div>
 
       {/* filter rail on the RIGHT — full-height chrome; the inner content is sticky */}
-      <nav className="ks-actpage__rail">
-        <div className="ks-actpage__railinner">
+      <nav className="ks-railpage__rail">
+        <div className="ks-railpage__railinner">
           <div className="ks-set__railgroup">
             <div className="ks-set__raill">Event class</div>
             <button className={'ks-set__railitem ks-act__filt' + (cls === 'all' ? ' active' : '')} onClick={() => setCls('all')}>

@@ -1,27 +1,6 @@
-/* Activity page: the filter rail is a REFINEMENT of the content (not navigation),
- * so it sits on the RIGHT — the content fills the space between the main sidebar
- * and the filter rail, flanked by both, no dead gap. Reuses the rail item/caption
- * styling from Settings; only the side differs. */
-/* No padding on the grid itself: the content column carries the page padding,
- * so the filter rail fills its track edge-to-edge (top/right/bottom) like a real
- * sidebar. */
-.kb .ks-actpage { display: grid; grid-template-columns: minmax(0, 1fr) clamp(196px, 16vw, 240px); align-items: stretch; min-height: 100%; }
-/* readable cap, centered in the column: symmetric breathing room between the
- * main sidebar and the filter rail. A cap (not viewport padding) so the log
- * rows never over-spread, at any width. */
-.kb .ks-actpage__main { min-width: 0; width: min(1040px, 100%); margin-inline: auto; padding: clamp(16px, 2vw, 24px) clamp(20px, 2.2vw, 32px) 40px; }
-/* filter rail as chrome: full-height fill (recessed --bg-2, subordinate to the
- * main sidebar's --bg) + border, framing the content well. Its inner content is
- * sticky, so the filters stay reachable no matter how far the log scrolls. */
-.kb .ks-actpage__rail { background: var(--bg-2); border-left: 1px solid var(--div); display: flex; flex-direction: column; }
-.kb .ks-actpage__railinner { position: sticky; top: 0; padding: clamp(16px, 2vw, 24px) clamp(16px, 1.6vw, 22px) 24px; display: flex; flex-direction: column; }
-/* narrow: rail becomes a top bar (no fill), filters horizontal so they stay reachable */
-@container page (max-width: 760px) {
-  .kb .ks-actpage { grid-template-columns: minmax(0, 1fr); }
-  .kb .ks-actpage__main { padding-bottom: 24px; }
-  .kb .ks-actpage__rail { order: -1; background: none; border-left: none; border-bottom: 1px solid var(--div); }
-  .kb .ks-actpage__railinner { position: static; padding: clamp(16px, 2vw, 24px) clamp(16px, 2.2vw, 30px) 12px; flex-direction: row; flex-wrap: wrap; align-items: center; gap: 6px 14px; }
-}
+/* Activity: the .ks-railpage primitive (see ks-shell.css) with a wide content
+ * cap. The filter rail is a refinement of the content, so it takes the right. */
+.kb .ks-actpage { --content-cap: 1040px; --rail-w: clamp(196px, 16vw, 240px); }
 
 /* class color ramp — one mapping, defined once (dots + strip segments) */
 

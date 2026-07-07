@@ -89,6 +89,23 @@
 .ks-top__theme:hover { color: var(--tx); border-color: var(--div-2); }
 
 .ks-content { flex: 1; min-height: 0; overflow-y: auto; container-type: inline-size; container-name: page; }
+
+/* Rail-page: a content well + a right-hand contextual rail (chrome). Shared by
+ * Activity (filter rail) and Settings (nav rail) — same grammar, differ only in
+ * the rail's contents. Per-page knobs: --content-cap (readable width) and
+ * --rail-w (rail track). The rail fills its track like a real sidebar; its inner
+ * is sticky so it stays reachable. Rail contents reuse .ks-set__rail* items. */
+.kb .ks-railpage { display: grid; grid-template-columns: minmax(0, 1fr) var(--rail-w, clamp(184px, 15vw, 228px)); align-items: stretch; min-height: 100%; }
+.kb .ks-railpage__content { min-width: 0; width: min(var(--content-cap, 960px), 100%); margin-inline: auto; padding: clamp(16px, 2vw, 24px) clamp(20px, 2.2vw, 32px) 40px; }
+.kb .ks-railpage__rail { background: var(--bg-2); border-left: 1px solid var(--div); display: flex; flex-direction: column; }
+.kb .ks-railpage__railinner { position: sticky; top: 0; padding: clamp(16px, 2vw, 24px) clamp(16px, 1.6vw, 22px) 24px; display: flex; flex-direction: column; }
+/* narrow: rail becomes a top bar (no fill), inner goes horizontal so it stays reachable */
+@container page (max-width: 760px) {
+  .kb .ks-railpage { grid-template-columns: minmax(0, 1fr); }
+  .kb .ks-railpage__content { padding-bottom: 24px; }
+  .kb .ks-railpage__rail { order: -1; background: none; border-left: none; border-bottom: 1px solid var(--div); }
+  .kb .ks-railpage__railinner { position: static; flex-direction: row; flex-wrap: wrap; align-items: center; gap: 6px 14px; padding: clamp(16px, 2vw, 24px) clamp(20px, 2.2vw, 30px) 12px; }
+}
 .ks-page { width: 100%; margin: 0; padding: clamp(16px, 2vw, 24px) clamp(16px, 2.2vw, 28px) 40px; }
 
 /* Off-canvas sidebar on small screens */
