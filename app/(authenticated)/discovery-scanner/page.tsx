@@ -5,6 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Check, X, Search, Github, FolderOpen } from 'lucide-react'
 import { Mark, Dot, Pill } from '@/components/ks'
 import { FindingDrawer } from '@/components/ks/FindingDrawer'
+import { InlineLoading } from '@/components/ks/Loading'
 import { useSourceConnect } from '@/components/ks/SourceConnect'
 import { pickAndScanFolder } from '@/lib/folder-scan'
 import { platOf, sevColor, ago, cleanLocation } from '@/lib/keys-display'
@@ -52,8 +53,8 @@ export default function DiscoveryScreen() {
     const j = await r.json()
     return (j.results?.findings ?? j.findings ?? []) as Finding[]
   }
-  const { data: inbox = [] } = useQuery<Finding[]>({ queryKey: ['findings', 'active'], queryFn: fetchFindings('active'), refetchInterval: scanning ? 3000 : false })
-  const { data: all = [] } = useQuery<Finding[]>({ queryKey: ['findings', 'all'], queryFn: fetchFindings() })
+  const { data: inbox = [], isLoading: inboxLoading } = useQuery<Finding[]>({ queryKey: ['findings', 'active'], queryFn: fetchFindings('active'), refetchInterval: scanning ? 3000 : false })
+  const { data: all = [], isLoading: allLoading } = useQuery<Finding[]>({ queryKey: ['findings', 'all'], queryFn: fetchFindings() })
   const triaged = all.filter((f) => f.status === 'resolved' || f.status === 'dismissed').slice(0, 6)
 
   // Connected GitHub repos, so any of them can be (re)scanned any time, not
@@ -144,7 +145,9 @@ export default function DiscoveryScreen() {
               {inbox.length > 0 && (() => { const a = ago(inbox[0].createdAt ?? ''); return <span className="ks-panel__sub">· last scan {a === 'now' ? 'just now' : a + ' ago'}</span> })()}
               {inbox.length > 0 && <Pill tone="crit" className="ks-disc__count">{inbox.length} new</Pill>}
             </div>
-            {inbox.length === 0 ? (
+            {inboxLoading || allLoading ? (
+              <InlineLoading />
+            ) : inbox.length === 0 ? (
               <div className="ks-empty" style={{ padding: '48px 24px' }}>
                 <span className="ks-empty__ico"><Search size={26} strokeWidth={1.75} /></span>
                 <div className="ks-empty__t">{scanning ? 'Scanning…' : triaged.length > 0 ? 'Inbox clear' : 'Nothing to triage yet'}</div>
