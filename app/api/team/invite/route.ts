@@ -46,6 +46,24 @@ export async function POST(request: NextRequest) {
   return NextResponse.json({ invite, emailed })
 }
 
+// PATCH /api/team/invite  { email, role } - change a pending invite's role
+// before it is accepted (admin-only). No email; the role applies on sign-in.
+export async function PATCH(request: NextRequest) {
+  const session = await auth()
+  if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const denied = await requireAdmin(session.user.id)
+  if (denied) return denied
+
+  const { email: emailRaw, role: roleRaw } = await request.json().catch(() => ({}))
+  const email = typeof emailRaw === 'string' ? emailRaw.trim().toLowerCase() : ''
+  const role = roleRaw === 'admin' ? 'admin' : 'member'
+  if (!email) return NextResponse.json({ error: 'email is required' }, { status: 400 })
+
+  const { count } = await prisma.invite.updateMany({ where: { email }, data: { role } })
+  if (count === 0) return NextResponse.json({ error: 'Invite not found.' }, { status: 404 })
+  return NextResponse.json({ ok: true, role })
+}
+
 // DELETE /api/team/invite  { email } - revoke a pending invite (admin-only).
 export async function DELETE(request: NextRequest) {
   const session = await auth()

@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { UserPlus, X, Shield, AlertTriangle, Lock, ChevronDown } from 'lucide-react'
+import { Users, X, Shield, AlertTriangle, Lock, ChevronDown } from 'lucide-react'
 import { ago } from '@/lib/keys-display'
 
 type Role = 'admin' | 'member'
@@ -11,6 +11,7 @@ interface Invite { id: string; email: string; role: Role; createdAt: string }
 interface TeamData { members: Member[]; invites: Invite[]; mailConfigured: boolean }
 
 const joined = (iso: string) => new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+const cap = (r: Role) => (r === 'admin' ? 'Admin' : 'Member')
 const Avatar = ({ email, pending }: { email: string; pending?: boolean }) => (
   <span className={'ks-mbr__av' + (pending ? ' ks-mbr__av--pending' : '')}>{(email[0] || '?').toUpperCase()}</span>
 )
@@ -22,7 +23,7 @@ export function TeamManager() {
   const [inviteEmail, setInviteEmail] = useState('')
   const [inviteRole, setInviteRole] = useState<Role>('member')
   // One confirm at a time: a staged role change or a pending removal.
-  const [confirm, setConfirm] = useState<{ kind: 'role' | 'remove'; id: string; email: string; role?: Role } | null>(null)
+  const [confirm, setConfirm] = useState<{ kind: 'role' | 'remove' | 'revoke'; id: string; email: string; role?: Role } | null>(null)
   const [err, setErr] = useState<string | null>(null)
 
   const { data, isLoading, error } = useQuery<TeamData>({
@@ -53,6 +54,7 @@ export function TeamManager() {
   const doRole = (id: string, role: Role) => run(() => fetch(`/api/team/members/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ role }) }))
   const doRemove = (id: string) => run(() => fetch(`/api/team/members/${id}`, { method: 'DELETE' }))
   const revokeInvite = (email: string) => run(() => fetch('/api/team/invite', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) }))
+  const patchInviteRole = (email: string, role: Role) => run(() => fetch('/api/team/invite', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, role }) }))
   const resendInvite = (email: string) => run(() => fetch('/api/team/invite/resend', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) }))
 
   if (error) {
@@ -81,8 +83,8 @@ export function TeamManager() {
           {!isLoading && <span className="ks-team__meta">{members.length} {members.length === 1 ? 'member' : 'members'} · {adminCount} {adminCount === 1 ? 'admin' : 'admins'}</span>}
         </div>
         {!inviting && (
-          <button className="ks-btn ks-btn--primary" onClick={() => { setErr(null); setInviting(true) }}>
-            <UserPlus size={14} /> Invite member
+          <button className="ks-btn ks-btn--primary ks-team__invite" onClick={() => { setErr(null); setInviting(true) }}>
+            Invite member
           </button>
         )}
       </div>
@@ -129,26 +131,36 @@ export function TeamManager() {
         </div>
       )}
 
-      <div className="ks-panel">
+      {/* Tip sits ABOVE the Members card, full width — lists grow down, so it must
+       * never sit between/below them. Retired once the team has 2+ admins. */}
+      {(members.length <= 1 || adminCount <= 1) && (
+        <div className="ks-mbr__tip">
+          <Users size={12} />
+          <span>Self-hosted, this instance is your whole team. The team always keeps at least one admin, so the last admin&apos;s role is locked.</span>
+        </div>
+      )}
+
+      <div className="ks-panel ks-team__card">
         <div className="ks-panel__hd"><span className="ks-panel__t">Members</span><span className="ks-panel__sub">· {members.length}</span></div>
         {members.map((m) => {
           const lastAdmin = m.role === 'admin' && adminCount === 1
-          const rowConfirm = confirm && confirm.id === m.id
+          const locked = m.you || lastAdmin
           return (
             <div className="ks-mbr__row" key={m.id}>
               <Avatar email={m.email} />
-              <span className="ks-mbr__email">{m.email}</span>
-              {m.you && <Chip>you</Chip>}
-              <span className="ks-mbr__sp" />
-              <div className="ks-mbr__right">
-                {lastAdmin ? (
-                  <span className="ks-mbr__rolelock"><Lock size={11} /> Admin</span>
+              <div className="ks-mbr__id">
+                <span className="ks-mbr__email">{m.email}</span>
+                {m.you && <Chip>you</Chip>}
+              </div>
+              <span className="ks-mbr__meta">{lastAdmin ? 'last admin · locked' : `joined ${joined(m.createdAt)}`}</span>
+              <div className="ks-mbr__rolecol">
+                {locked ? (
+                  <span className="ks-mbr__rolelock"><span>{cap(m.role)}</span><Lock size={11} /></span>
                 ) : (
                   <span className="ks-mbr__rolewrap">
                     <select
                       className="ks-mbr__role"
-                      value={rowConfirm && confirm?.kind === 'role' ? confirm.role : m.role}
-                      disabled={m.you}
+                      value={confirm && confirm.id === m.id && confirm.kind === 'role' ? confirm.role : m.role}
                       onChange={(e) => {
                         const role = e.target.value as Role
                         if (role !== m.role) setConfirm({ kind: 'role', id: m.id, email: m.email, role })
@@ -158,20 +170,20 @@ export function TeamManager() {
                       <option value="admin">Admin</option>
                       <option value="member">Member</option>
                     </select>
-                    {!m.you && <ChevronDown size={12} className="ks-mbr__rolechev" />}
+                    <ChevronDown size={12} className="ks-mbr__rolechev" />
                   </span>
                 )}
-                {lastAdmin && <span className="ks-mbr__reason">last admin · locked</span>}
-                <span className="ks-mbr__joined">joined {joined(m.createdAt)}</span>
-                {!lastAdmin && !m.you && (
-                  <button className="ks-btn ks-btn--sm ks-mbr__rm" onClick={() => setConfirm({ kind: 'remove', id: m.id, email: m.email })}>Remove</button>
+              </div>
+              <div className="ks-mbr__act">
+                {!locked && (
+                  <button className="ks-mbr__rm" onClick={() => setConfirm({ kind: 'remove', id: m.id, email: m.email })}>Remove</button>
                 )}
               </div>
             </div>
           )
         })}
 
-        {confirm && (
+        {confirm && confirm.kind !== 'revoke' && (
           <div className="ks-mbr__confirm">
             {confirm.kind === 'role' ? (
               <>
@@ -188,7 +200,7 @@ export function TeamManager() {
                 <span>Remove <b>{confirm.email}</b> from the team? They lose access immediately; the keys and findings they added stay in the workspace.</span>
                 <div className="ks-mbr__confirm-cta">
                   <button className="ks-btn ks-btn--sm" onClick={() => setConfirm(null)}>Cancel</button>
-                  <button className="ks-btn ks-btn--sm ks-mbr__rm" onClick={() => { doRemove(confirm.id); setConfirm(null) }}>Remove member</button>
+                  <button className="ks-btn ks-btn--sm ks-mbr__dangerc" onClick={() => { doRemove(confirm.id); setConfirm(null) }}>Remove member</button>
                 </div>
               </>
             )}
@@ -196,28 +208,39 @@ export function TeamManager() {
         )}
       </div>
 
-      {/* Tip sits BETWEEN the cards, so a growing invites list never pushes it off-page. */}
-      <div className="ks-mbr__tip">
-        <Shield size={12} />
-        <span>Self-hosted, this instance is your whole team. The team always keeps at least one admin, so the last admin&apos;s role is locked.</span>
-      </div>
-
       {invites.length > 0 && (
-        <div className="ks-panel">
+        <div className="ks-panel ks-team__card">
           <div className="ks-panel__hd"><span className="ks-panel__t">Pending invites</span><span className="ks-panel__sub">· {invites.length}</span></div>
           {invites.map((iv) => (
             <div className="ks-mbr__row" key={iv.id}>
               <Avatar email={iv.email} pending />
-              <span className="ks-mbr__email">{iv.email}</span>
-              <Chip>{iv.role}</Chip>
-              <span className="ks-mbr__sp" />
-              <div className="ks-mbr__right">
-                <span className="ks-mbr__joined">invited {ago(iv.createdAt)} ago</span>
+              <div className="ks-mbr__id"><span className="ks-mbr__email">{iv.email}</span></div>
+              <span className="ks-mbr__meta">invited {ago(iv.createdAt)} ago</span>
+              <div className="ks-mbr__rolecol">
+                <span className="ks-mbr__rolewrap">
+                  <select className="ks-mbr__role" value={iv.role} onChange={(e) => patchInviteRole(iv.email, e.target.value as Role)}>
+                    <option value="member">Member</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                  <ChevronDown size={12} className="ks-mbr__rolechev" />
+                </span>
+              </div>
+              <div className="ks-mbr__act">
                 <button className="ks-mbr__resend" onClick={() => resendInvite(iv.email)}>Resend</button>
-                <button className="ks-mbr__revoke" onClick={() => revokeInvite(iv.email)}>Revoke</button>
+                <button className="ks-mbr__revoke" onClick={() => setConfirm({ kind: 'revoke', id: iv.id, email: iv.email })}>Revoke</button>
               </div>
             </div>
           ))}
+
+          {confirm && confirm.kind === 'revoke' && (
+            <div className="ks-mbr__confirm">
+              <span>Revoke the invite for <b>{confirm.email}</b>? Their pending sign-in access is removed; you can invite them again later.</span>
+              <div className="ks-mbr__confirm-cta">
+                <button className="ks-btn ks-btn--sm" onClick={() => setConfirm(null)}>Cancel</button>
+                <button className="ks-btn ks-btn--sm ks-mbr__dangerc" onClick={() => { revokeInvite(confirm.email); setConfirm(null) }}>Revoke invite</button>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
