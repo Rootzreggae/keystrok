@@ -62,5 +62,5 @@
 
 /* self-hosted tip: ABOVE the Members card, full width — lists grow down, so the
  * tip must never move. Readable ch measure (scales with the font). */
-.kb .ks-mbr__tip { display: flex; align-items: flex-start; gap: 8px; max-width: min(78ch, 100%); margin: 0 2px; font-family: var(--font-mono); font-size: 10.5px; color: var(--tx-dim); line-height: 1.6; }
+.kb .ks-mbr__tip { display: flex; align-items: flex-start; gap: 8px; margin: 0 2px; font-family: var(--font-mono); font-size: 10.5px; color: var(--tx-dim); line-height: 1.6; }
 .kb .ks-mbr__tip svg { flex: none; margin-top: 2px; }
