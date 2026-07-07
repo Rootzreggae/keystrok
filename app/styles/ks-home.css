@@ -33,8 +33,10 @@
 .kb .ks-band__m .k .warn { color: var(--warn-ink); }
 .kb .ks-band__trend { margin-left: auto; display: flex; align-items: center; gap: 12px; }
 .kb .ks-band__bars { display: flex; align-items: flex-end; gap: 3px; height: 34px; border-bottom: 1px solid var(--div-2); padding-bottom: 1px; }
-.kb .ks-band__bars i { width: 10px; background: var(--div-2); }
+.kb .ks-band__bars i { width: 10px; background: var(--div-2); cursor: help; transition: background .12s; }
+.kb .ks-band__bars i:hover { background: var(--tx-mut); }
 .kb .ks-band__bars i.hot { background: var(--high); }
+.kb .ks-band__bars i.hot:hover { filter: brightness(1.15); }
 .kb .ks-band__trendcap { font-family: var(--font-mono); font-size: 9.5px; color: var(--tx-mut); line-height: 1.5; white-space: nowrap; flex: none; }
 
 /* an SLA-expired key reads "SLA expired", never a "0d left" that says nothing */

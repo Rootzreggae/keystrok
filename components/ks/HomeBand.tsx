@@ -95,6 +95,7 @@ function Trend({ trend }: { trend: Posture['trend'] }) {
       <div className="ks-band__bars" role="img" aria-label="Exposure-days burned, last 12 weeks">
         {trend.map((t, i) => (
           <i key={t.weekEnd} className={i >= trend.length - 3 ? 'hot' : ''}
+             title={`week ending ${t.weekEnd} · ${t.expDays} exposure-day${t.expDays === 1 ? '' : 's'}`}
              style={{ height: t.expDays === 0 ? 1 : Math.max(2, Math.round((t.expDays / max) * H)) }} />
         ))}
       </div>
