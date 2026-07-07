@@ -25,6 +25,11 @@ assert.ok(plat.parts.some((p) => p.k === 'strong' && p.s === 'AWS'))
 // discovery promote -> entity + path tail
 const prom = parseActivity(A('key_promoted', 'Local scan finding promoted to inventory: aws_access_key key in /Users/x/.keystrok/clones/abc/app/page.tsx'))!
 assert.ok(prom.detail && !prom.detail.includes('.keystrok/clones')) // clone path stripped
+// discovery restore (undo of a dismissal) -> discovery class, entity + path
+const rest = parseActivity(A('finding_restored', 'Restored scan finding: aws_access_key in app/page.tsx'))!
+assert.equal(rest.cls, 'discovery')
+assert.ok(rest.parts.some((p) => p.k === 'strong' && p.s === 'aws_access_key'))
+assert.ok(rest.parts.some((p) => p.s === 'Restored '))
 
 // workflow threading -> head + steps, last step tagged completed
 const rawWf = {

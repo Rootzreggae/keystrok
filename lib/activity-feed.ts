@@ -90,6 +90,7 @@ export function parseActivity(row: { id: string; action: string; description: st
   if ((m = d.match(/^Quick scan completed: (\d+) findings in (\d+) files$/))) return ev([{ s: `Scan complete — ${m[1]} finding${m[1] === '1' ? '' : 's'} in ${m[2]} files` }])
   if ((m = d.match(/^Local scan finding promoted to inventory: (\w+) key in (.+)$/))) return ev([{ s: 'Promoted ' }, { s: m[1], k: 'strong' }, { s: ' key to inventory' }], pathBits(m[2]))
   if ((m = d.match(/^Dismissed scan finding: (\w+) in (.+)$/))) return ev([{ s: 'Dismissed ' }, { s: m[1], k: 'strong' }, { s: ' finding' }], pathBits(m[2]))
+  if ((m = d.match(/^Restored scan finding: (\w+) in (.+)$/))) return ev([{ s: 'Restored ' }, { s: m[1], k: 'strong' }, { s: ' finding' }], pathBits(m[2]))
   if ((m = d.match(/^Deleted (?:\w+) key: (.+)$/))) return ev([{ s: 'Deleted ' }, { s: displayName(m[1]), k: 'strong' }, { s: ' from inventory' }])
   if (/exposure/i.test(d)) { const key = d.match(/for ([A-Z0-9_]+)/)?.[1]; return ev([{ s: 'Exposure date set' }, ...(key ? [{ s: ' for ' }, { s: displayName(key), k: 'strong' as const }] : [])]) }
   if (/false positive/i.test(d)) return ev([{ s: 'Marked a finding false positive' }])
