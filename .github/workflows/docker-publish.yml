@@ -20,6 +20,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # arm64 emulation, so the amd64 runner can also build the ARM image. Most
+      # self-hosters run ARM (Pi, Ampere, Apple Silicon); ship both or `pull`
+      # fails for them. QEMU is slow (~10-20m for the arm64 leg); if that bites,
+      # switch to a native-runner matrix (ubuntu-24.04-arm) + manifest merge.
+      - uses: docker/setup-qemu-action@v3
+
       - uses: docker/setup-buildx-action@v3
 
       - name: Log in to GHCR
@@ -43,6 +49,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
+          platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
