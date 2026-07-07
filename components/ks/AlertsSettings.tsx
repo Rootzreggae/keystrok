@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { Send, Bell, Check, AlertTriangle } from 'lucide-react'
+import { InlineLoading } from '@/components/ks/Loading'
 
 type Channel = 'telegram' | 'webhook'
 interface Cfg {
@@ -25,7 +26,7 @@ export function AlertsSettings() {
   const [idMsg, setIdMsg] = useState<string | null>(null)
 
   useEffect(() => { fetch('/api/alerts/config').then((r) => r.json()).then(setC).catch(() => {}) }, [])
-  if (!c) return null
+  if (!c) return <div className="ks-panel"><InlineLoading /></div>
   const set = (p: Partial<Cfg>) => setC({ ...c, ...p })
 
   const save = async () => {

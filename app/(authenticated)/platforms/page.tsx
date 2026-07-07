@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { ArrowRight, Server, RefreshCw } from 'lucide-react'
 import { PlatformConnect } from '@/components/ks/PlatformConnect'
+import { PanelLoading } from '@/components/ks/Loading'
 import { platOf } from '@/lib/keys-display'
 
 interface Platform {
@@ -36,7 +37,7 @@ export default function PlatformsScreen() {
     onError: (e: Error) => setLiveMsg(e.message),
   })
 
-  const { data: platforms = [] } = useQuery<Platform[]>({
+  const { data: platforms = [], isLoading } = useQuery<Platform[]>({
     queryKey: ['platforms'],
     queryFn: async () => {
       const r = await fetch('/api/platforms')
@@ -78,7 +79,9 @@ export default function PlatformsScreen() {
         <div style={{ marginTop: -8, marginBottom: 18, fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--tx-mut)' }}>{liveMsg}</div>
       )}
 
-      {platforms.length === 0 ? (
+      {isLoading ? (
+        <PanelLoading minHeight={520} />
+      ) : platforms.length === 0 ? (
         <div className="ks-panel" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 520 }}>
           <div className="ks-empty">
             <span className="ks-empty__ico"><Server size={26} strokeWidth={1.75} /></span>

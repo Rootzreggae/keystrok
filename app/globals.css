@@ -228,3 +228,10 @@ html[data-theme="light"], html[data-theme="light"] body {
 .toast-enter {
   animation: toast-slide-in 0.3s ease-out forwards;
 }
+
+/* Loading placeholders (components/ks/Loading.tsx) */
+.kb .ks-loading { display: flex; align-items: center; justify-content: center; gap: 10px; }
+.kb .ks-loading--inline { padding: 24px 20px; justify-content: flex-start; }
+.kb .ks-loading__spin { width: 15px; height: 15px; border: 2px solid var(--div-2); border-top-color: var(--tx-mut); border-radius: 50%; animation: ks-spin 0.7s linear infinite; flex: none; }
+.kb .ks-loading__lbl { font-family: var(--font-mono); font-size: 12px; color: var(--tx-mut); }
+@keyframes ks-spin { to { transform: rotate(360deg); } }

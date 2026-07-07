@@ -2,6 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query'
 import { Copy, Search, CheckCircle2, RefreshCw, X, Server, FileText, type LucideIcon } from 'lucide-react'
+import { InlineLoading } from '@/components/ks/Loading'
 
 interface Activity { id: string; action?: string; description?: string; createdAt: string }
 
@@ -40,7 +41,7 @@ function highlightKeys(text: string) {
 }
 
 export default function ActivityScreen() {
-  const { data: activity = [] } = useQuery<Activity[]>({
+  const { data: activity = [], isLoading } = useQuery<Activity[]>({
     queryKey: ['activity-log'],
     queryFn: async () => {
       const r = await fetch('/api/activity/recent?limit=50')
@@ -70,7 +71,9 @@ export default function ActivityScreen() {
         </span>
       </div>
       <div className="ks-panel" style={{ padding: '8px 22px' }}>
-        {activity.length === 0 ? (
+        {isLoading ? (
+          <InlineLoading />
+        ) : activity.length === 0 ? (
           <div style={{ padding: '28px 0', fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--tx-dim)' }}>No activity yet.</div>
         ) : (
           <div className="ks-act">

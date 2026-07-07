@@ -5,6 +5,7 @@ import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query'
 import { useSearchParams } from 'next/navigation'
 import { Check, Lock, RotateCw, ShieldAlert, KeyRound, ChevronRight, ChevronDown } from 'lucide-react'
 import { Mark, Dot, Pill } from '@/components/ks'
+import { PanelLoading } from '@/components/ks/Loading'
 import { platOf, SEVL, displayName, needsAction, urgency, type ApiKey } from '@/lib/keys-display'
 import { isDestructiveStep } from '@/lib/rotation-policy'
 
@@ -125,7 +126,7 @@ function RotationsInner() {
   const [doneOpen, setDoneOpen] = useState(false) // completed rotations are secondary; collapsed by default
   const qc = useQueryClient()
 
-  const { data: workflows = [] } = useQuery<Workflow[]>({
+  const { data: workflows = [], isLoading: loadingWf } = useQuery<Workflow[]>({
     queryKey: ['workflows'],
     queryFn: async () => {
       const r = await fetch('/api/workflows')
@@ -135,7 +136,7 @@ function RotationsInner() {
     },
   })
 
-  const { data: keys = [] } = useQuery<ApiKey[]>({
+  const { data: keys = [], isLoading: loadingKeys } = useQuery<ApiKey[]>({
     queryKey: ['keys'],
     queryFn: async () => {
       const r = await fetch('/api/keys')
@@ -181,6 +182,11 @@ function RotationsInner() {
       return j.workflow ?? j.data ?? j
     },
   })
+
+  // Don't flash the "nothing to rotate" empty state while the data is still loading.
+  if (loadingWf || loadingKeys) {
+    return <div className="ks-home"><PanelLoading minHeight={520} /></div>
+  }
 
   if (dueKeys.length === 0 && workflows.length === 0) {
     return (

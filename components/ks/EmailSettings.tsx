@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { Mail, Send, Check, AlertTriangle } from 'lucide-react'
+import { InlineLoading } from '@/components/ks/Loading'
 
 interface Status { transport: 'resend' | 'smtp' | 'none'; from: string; detail: string; youEmail: string | null }
 
@@ -14,7 +15,7 @@ export function EmailSettings() {
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null)
 
   useEffect(() => { fetch('/api/settings/email').then((r) => r.json()).then(setS).catch(() => {}) }, [])
-  if (!s) return null
+  if (!s) return <div className="ks-panel"><InlineLoading /></div>
   const configured = s.transport !== 'none'
 
   const test = async () => {
