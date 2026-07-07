@@ -16,27 +16,29 @@
 /* both cards share identical chrome: div-2 border on panel bg */
 .kb .ks-team__card { border-color: var(--div-2); }
 
-/* THE refinement: member AND invite rows share ONE grid, so role + actions align
- * page-wide across both cards. avatar | identity (flex, truncates) | meta (one
- * fact) | role (fixed) | actions (fixed gutter). Flexible cells truncate; fixed
- * cells never shrink; no variable-width text sits right of a fixed column. */
-.kb .ks-mbr__row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto 96px 148px; align-items: center; column-gap: 14px; padding: 12px 16px; border-bottom: 1px solid var(--div); }
+/* THE refinement: member AND invite rows share ONE layout — avatar | identity
+ * (flex, truncates) | controls. The controls cluster holds meta | role (fixed) |
+ * actions (fixed gutter), right-anchored, so role + actions align page-wide
+ * across both cards. Flexible cells truncate; fixed cells never shrink. */
+.kb .ks-mbr__row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: "av id ctl"; align-items: center; column-gap: 14px; padding: 12px 16px; border-bottom: 1px solid var(--div); }
 .kb .ks-mbr__row:last-child { border-bottom: none; }
+.kb .ks-mbr__controls { grid-area: ctl; display: flex; align-items: center; gap: 14px; }
 
 /* avatar: 24px square, inset */
-.kb .ks-mbr__av { width: 24px; height: 24px; border-radius: 0; flex: none; display: inline-flex; align-items: center; justify-content: center; font-family: var(--font-mono); font-size: 10px; font-weight: 600; color: var(--tx); background: var(--inset); border: 1px solid var(--div-2); }
+.kb .ks-mbr__av { grid-area: av; width: 24px; height: 24px; border-radius: 0; flex: none; display: inline-flex; align-items: center; justify-content: center; font-family: var(--font-mono); font-size: 10px; font-weight: 600; color: var(--tx); background: var(--inset); border: 1px solid var(--div-2); }
 .kb .ks-mbr__av--pending { color: var(--tx-dim); border-style: dashed; }
 
 /* identity: flexes + truncates. the email ellipsizes; chips never shrink */
-.kb .ks-mbr__id { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.kb .ks-mbr__id { grid-area: id; display: flex; align-items: center; gap: 8px; min-width: 0; }
 .kb .ks-mbr__email { font-family: var(--font-mono); font-size: 12px; color: var(--tx); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .kb .ks-mbr__chip { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.06em; background: var(--inset); border: 1px solid var(--div-2); border-radius: 2px; padding: 2px 5px; color: var(--tx-mut); flex: none; }
 
-/* meta: exactly ONE fact, right-aligned dim mono */
-.kb .ks-mbr__meta { justify-self: end; text-align: right; white-space: nowrap; font-family: var(--font-mono); font-size: 10.5px; color: var(--tx-dim); }
+/* meta: exactly ONE fact, dim mono */
+.kb .ks-mbr__meta { white-space: nowrap; font-family: var(--font-mono); font-size: 10.5px; color: var(--tx-dim); }
 
 /* role: fills its fixed track; label left, chevron (editable) or lock (locked)
  * pinned right — keeps the column edge straight across both cards */
+.kb .ks-mbr__rolecol { width: 96px; flex: none; }
 .kb .ks-mbr__rolewrap { position: relative; display: block; }
 .kb .ks-mbr__role { width: 100%; height: 28px; padding: 0 26px 0 10px; border: 1px solid var(--div-2); border-radius: 2px; background: var(--inset); font-family: var(--font-sans); font-size: 11.5px; color: var(--tx-2); -webkit-appearance: none; appearance: none; cursor: pointer; }
 .kb .ks-mbr__rolechev { position: absolute; top: 50%; right: 8px; transform: translateY(-50%); color: var(--tx-mut); pointer-events: none; }
@@ -44,7 +46,7 @@
 .kb .ks-mbr__rolelock svg { color: var(--tx-dim); flex: none; }
 
 /* actions: fixed gutter, right-justified, identical width in both cards */
-.kb .ks-mbr__act { display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
+.kb .ks-mbr__act { width: 148px; flex: none; display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
 .kb .ks-mbr__rm, .kb .ks-mbr__revoke, .kb .ks-mbr__resend { height: 28px; padding: 0 12px; border-radius: 2px; background: none; font-family: var(--font-sans); font-size: 12px; cursor: pointer; white-space: nowrap; transition: color .12s, border-color .12s, background .12s; }
 /* Remove + Revoke are identical: crit text, crit @45% border */
 .kb .ks-mbr__rm, .kb .ks-mbr__revoke { color: var(--crit); border: 1px solid color-mix(in srgb, var(--crit) 45%, transparent); }
@@ -64,3 +66,14 @@
  * tip must never move. Readable ch measure (scales with the font). */
 .kb .ks-mbr__tip { display: flex; align-items: flex-start; gap: 8px; margin: 0 2px; font-family: var(--font-mono); font-size: 10.5px; color: var(--tx-dim); line-height: 1.6; }
 .kb .ks-mbr__tip svg { flex: none; margin-top: 2px; }
+
+/* Responsive: make the team column its own query container so rows react to
+ * their REAL width, independent of whether the settings rail is expanded (a
+ * page-width query would miss the narrow-content-with-rail case). Below the
+ * breakpoint the controls drop to a second line so the email keeps its room. */
+.kb .ks-teamwrap { container-type: inline-size; }
+@container (max-width: 680px) {
+  .kb .ks-mbr__row { grid-template-columns: auto minmax(0, 1fr); grid-template-areas: "av id" "ctl ctl"; row-gap: 10px; }
+  .kb .ks-mbr__controls { flex-wrap: wrap; justify-content: flex-end; }
+  .kb .ks-team__hd { flex-wrap: wrap; }
+}

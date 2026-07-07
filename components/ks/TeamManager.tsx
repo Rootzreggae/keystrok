@@ -152,32 +152,34 @@ export function TeamManager() {
                 <span className="ks-mbr__email">{m.email}</span>
                 {m.you && <Chip>you</Chip>}
               </div>
-              <span className="ks-mbr__meta">{lastAdmin ? 'last admin · locked' : `joined ${joined(m.createdAt)}`}</span>
-              <div className="ks-mbr__rolecol">
-                {locked ? (
-                  <span className="ks-mbr__rolelock"><span>{cap(m.role)}</span><Lock size={11} /></span>
-                ) : (
-                  <span className="ks-mbr__rolewrap">
-                    <select
-                      className="ks-mbr__role"
-                      value={confirm && confirm.id === m.id && confirm.kind === 'role' ? confirm.role : m.role}
-                      onChange={(e) => {
-                        const role = e.target.value as Role
-                        if (role !== m.role) setConfirm({ kind: 'role', id: m.id, email: m.email, role })
-                        else setConfirm(null)
-                      }}
-                    >
-                      <option value="admin">Admin</option>
-                      <option value="member">Member</option>
-                    </select>
-                    <ChevronDown size={12} className="ks-mbr__rolechev" />
-                  </span>
-                )}
-              </div>
-              <div className="ks-mbr__act">
-                {!locked && (
-                  <button className="ks-mbr__rm" onClick={() => setConfirm({ kind: 'remove', id: m.id, email: m.email })}>Remove</button>
-                )}
+              <div className="ks-mbr__controls">
+                <span className="ks-mbr__meta">{lastAdmin ? 'last admin · locked' : `joined ${joined(m.createdAt)}`}</span>
+                <div className="ks-mbr__rolecol">
+                  {locked ? (
+                    <span className="ks-mbr__rolelock"><span>{cap(m.role)}</span><Lock size={11} /></span>
+                  ) : (
+                    <span className="ks-mbr__rolewrap">
+                      <select
+                        className="ks-mbr__role"
+                        value={confirm && confirm.id === m.id && confirm.kind === 'role' ? confirm.role : m.role}
+                        onChange={(e) => {
+                          const role = e.target.value as Role
+                          if (role !== m.role) setConfirm({ kind: 'role', id: m.id, email: m.email, role })
+                          else setConfirm(null)
+                        }}
+                      >
+                        <option value="admin">Admin</option>
+                        <option value="member">Member</option>
+                      </select>
+                      <ChevronDown size={12} className="ks-mbr__rolechev" />
+                    </span>
+                  )}
+                </div>
+                <div className="ks-mbr__act">
+                  {!locked && (
+                    <button className="ks-mbr__rm" onClick={() => setConfirm({ kind: 'remove', id: m.id, email: m.email })}>Remove</button>
+                  )}
+                </div>
               </div>
             </div>
           )
@@ -215,19 +217,21 @@ export function TeamManager() {
             <div className="ks-mbr__row" key={iv.id}>
               <Avatar email={iv.email} pending />
               <div className="ks-mbr__id"><span className="ks-mbr__email">{iv.email}</span></div>
-              <span className="ks-mbr__meta">invited {ago(iv.createdAt)} ago</span>
-              <div className="ks-mbr__rolecol">
-                <span className="ks-mbr__rolewrap">
-                  <select className="ks-mbr__role" value={iv.role} onChange={(e) => patchInviteRole(iv.email, e.target.value as Role)}>
-                    <option value="member">Member</option>
-                    <option value="admin">Admin</option>
-                  </select>
-                  <ChevronDown size={12} className="ks-mbr__rolechev" />
-                </span>
-              </div>
-              <div className="ks-mbr__act">
-                <button className="ks-mbr__resend" onClick={() => resendInvite(iv.email)}>Resend</button>
-                <button className="ks-mbr__revoke" onClick={() => setConfirm({ kind: 'revoke', id: iv.id, email: iv.email })}>Revoke</button>
+              <div className="ks-mbr__controls">
+                <span className="ks-mbr__meta">invited {ago(iv.createdAt)} ago</span>
+                <div className="ks-mbr__rolecol">
+                  <span className="ks-mbr__rolewrap">
+                    <select className="ks-mbr__role" value={iv.role} onChange={(e) => patchInviteRole(iv.email, e.target.value as Role)}>
+                      <option value="member">Member</option>
+                      <option value="admin">Admin</option>
+                    </select>
+                    <ChevronDown size={12} className="ks-mbr__rolechev" />
+                  </span>
+                </div>
+                <div className="ks-mbr__act">
+                  <button className="ks-mbr__resend" onClick={() => resendInvite(iv.email)}>Resend</button>
+                  <button className="ks-mbr__revoke" onClick={() => setConfirm({ kind: 'revoke', id: iv.id, email: iv.email })}>Revoke</button>
+                </div>
               </div>
             </div>
           ))}
