@@ -42,31 +42,46 @@ export async function runAlerts(keys: AlertableKey[]): Promise<{ fired: number; 
   let fired = 0, resolved = 0
   let lastOk: { ok: boolean; msg: string } | null = null
 
+  // One read for every key's open events (was one findMany per key), then the
+  // loop only decides + sends; the writes collect into a single updateMany +
+  // createMany at the end. Sends stay sequential — they're external deliveries.
+  const openAll = await prisma.alertEvent.findMany({ where: { keyId: { in: keys.map((k) => k.id) }, resolvedAt: null } })
+  const openByKey = new Map<string, typeof openAll>()
+  for (const e of openAll) {
+    const list = openByKey.get(e.keyId) ?? []
+    list.push(e)
+    openByKey.set(e.keyId, list)
+  }
+  const resolveIds: string[] = []
+  const createRows: { keyId: string; kind: string; severity: string; deliveredOk: boolean }[] = []
+
   for (const k of keys) {
     const inc = incidentFor(k, now)
-    // open events for this key that aren't resolved yet
-    const open = await prisma.alertEvent.findMany({ where: { keyId: k.id, resolvedAt: null } })
+    const open = openByKey.get(k.id) ?? []
 
     if (inc) {
       const already = open.find((e) => e.kind === inc.kind)
       if (!already) {
         const res = await send(cfg, summaryText(k, inc, baseUrl), { ...inc, key: k })
         lastOk = res
-        await prisma.alertEvent.create({ data: { keyId: k.id, kind: inc.kind, severity: inc.severity, deliveredOk: res.ok } })
+        createRows.push({ keyId: k.id, kind: inc.kind, severity: inc.severity, deliveredOk: res.ok })
         fired++
       }
       // any open events of a *different* kind are stale → resolve silently
-      for (const e of open.filter((e) => e.kind !== inc.kind)) {
-        await prisma.alertEvent.update({ where: { id: e.id }, data: { resolvedAt: now } })
-      }
+      resolveIds.push(...open.filter((e) => e.kind !== inc.kind).map((e) => e.id))
     } else if (open.length) {
       // key left every incident state → resolve + send one recovery
       const res = await send(cfg, recoveryText(k, open[0].kind as 'live_and_used', baseUrl))
       lastOk = res
-      await prisma.alertEvent.updateMany({ where: { keyId: k.id, resolvedAt: null }, data: { resolvedAt: now } })
+      resolveIds.push(...open.map((e) => e.id))
       resolved++
     }
   }
+
+  await Promise.all([
+    resolveIds.length ? prisma.alertEvent.updateMany({ where: { id: { in: resolveIds } }, data: { resolvedAt: now } }) : null,
+    createRows.length ? prisma.alertEvent.createMany({ data: createRows }) : null,
+  ])
 
   if (lastOk) {
     await prisma.alertConfig.update({ where: { id: 'default' }, data: { lastDeliveryOk: lastOk.ok, lastDeliveryAt: now, lastDeliveryMsg: lastOk.msg } }).catch(() => {})
@@ -94,17 +109,25 @@ export async function alertNewFindings(findings: { keyHashId: string; keyType: s
   if (!loaded) return 0
   const { cfg, baseUrl } = loaded
   const now = new Date()
-  let fired = 0
+  // One dedup read for the whole batch (was one findFirst per finding); the Set
+  // also dedupes repeats within the batch itself. Writes land as one createMany.
+  const announced = new Set(
+    (await prisma.alertEvent.findMany({
+      where: { keyId: { in: findings.map((f) => f.keyHashId) }, kind: 'new_finding' },
+      select: { keyId: true },
+    })).map((e) => e.keyId),
+  )
+  const rows: { keyId: string; kind: string; severity: string; firedAt: Date; resolvedAt: Date; deliveredOk: boolean }[] = []
   for (const f of findings) {
-    const already = await prisma.alertEvent.findFirst({ where: { keyId: f.keyHashId, kind: 'new_finding' } })
-    if (already) continue
+    if (announced.has(f.keyHashId)) continue
+    announced.add(f.keyHashId)
     const link = baseUrl ? ` ${baseUrl.replace(/\/$/, '')}/discovery-scanner` : ''
     const text = `🔴 Keystrok: new ${f.keyType} committed in ${f.repository} · ${f.relativePath} (${f.severity})${link}`
     const res = await send(cfg, text)
-    await prisma.alertEvent.create({ data: { keyId: f.keyHashId, kind: 'new_finding', severity: f.severity, firedAt: now, resolvedAt: now, deliveredOk: res.ok } })
-    fired++
+    rows.push({ keyId: f.keyHashId, kind: 'new_finding', severity: f.severity, firedAt: now, resolvedAt: now, deliveredOk: res.ok })
   }
-  return fired
+  if (rows.length) await prisma.alertEvent.createMany({ data: rows })
+  return rows.length
 }
 
 export async function evaluateAllAlerts(): Promise<{ fired: number; resolved: number }> {

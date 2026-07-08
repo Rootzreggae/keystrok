@@ -69,26 +69,48 @@ export async function runLivenessCheck(opts: { actorId?: string } = {}): Promise
   const liveSets = new Map<string, Set<string>>()
   for (const [prov, m] of usageByProvider) liveSets.set(prov, new Set(m.keys()))
 
-  let live = 0, revoked = 0, checked = 0
+  // Classify first, write after: one update per key was N serial round-trips to
+  // the remote DB. Keys landing on identical data (revoked, or live with no
+  // usage info — lastUsedAt null either way) collapse into one updateMany each;
+  // only live keys with a distinct lastUsedAt need per-row updates, and those
+  // run in parallel so the wall cost is ~one round trip, not N.
+  const revokedIds: string[] = []
+  const liveNoUsageIds: string[] = []
+  const liveWithUsage: { id: string; usage: KeyUsage; provider: string }[] = []
   for (const k of keys) {
     const provider = providerOf(k.platform)
     const set = liveSets.get(provider)
     if (!set) continue
     const status = statusFor(k.keyPreview, set)
     if (status === 'unknown') continue
+    if (status === 'revoked') { revokedIds.push(k.id); continue }
     const usage = usageByProvider.get(provider)?.get(last4(k.keyPreview) ?? '')
-    await prisma.discoveredKey.update({
-      where: { id: k.id },
-      data: {
-        liveStatus: status, liveCheckedAt: now,
-        lastUsedAt: usage?.lastUsedAt ?? null,
-        lastUsedSource: usage?.lastUsedAt ? (usage.location ? `${provider} · ${usage.location}` : provider) : null,
-      },
-    })
-    checked++
-    if (status === 'live') live++
-    else revoked++
+    if (usage?.lastUsedAt) liveWithUsage.push({ id: k.id, usage, provider })
+    else liveNoUsageIds.push(k.id)
   }
+
+  await Promise.all([
+    revokedIds.length ? prisma.discoveredKey.updateMany({
+      where: { id: { in: revokedIds } },
+      data: { liveStatus: 'revoked', liveCheckedAt: now, lastUsedAt: null, lastUsedSource: null },
+    }) : null,
+    liveNoUsageIds.length ? prisma.discoveredKey.updateMany({
+      where: { id: { in: liveNoUsageIds } },
+      data: { liveStatus: 'live', liveCheckedAt: now, lastUsedAt: null, lastUsedSource: null },
+    }) : null,
+    ...liveWithUsage.map(({ id, usage, provider }) => prisma.discoveredKey.update({
+      where: { id },
+      data: {
+        liveStatus: 'live', liveCheckedAt: now,
+        lastUsedAt: usage.lastUsedAt,
+        lastUsedSource: usage.location ? `${provider} · ${usage.location}` : provider,
+      },
+    })),
+  ])
+
+  const revoked = revokedIds.length
+  const live = liveNoUsageIds.length + liveWithUsage.length
+  const checked = live + revoked
 
   const providers = [...usageByProvider.keys()]
   // Per-user audit entry only for a user-initiated run; a scheduled tick has no actor.
