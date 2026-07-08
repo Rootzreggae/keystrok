@@ -84,7 +84,7 @@ export function FindingDrawer({
           </div>
 
           <div className="ks-dsect">
-            <div className="ks-dsect__l">If you promote</div>
+            <div className="ks-dsect__l">If you track</div>
             <div className="ks-drawer__promote">
               <ArrowRight size={14} style={{ flex: 'none', marginTop: 1, color: 'var(--a)' }} />
               <span>
@@ -97,7 +97,7 @@ export function FindingDrawer({
 
         <div className="ks-drawer__foot">
           <button className="ks-btn ks-btn--primary" style={{ flex: 1, justifyContent: 'center' }} disabled={busy} onClick={() => onPromote(f.id)}>
-            <Check size={14} /> Promote to ledger
+            <Check size={14} /> Track in ledger
           </button>
           <button className="ks-btn" disabled={busy} onClick={() => onDismiss(f.id)}>
             <X size={14} /> Dismiss

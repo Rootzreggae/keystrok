@@ -20,17 +20,13 @@ interface WfStep {
   isAutomated?: boolean
 }
 interface WfKey { keyName?: string; platform?: string; severity?: string; location?: string }
+// The list endpoint now returns full steps, so one Workflow shape serves both the
+// queue and the detail pane — no separate detail type / query.
 interface Workflow {
   id: string
   status: string
-  discoveredKeyId?: string
-  discoveredKey?: WfKey
-  steps?: { stepNumber: number; status: string }[]
-}
-interface WorkflowDetail {
-  id: string
-  status: string
   startedAt?: string | null
+  discoveredKeyId?: string
   discoveredKey?: WfKey
   steps?: WfStep[]
 }
@@ -48,7 +44,7 @@ function Stepper({ workflowId, steps }: { workflowId: string; steps: WfStep[] })
       return r.json()
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['workflow', workflowId] })
+      // One list query now backs both panes; refetch it and the derived view updates.
       qc.invalidateQueries({ queryKey: ['workflows'] })
     },
     onError: (e: Error) => alert(e.message),
@@ -172,18 +168,9 @@ function RotationsInner() {
   // "all caught up" state, not a stale success card. (Selecting one still works.)
   const activeId = selId ?? focus ?? inProgress[0]?.id ?? null
 
-  const { data: detail } = useQuery<WorkflowDetail>({
-    queryKey: ['workflow', activeId],
-    enabled: !!activeId,
-    queryFn: async () => {
-      const r = await fetch(`/api/workflows/${activeId}`)
-      if (!r.ok) throw new Error('workflow')
-      const j = await r.json()
-      return j.workflow ?? j.data ?? j
-    },
-  })
-
-  // Don't flash the "nothing to rotate" empty state while the data is still loading.
+  // Wait only for the queue data (workflows + keys). There is no second fetch:
+  // the selected rotation is derived from the list we already have, so the whole
+  // two-pane view renders in one shot with zero detail-pane spinner.
   if (loadingWf || loadingKeys) {
     return <div className="ks-home"><PanelLoading minHeight={520} /></div>
   }
@@ -209,7 +196,11 @@ function RotationsInner() {
     )
   }
 
-  const sel = detail
+  // Derived synchronously from the already-loaded list, so on refresh `sel` is
+  // present the instant the queue is — no waterfall, no spinner. It's only absent
+  // for a stale ?workflow= id or the brief moment after Start before the list
+  // refetches, both handled by a quiet placeholder (not a spinner) in the pane.
+  const sel = activeId ? workflows.find((w) => w.id === activeId) : undefined
   const plat = platOf(sel?.discoveredKey?.platform ?? '')
   const sev = sel?.discoveredKey?.severity ?? 'medium'
   const steps = (sel?.steps ?? []).slice().sort((a, b) => a.stepNumber - b.stepNumber)
@@ -220,9 +211,10 @@ function RotationsInner() {
     ? `rotation complete · was ${SEVL[sev] ?? sev}`
     : `step ${curStep} of ${steps.length}${started ? ` · started ${started}` : ''}`
 
-  // No rotation to walk right now: single-pane, truthful empty state. Empty is
+  // No rotation active right now: single-pane, truthful empty state. Gate on
+  // `activeId`, not `sel` — a loading detail is not "nothing to rotate". Empty is
   // not the same as done, a key past its SLA gets a prompt, never a celebration.
-  if (!sel) {
+  if (!activeId) {
     const overdueDue = dueKeys.filter((k) => urgency(k).overdue)
     const top = overdueDue[0] ?? dueKeys[0]
     const restDue = dueKeys.filter((k) => k.id !== top?.id)
@@ -358,7 +350,9 @@ function RotationsInner() {
 
         <div className="ks-rotmain">
           {startErr && <div className="ks-drawer__err" style={{ margin: '0 0 18px' }} role="alert">{startErr}</div>}
-          {sel && (
+          {!sel ? (
+            <div className="ks-rotmain__empty">Select a rotation from the queue.</div>
+          ) : (
             <>
               <div className="ks-rotmain__hd">
                 <Mark>{plat.code}</Mark>

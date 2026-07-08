@@ -3,6 +3,7 @@ import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { encryptSecret, decryptSecret, maskApiKey, isMaskedSecret } from '@/lib/crypto'
 import { requireAdmin } from '@/lib/roles'
+import { getPlatforms } from '@/lib/platforms'
 
 // GET /api/platforms - Returns all platforms for the user
 export async function GET(request: NextRequest) {
@@ -12,54 +13,10 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Get all platforms for the instance (shared workspace)
-    const platforms = await prisma.platform.findMany({
-      where: {},
-      include: {
-        _count: {
-          select: {
-            discoveredKeys: true
-          }
-        },
-        discoveredKeys: {
-          where: {
-            expiresAt: {
-              lte: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // Next 30 days
-            }
-          },
-          select: {
-            id: true
-          }
-        }
-      },
-      orderBy: {
-        createdAt: 'desc'
-      }
-    })
-
-    // Transform platforms to match expected format
-    const transformedPlatforms = platforms.map(platform => ({
-      id: platform.id,
-      name: platform.name,
-      platform_type: platform.type,
-      category: platform.category,
-      api_url: platform.apiUrl,
-      // Masked preview only. Never return key material to the client.
-      api_key: platform.apiKey ? maskApiKey(decryptSecret(platform.apiKey)) : '',
-      rotation_schedule: 90, // Default rotation schedule
-      description: platform.description,
-      created_at: platform.createdAt.toISOString(),
-      updated_at: platform.updatedAt.toISOString(),
-      key_count: platform._count.discoveredKeys,
-      expiring_count: platform.discoveredKeys.length,
-      auth_type: platform.authType,
-      auth_header: platform.authHeader,
-      test_endpoint: platform.testEndpoint
-    }))
-
+    // Shared with the server-side prefetch (lib/platforms) so shapes never drift.
     return NextResponse.json({
       success: true,
-      platforms: transformedPlatforms
+      platforms: await getPlatforms(),
     })
 
   } catch (error) {

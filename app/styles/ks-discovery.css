@@ -1,32 +1,45 @@
-/* Discovery: findings triage + scan instrument. Vendored from handoff, scoped .kb. */
+/* Discovery: triage (grouped-by-file) + control rail. Per the triage redesign spec.
+ * Two regions: flexible main (min-width:0) + fixed sticky rail. Flat, 0 radius. */
 
-.kb .ks-disc { display: grid; grid-template-columns: minmax(0, 1fr) 312px; gap: 24px; align-items: start; }
+/* motion: mechanical, not bouncy. translate/opacity only, fast, linear-ish out. */
+.kb .ks-disc { --ease: cubic-bezier(.2, 0, 0, 1); --dur: .16s; display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 24px; align-items: start; }
+@keyframes ks-slidein { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
 
-/* findings to triage */
-.kb .ks-finding { display: flex; gap: 14px; padding: 16px 18px; border-bottom: 1px solid var(--div); }
-.kb .ks-finding:last-child { border-bottom: none; }
-.kb .ks-finding--click { cursor: pointer; transition: background .1s; }
-.kb .ks-finding--click:hover { background: var(--elev); }
-.kb .ks-finding__sev { width: 3px; align-self: stretch; border-radius: 2px; flex: none; }
-.kb .ks-finding__main { flex: 1; min-width: 0; }
-.kb .ks-finding__name { font-family: var(--font-mono); font-size: 13px; font-weight: 600; color: var(--tx); display: flex; align-items: center; gap: 9px; }
-.kb .ks-finding__line { font-size: 12px; color: var(--tx-mut); margin-top: 6px; }
-.kb .ks-finding__src { font-family: var(--font-mono); font-size: 11px; color: var(--tx-dim); margin-top: 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.kb .ks-finding__cta { display: flex; flex-direction: column; gap: 8px; flex: none; justify-content: center; }
+/* ---- MAIN column ---------------------------------------------------------- */
+.kb .ks-triage { display: flex; flex-direction: column; min-width: 0; gap: 14px; }
 
-/* bulk triage: checkbox column + select-all + a red "dismiss selected" action */
-.kb .ks-finding__pick { flex: none; align-self: stretch; display: flex; align-items: center; cursor: pointer; }
-.kb .ks-finding__pick input, .kb .ks-disc__selall input { width: 15px; height: 15px; margin: 0; accent-color: var(--crit); cursor: pointer; }
-.kb .ks-finding.is-picked { background: var(--crit-dim); }
-.kb .ks-finding.is-picked .ks-finding__sev { opacity: 0.5; }
-.kb .ks-disc__selall { flex: none; display: flex; align-items: center; cursor: pointer; }
-.kb .ks-disc__bulk { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-sans); font-size: 12px; font-weight: 600; color: var(--crit); background: var(--crit-dim); border: 1px solid var(--crit-line); border-radius: 2px; padding: 5px 10px; cursor: pointer; white-space: nowrap; transition: border-color .12s, background .12s; }
-.kb .ks-disc__bulk:hover { border-color: var(--crit); background: var(--crit-line); }
-.kb .ks-disc__bulk:disabled { opacity: 0.6; cursor: default; }
-.kb .ks-disc__bulk svg { flex: none; }
+/* title row */
+.kb .ks-triage__hd { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.kb .ks-triage__title { margin: 0; font-family: var(--font-sans); font-size: 17px; font-weight: 650; color: var(--tx); }
+.kb .ks-triage__meta { font-family: var(--font-mono); font-size: 11px; color: var(--tx-dim); white-space: nowrap; }
+.kb .ks-triage__spacer { flex: 1 1 auto; }
+.kb .ks-triage__collapse { font-family: var(--font-mono); font-size: 11px; color: var(--tx-dim); background: none; border: none; padding: 0; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; align-self: center; }
+.kb .ks-triage__collapse:hover { color: var(--tx-2); }
 
-/* undo bar: transient, sits under the header after a bulk dismiss */
-.kb .ks-disc__undo { display: flex; align-items: center; gap: 12px; padding: 10px 18px; background: var(--bg-2); border-bottom: 1px solid var(--div); font-size: 12.5px; color: var(--tx-mut); }
+/* severity filter chips */
+.kb .ks-sevchips { display: flex; gap: 6px; align-self: center; flex-wrap: wrap; }
+.kb .ks-sevchip { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 10px; border: 1px solid var(--div-2); border-radius: 2px; background: none; font-family: var(--font-mono); font-size: 11px; color: var(--tx-mut); cursor: pointer; position: relative; transition: color .12s, border-color .12s, background .12s; }
+.kb .ks-sevchip em { font-style: normal; color: var(--tx-dim); }
+.kb .ks-sevchip:hover { border-color: var(--div-3); color: var(--tx-2); }
+.kb .ks-sevchip.is-on { color: var(--tx); background: var(--elev); border-color: var(--div-3); }
+.kb .ks-sevchip.is-on::after { content: ''; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; background: var(--tx); }
+.kb .ks-sevchip.is-on em { color: var(--tx-2); }
+
+/* selection action bar — pinned above the list */
+.kb .ks-selbar { position: sticky; top: 0; z-index: 6; display: flex; align-items: center; gap: 12px; padding: 10px 14px; background: var(--bg-2); border: 1px solid var(--div-2); border-radius: 2px; flex-wrap: wrap; animation: ks-slidein var(--dur) var(--ease); }
+.kb .ks-selbar__check { flex: none; display: flex; align-items: center; cursor: pointer; }
+.kb .ks-selbar__check input { width: 15px; height: 15px; margin: 0; cursor: pointer; }
+.kb .ks-selbar__n { font-family: var(--font-sans); font-size: 13px; font-weight: 600; color: var(--tx); white-space: nowrap; }
+.kb .ks-selbar__mix { font-family: var(--font-mono); font-size: 11px; color: var(--tx-dim); white-space: nowrap; }
+.kb .ks-selbar__clear { font-family: var(--font-mono); font-size: 11.5px; color: var(--tx-mut); background: none; border: none; padding: 0; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+.kb .ks-selbar__clear:hover { color: var(--tx-2); }
+/* dismiss-bulk: the one crit ghost on the page (red = verdict, never selection) */
+.kb .ks-selbar__dismiss { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 12px; border-radius: 2px; font-family: var(--font-sans); font-size: 12px; font-weight: 600; color: var(--crit); background: none; border: 1px solid color-mix(in srgb, var(--crit) 45%, transparent); cursor: pointer; white-space: nowrap; transition: border-color .12s, background .12s; }
+.kb .ks-selbar__dismiss:hover { border-color: var(--crit); background: var(--crit-dim); }
+.kb .ks-selbar__dismiss:disabled, .kb .ks-selbar__dismiss[disabled] { opacity: 0.6; cursor: default; }
+
+/* undo bar (transient, after a bulk dismiss) */
+.kb .ks-disc__undo { display: flex; align-items: center; gap: 12px; padding: 10px 14px; background: var(--bg-2); border: 1px solid var(--div-2); border-radius: 2px; font-size: 12.5px; color: var(--tx-mut); animation: ks-slidein var(--dur) var(--ease); }
 .kb .ks-disc__undot { font-family: var(--font-mono); }
 .kb .ks-disc__undobtn { font-family: var(--font-sans); font-size: 12px; font-weight: 600; color: var(--tx); background: none; border: 1px solid var(--div-2); border-radius: 2px; padding: 4px 12px; cursor: pointer; transition: border-color .12s, background .12s; }
 .kb .ks-disc__undobtn:hover { border-color: var(--tx-2); background: var(--elev); }
@@ -34,47 +47,111 @@
 .kb .ks-disc__undox { margin-left: auto; background: none; border: none; color: var(--tx-dim); font-size: 16px; line-height: 1; cursor: pointer; padding: 2px 4px; }
 .kb .ks-disc__undox:hover { color: var(--tx-2); }
 
-/* the "N new" count pill: rounded count badge, pushed to the far right */
-.kb .ks-disc__count { border-radius: 99px; margin-left: auto; }
+/* ---- findings list, grouped by file --------------------------------------- */
+.kb .ks-triage__list { overflow: hidden; }
+.kb .ks-fgroup__empty { padding: 28px 18px; text-align: center; font-family: var(--font-mono); font-size: 12px; color: var(--tx-dim); }
 
-/* recently triaged */
-.kb .ks-triaged { display: flex; align-items: center; gap: 11px; padding: 10px 18px; border-bottom: 1px solid var(--div); font-family: var(--font-mono); font-size: 11.5px; }
-.kb .ks-triaged:last-child { border-bottom: none; }
-.kb .ks-triaged__verb { font-size: 10px; letter-spacing: 0.04em; text-transform: uppercase; padding: 2px 7px; border-radius: 2px; flex: none; }
-.kb .ks-triaged__verb.promoted { color: var(--a); background: var(--a-dim); border: 1px solid var(--a-line); }
-.kb .ks-triaged__verb.dismissed { color: var(--tx-dim); background: var(--inset); border: 1px solid var(--div-2); }
-.kb .ks-triaged__name { color: var(--tx); font-weight: 600; flex: none; }
-.kb .ks-triaged__path { color: var(--tx-dim); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.kb .ks-triaged__when { color: var(--tx-dim); flex: none; }
+/* file group header — sticky within the list (ponytail: top:0; if the app grows
+ * a taller fixed chrome, offset this + the selbar to match) */
+.kb .ks-fgroup__hd { position: sticky; top: 0; z-index: 2; display: flex; align-items: center; gap: 10px; padding: 9px 16px; background: var(--bg-2); border-bottom: 1px solid var(--div); }
+.kb .ks-fgroup:not(:first-child) .ks-fgroup__hd { border-top: 1px solid var(--div); }
+.kb .ks-fgroup__pick { flex: none; display: flex; align-items: center; cursor: pointer; }
+.kb .ks-fgroup__pick input, .kb .ks-frow__pick input { width: 14px; height: 14px; margin: 0; cursor: pointer; }
+.kb .ks-fgroup__chev { flex: none; display: flex; align-items: center; background: none; border: none; padding: 0; color: var(--tx-mut); cursor: pointer; }
+.kb .ks-fgroup__chev:hover { color: var(--tx); }
+.kb .ks-fgroup__path { flex: 1 1 auto; min-width: 0; display: flex; font-family: var(--font-mono); font-size: 11px; color: var(--tx-2); }
+.kb .ks-fgroup__dir { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; color: var(--tx-dim); }
+.kb .ks-fgroup__file { flex: none; color: var(--tx-2); }
+.kb .ks-fgroup__count { flex: none; font-family: var(--font-mono); font-size: 11px; color: var(--tx-dim); }
+.kb .ks-fgroup__crit { flex: none; font-family: var(--font-mono); font-size: 11px; color: var(--crit); }
 
-/* connected repositories: each re-scannable any time */
-.kb .ks-scanrepos { padding: 13px 18px; border-bottom: 1px solid var(--div); }
-.kb .ks-scanrepos__l { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--tx-dim); margin-bottom: 10px; }
-.kb .ks-scanrepo { display: flex; align-items: center; gap: 9px; padding: 5px 0; }
-.kb .ks-scanrepo__ico { color: var(--tx-mut); flex: none; }
-.kb .ks-scanrepo__name { flex: 1; min-width: 0; font-family: var(--font-mono); font-size: 11.5px; color: var(--tx-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.kb .ks-scanrepo .ks-btn { flex: none; }
+/* collapse/expand: 0fr↔1fr grid rows animate height with no JS measuring */
+.kb .ks-fgroup__rows { display: grid; grid-template-rows: 1fr; transition: grid-template-rows var(--dur) var(--ease); }
+.kb .ks-fgroup__rows.is-collapsed { grid-template-rows: 0fr; }
+.kb .ks-fgroup__rowsinner { overflow: hidden; min-height: 0; }
 
-/* connect-source entry (top of the scan instrument) */
-.kb .ks-scansource { padding: 16px 18px 4px; }
-.kb .ks-scansource__or { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--tx-dim); text-align: center; margin-top: 12px; }
+/* finding row: taller than group headers so content breathes, chrome compresses */
+.kb .ks-frow { display: flex; align-items: center; gap: 12px; padding: 11px 16px; border-bottom: 1px solid var(--div); cursor: pointer; transition: background .12s var(--ease); }
+.kb .ks-frow:last-child { border-bottom: none; }
+.kb .ks-frow:hover { background: var(--elev); }
+.kb .ks-frow__pick { flex: none; display: flex; align-items: center; cursor: pointer; }
+/* the sev bar is the hover accent — brightens on row hover, no layout shift */
+.kb .ks-frow__sev { flex: none; width: 3px; align-self: stretch; border-radius: 2px; transition: filter .12s var(--ease); }
+.kb .ks-frow:hover .ks-frow__sev { filter: brightness(1.3) saturate(1.1); }
+.kb .ks-frow .ks-mark { flex: none; }
+.kb .ks-frow__name { flex: none; font-family: var(--font-sans); font-size: 12.5px; font-weight: 600; color: var(--tx); white-space: nowrap; }
+.kb .ks-frow__val { flex: 1 1 auto; min-width: 0; font-family: var(--font-mono); font-size: 11px; color: var(--tx-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.kb .ks-frow__line { flex: none; font-family: var(--font-mono); font-size: 11px; color: var(--tx-dim); text-align: right; }
+/* actions sit dimmed (present, discoverable) and come up on row hover/focus */
+.kb .ks-frow__cta { flex: none; display: flex; align-items: center; gap: 4px; opacity: 0.55; transition: opacity .12s var(--ease); }
+.kb .ks-frow:hover .ks-frow__cta, .kb .ks-frow:focus-within .ks-frow__cta { opacity: 1; }
+/* row actions are quiet ghosts — the row's identity is the finding, not its buttons */
+.kb .ks-frow__track, .kb .ks-frow__dismiss { height: 26px; padding: 0 10px; border-radius: 2px; background: none; border: 1px solid transparent; font-family: var(--font-sans); font-size: 12px; cursor: pointer; transition: color .12s, border-color .12s, background .12s; }
+.kb .ks-frow__track { color: var(--tx); }
+.kb .ks-frow__track:hover { border-color: var(--div-2); background: var(--inset); }
+.kb .ks-frow__dismiss { color: var(--tx-mut); }
+.kb .ks-frow__dismiss:hover { color: var(--tx-2); border-color: var(--div-2); }
+.kb .ks-frow__track:disabled, .kb .ks-frow__dismiss:disabled { opacity: 0.6; cursor: default; }
+/* selected: NEUTRAL tint + inset ink bar. Never red — red is the verdict. */
+.kb .ks-frow.is-picked { background: var(--elev); box-shadow: inset 2px 0 0 var(--tx); }
 
-/* scan target field */
-.kb .ks-scantarget { padding: 14px 18px; border-bottom: 1px solid var(--div); }
-.kb .ks-scantarget__lbl { display: block; font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--tx-dim); margin-bottom: 7px; }
-.kb .ks-scantarget .ks-input { width: 100%; font-family: var(--font-mono); font-size: 12px; }
-.kb .ks-scantarget__hint { font-family: var(--font-mono); font-size: 10px; color: var(--tx-dim); margin-top: 7px; line-height: 1.5; }
+/* ---- RAIL: control surface ------------------------------------------------ */
+.kb .ks-drail { position: sticky; top: 16px; align-self: start; display: flex; flex-direction: column; gap: 16px; }
 
-/* scan instrument */
-.kb .ks-scan { padding: 4px 0; }
-.kb .ks-scanrow { display: flex; align-items: center; gap: 11px; padding: 11px 18px; border-bottom: 1px solid var(--div); }
-.kb .ks-scanrow:last-child { border-bottom: none; }
-.kb .ks-scanrow__main { flex: 1; min-width: 0; }
-.kb .ks-scanrow__lbl { font-size: 12.5px; color: var(--tx); font-weight: 500; }
-.kb .ks-scanrow__meta { font-family: var(--font-mono); font-size: 10.5px; color: var(--tx-dim); margin-top: 2px; }
-.kb .ks-toggle { width: 36px; height: 20px; border-radius: 99px; background: var(--inset); border: 1px solid var(--div-2); position: relative; cursor: pointer; flex: none; transition: background .15s; }
-.kb .ks-toggle.on { background: var(--a); border-color: var(--a); }
-.kb .ks-toggle__k { position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: var(--tx-mut); transition: transform .15s, background .15s; }
-.kb .ks-toggle.on .ks-toggle__k { transform: translateX(16px); background: #06251a; }
+/* sources */
+.kb .ks-srcs { padding: 6px 0; }
+.kb .ks-src { display: flex; align-items: center; gap: 10px; padding: 9px 16px; }
+.kb .ks-src__ico { flex: none; color: var(--tx-mut); }
+.kb .ks-src__body { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.kb .ks-src__name { font-family: var(--font-mono); font-size: 11.5px; color: var(--tx-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.kb .ks-src__st { font-family: var(--font-mono); font-size: 10px; color: var(--tx-dim); }
+.kb .ks-src .ks-btn { flex: none; }
+.kb .ks-srcs__foot { padding: 8px 16px 12px; }
+.kb .ks-coverage { padding: 12px 16px; border-top: 1px solid var(--div); font-family: var(--font-mono); font-size: 10.5px; color: var(--tx-dim); line-height: 1.6; }
+.kb .ks-coverage__cfg { color: var(--tx-mut); text-decoration: underline; text-underline-offset: 2px; white-space: nowrap; }
+.kb .ks-coverage__cfg:hover { color: var(--tx-2); }
 
-@container page (max-width: 720px) { .kb .ks-disc { grid-template-columns: minmax(0, 1fr); } }
+/* scan-a-local-folder disclosure (collapsed by default) */
+.kb .ks-fold { background: var(--panel); border: 1px solid var(--div); }
+.kb .ks-fold__hd { width: 100%; display: flex; align-items: center; gap: 10px; padding: 11px 16px; background: none; border: none; cursor: pointer; color: var(--tx-2); }
+.kb .ks-fold__hd:hover { background: var(--elev); }
+.kb .ks-fold__ico { flex: none; color: var(--tx-mut); }
+.kb .ks-fold__lbl { flex: 1 1 auto; text-align: left; font-family: var(--font-sans); font-size: 12.5px; }
+.kb .ks-fold__hd svg:last-child { flex: none; color: var(--tx-mut); }
+.kb .ks-fold__body { padding: 4px 16px 16px; border-top: 1px solid var(--div); }
+.kb .ks-fold__note { font-size: 11px; color: var(--tx-mut); margin: 10px 0; line-height: 1.5; }
+.kb .ks-fold__body .ks-input { width: 100%; font-family: var(--font-mono); font-size: 12px; }
+.kb .ks-fold__hint { font-family: var(--font-mono); font-size: 10px; color: var(--tx-dim); margin-top: 7px; line-height: 1.5; }
+
+/* recently triaged — receipts */
+.kb .ks-receipt { padding: 10px 16px; border-bottom: 1px solid var(--div); }
+.kb .ks-receipt:last-of-type { border-bottom: none; }
+.kb .ks-receipt__top { display: flex; align-items: center; gap: 9px; }
+.kb .ks-receipt__chip { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.06em; padding: 2px 6px; border-radius: 2px; flex: none; }
+.kb .ks-receipt__chip.tracked { color: var(--a); background: var(--a-dim); border: 1px solid var(--a-line); }
+.kb .ks-receipt__chip.dismissed { color: var(--tx-dim); background: var(--inset); border: 1px solid var(--div-2); }
+.kb .ks-receipt__name { flex: 1 1 auto; min-width: 0; font-family: var(--font-mono); font-size: 11.5px; font-weight: 600; color: var(--tx); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.kb .ks-receipt__when { flex: none; font-family: var(--font-mono); font-size: 10px; color: var(--tx-dim); }
+.kb .ks-receipt__sub { font-family: var(--font-mono); font-size: 10.5px; color: var(--tx-dim); margin-top: 5px; padding-left: 2px; }
+.kb .ks-receipt__key { color: var(--tx-2); text-decoration: none; border-bottom: 1px solid var(--div-2); }
+.kb .ks-receipt__key:hover { color: var(--tx); border-color: var(--tx-mut); }
+.kb .ks-receipt__all { display: block; padding: 11px 16px; font-family: var(--font-mono); font-size: 11px; color: var(--tx-mut); text-decoration: none; }
+.kb .ks-receipt__all:hover { color: var(--tx-2); }
+
+.kb .ks-drail__note { font-family: var(--font-mono); font-size: 10.5px; color: var(--tx-dim); line-height: 1.6; padding: 0 2px; }
+
+/* ---- responsive: collapse to one column; rail drops below, un-sticks ------ */
+@container page (max-width: 860px) {
+  .kb .ks-disc { grid-template-columns: minmax(0, 1fr); }
+  .kb .ks-drail { position: static; }
+}
+@container page (max-width: 560px) {
+  .kb .ks-frow__val { display: none; }
+  .kb .ks-frow__cta .ks-frow__track, .kb .ks-frow__cta .ks-frow__dismiss { padding: 0 8px; }
+}
+
+/* Accessibility: honor reduced-motion — kill every transition/animation here */
+@media (prefers-reduced-motion: reduce) {
+  .kb .ks-disc *, .kb .ks-disc *::before, .kb .ks-disc *::after { animation: none !important; transition: none !important; }
+  .kb .ks-fgroup__rows.is-collapsed { grid-template-rows: 0fr; }
+}

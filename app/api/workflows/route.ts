@@ -55,6 +55,10 @@ export async function GET(request: NextRequest) {
           },
         },
         steps: {
+          // Full step shape so the rotations view renders entirely from this one
+          // list call — no per-workflow detail round-trip (that waterfall was the
+          // spinner-in-the-detail-pane on refresh). These 4 extra fields are the
+          // only gap the old /workflows/[id] detail query filled.
           select: {
             id: true,
             stepNumber: true,
@@ -62,6 +66,10 @@ export async function GET(request: NextRequest) {
             status: true,
             isRequired: true,
             completedAt: true,
+            description: true,
+            instructions: true,
+            isAutomated: true,
+            stepType: true,
           },
           orderBy: { stepNumber: 'asc' },
         },

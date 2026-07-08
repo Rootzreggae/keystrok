@@ -6,6 +6,7 @@ import { useState } from 'react'
 import { ArrowRight, RotateCw, Shield, Github, Search, CheckCircle2, RefreshCw, X, Server, FileText, type LucideIcon } from 'lucide-react'
 import { Mark } from '@/components/ks'
 import { KeyDrawer } from '@/components/ks/KeyDrawer'
+import { PanelLoading } from '@/components/ks/Loading'
 import { HomeBand } from '@/components/ks/HomeBand'
 import { useSourceConnect } from '@/components/ks/SourceConnect'
 import { type ApiKey, platOf, SEVL, sevColor, displayName, urgency, needsAction, ago, cleanLocation } from '@/lib/keys-display'
@@ -36,7 +37,7 @@ export default function HomeScreen() {
   const { openConnect } = useSourceConnect()
   const [selected, setSelected] = useState<ApiKey | null>(null)
 
-  const { data: keysData } = useQuery<ApiKey[]>({
+  const { data: keysData, isLoading: loadingKeys } = useQuery<ApiKey[]>({
     queryKey: ['keys'],
     queryFn: async () => {
       const r = await fetch('/api/keys')
@@ -99,6 +100,13 @@ export default function HomeScreen() {
       return acc
     }, [])
     .slice(0, 5)
+
+  // Keys drive the hero metrics, the queue, and the empty-state decision. Hold
+  // the whole view until they land, otherwise the metrics flash 0 → real on every
+  // refresh. Secondary lists (activity) fill in on their own; that's fine.
+  if (loadingKeys) {
+    return <div className="ks-home"><PanelLoading minHeight={520} /></div>
+  }
 
   // Empty ledger has two distinct meanings. Don't conflate them.
   if (keysData && keys.length === 0) {
