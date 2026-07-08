@@ -152,10 +152,9 @@ export default function ActivityScreen() {
   }
 
   return (
-    <div className="ks-page ks-actpage">
-      {/* grid: log column + filter rail as siblings — the rail can never detach */}
-      <div className="ks-act">
-        <div className="ks-act__main">
+    <div className="ks-railpage ks-actpage">
+      {/* content well + full-height chrome rail — same grammar as Settings */}
+      <div className="ks-railpage__content ks-act__main">
           {/* meta row — the page title lives in the top bar only */}
           <div className="ks-act__hd">
             <span className="ks-act__meta">{plural(view?.total ?? 0, 'event')} · {plural(opsTotal, 'operation')} · last {data?.windowDays ?? 14} days</span>
@@ -239,9 +238,9 @@ export default function ActivityScreen() {
           )}
         </div>
 
-        {/* filter rail: grid sibling with a border-left divider */}
-        <nav className="ks-act__rail">
-          <div className="ks-act__railinner">
+      {/* filter rail on the RIGHT — full-height chrome; the inner content is sticky */}
+      <nav className="ks-railpage__rail">
+        <div className="ks-railpage__railinner">
             <div className="ks-set__railgroup">
               <div className="ks-set__raill">Event class</div>
               <button className={'ks-set__railitem ks-act__filt' + (cls === 'all' ? ' active' : '')} onClick={() => setCls('all')}>
@@ -258,8 +257,7 @@ export default function ActivityScreen() {
               <input className="ks-input ks-act__scope" placeholder="filter by key…" value={scope} onChange={(e) => setScope(e.target.value)} spellCheck={false} />
             </div>
           </div>
-        </nav>
-      </div>
+      </nav>
     </div>
   )
 }

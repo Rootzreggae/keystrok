@@ -1,17 +1,8 @@
-/* Activity v3: log column + filter rail locked in one grid — the rail is a
- * grid sibling with a border-left divider, never chrome, never absolute.
+/* Activity v3 content on the .ks-railpage primitive (see ks-shell.css): content
+ * well + full-height right chrome rail, same grammar as Settings.
  * Grammar: flat content, ink ramp for routine classes; amber/crit reserved. */
-.kb .ks-act { display: grid; grid-template-columns: minmax(0, 1fr) 208px; gap: 26px; max-width: 1120px; margin-inline: auto; align-items: start; }
-.kb .ks-act__main { min-width: 0; display: flex; flex-direction: column; gap: 16px; }
-.kb .ks-act__rail { border-left: 1px solid var(--div); padding-left: 18px; align-self: stretch; min-width: 0; }
-.kb .ks-act__railinner { position: sticky; top: 16px; display: flex; flex-direction: column; }
-
-/* narrow: single column, rail becomes a top strip (mirrors .ks-railpage) */
-@container page (max-width: 760px) {
-  .kb .ks-act { grid-template-columns: minmax(0, 1fr); }
-  .kb .ks-act__rail { order: -1; border-left: none; border-bottom: 1px solid var(--div); padding: 0 0 12px; }
-  .kb .ks-act__railinner { position: static; flex-direction: row; flex-wrap: wrap; align-items: center; gap: 6px 14px; }
-}
+.kb .ks-actpage { --content-cap: 1040px; --rail-w: clamp(196px, 16vw, 240px); }
+.kb .ks-act__main { display: flex; flex-direction: column; gap: 16px; }
 
 /* class color ramp — one mapping (dots + strip segments); 7px square */
 .kb .ks-act__dot { width: 7px; height: 7px; flex: none; display: inline-block; }
