@@ -46,6 +46,9 @@ const nextConfig: NextConfig = {
   // ESLint and TypeScript strict checking both enforced. Real errors block
   // builds. (The strict-TS backlog was drained; the `ignoreBuildErrors` escape
   // hatch is intentionally gone.)
+  // Trace-pruned server bundle for the Docker image (.next/standalone runs with
+  // `node server.js`, no full node_modules). Ignored by `next dev`.
+  output: "standalone",
   turbopack: {
     root: __dirname,
   },

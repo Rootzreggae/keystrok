@@ -37,19 +37,26 @@ RUN npx prisma generate && npm run build
 FROM node:20-bookworm-slim AS runner
 WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends openssl ca-certificates && rm -rf /var/lib/apt/lists/*
+# HOSTNAME: the standalone server binds to localhost unless told otherwise;
+# inside a container it must listen on all interfaces to be reachable.
 ENV NODE_ENV=production \
     NEXT_TELEMETRY_DISABLED=1 \
-    PORT=3000
+    PORT=3000 \
+    HOSTNAME=0.0.0.0
 
-# node_modules carries the Prisma CLI + client (used by the boot migration) and
-# Next's runtime deps. .next/public/prisma carry the build and schema. Owned by
-# the unprivileged `node` user so `next start` can write its runtime cache.
-COPY --from=builder --chown=node:node /app/node_modules ./node_modules
-COPY --from=builder --chown=node:node /app/.next ./.next
+# output:'standalone' ships server.js + a trace-pruned node_modules (tens of MB
+# instead of the full tree). Static assets and public/ are not traced; they go
+# where the standalone server expects them. The Prisma CLI is re-added on top:
+# tracing keeps only the client, but the boot-time `db push` needs the CLI +
+# schema engine. Owned by the unprivileged `node` user so the server can write
+# its runtime cache.
+COPY --from=builder --chown=node:node /app/.next/standalone ./
+COPY --from=builder --chown=node:node /app/.next/static ./.next/static
 COPY --from=builder --chown=node:node /app/public ./public
 COPY --from=builder --chown=node:node /app/prisma ./prisma
-COPY --from=builder --chown=node:node /app/package.json ./package.json
-COPY --from=builder --chown=node:node /app/next.config.ts ./next.config.ts
+COPY --from=builder --chown=node:node /app/node_modules/prisma ./node_modules/prisma
+COPY --from=builder --chown=node:node /app/node_modules/@prisma ./node_modules/@prisma
+COPY --from=builder --chown=node:node /app/node_modules/.prisma ./node_modules/.prisma
 COPY --chown=node:node docker-entrypoint.sh ./docker-entrypoint.sh
 RUN chmod +x docker-entrypoint.sh
 
