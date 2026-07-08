@@ -72,8 +72,41 @@ async function sendVerificationRequest(params: {
   }
 }
 
+// Every API route calls auth(), and with database sessions each call is a
+// session+user round-trip to the (remote) DB — ~100-180ms tax on every request.
+// Cache the lookup briefly; sign-out and session updates invalidate their entry.
+// Worst case: a revoked/removed session stays valid for SESSION_CACHE_TTL_MS.
+// ponytail: per-process cache — fine while self-host means one instance; swap
+// for a shared cache if the app ever runs multiple nodes.
+const SESSION_CACHE_TTL_MS = 30_000
+type SessionAndUser = Awaited<ReturnType<NonNullable<Adapter["getSessionAndUser"]>>>
+const sessionCache = new Map<string, { value: SessionAndUser; exp: number }>()
+
+function cachedAdapter(): Adapter {
+  const base = PrismaAdapter(prisma) as Adapter
+  return {
+    ...base,
+    async getSessionAndUser(sessionToken) {
+      const hit = sessionCache.get(sessionToken)
+      if (hit && hit.exp > Date.now()) return hit.value
+      if (sessionCache.size > 1000) sessionCache.clear() // bound growth from junk cookies
+      const value = await base.getSessionAndUser!(sessionToken)
+      sessionCache.set(sessionToken, { value, exp: Date.now() + SESSION_CACHE_TTL_MS })
+      return value
+    },
+    async updateSession(session) {
+      sessionCache.delete(session.sessionToken)
+      return base.updateSession!(session)
+    },
+    async deleteSession(sessionToken) {
+      sessionCache.delete(sessionToken)
+      await base.deleteSession!(sessionToken)
+    },
+  }
+}
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
-  adapter: PrismaAdapter(prisma) as Adapter,
+  adapter: cachedAdapter(),
   session: {
     strategy: "database",
     maxAge: 30 * 24 * 60 * 60, // 30 days

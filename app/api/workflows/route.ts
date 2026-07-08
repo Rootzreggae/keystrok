@@ -33,8 +33,8 @@ export async function GET(request: NextRequest) {
       where.priority = priority
     }
 
-    // Query workflows with pagination
-    const workflows = await prisma.rotationWorkflow.findMany({
+    // List + stats in one round-trip (remote DB, serial queries add up)
+    const workflowsQuery = prisma.rotationWorkflow.findMany({
       where,
       include: {
         discoveredKey: {
@@ -82,12 +82,14 @@ export async function GET(request: NextRequest) {
       skip: offset ? parseInt(offset) : undefined,
     })
 
-    // Get summary statistics
-    const stats = await prisma.rotationWorkflow.groupBy({
-      by: ['status'],
-      where: {},
-      _count: { status: true },
-    })
+    const [workflows, stats] = await Promise.all([
+      workflowsQuery,
+      prisma.rotationWorkflow.groupBy({
+        by: ['status'],
+        where: {},
+        _count: { status: true },
+      }),
+    ])
 
     const statusStats = stats.reduce((acc, stat) => {
       acc[stat.status] = stat._count.status

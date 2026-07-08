@@ -88,13 +88,12 @@ export async function GET(request: NextRequest) {
     if (status) whereClause.status = status
     if (keyType) whereClause.keyType = keyType
 
-    // Get total count for pagination
-    const totalCount = await prisma.localScanFinding.count({
-      where: whereClause
-    })
-
-    // Fetch findings with related data
-    const findings = await prisma.localScanFinding.findMany({
+    // Count + page in one round-trip (remote DB, serial queries add up)
+    const [totalCount, findings] = await Promise.all([
+      prisma.localScanFinding.count({
+        where: whereClause
+      }),
+      prisma.localScanFinding.findMany({
       where: whereClause,
       include: {
         session: {
@@ -130,7 +129,8 @@ export async function GET(request: NextRequest) {
       ],
       skip: offset,
       take: limit
-    })
+      })
+    ])
 
     // Transform findings to match the required response format
     const transformedFindings = findings.map(finding => ({

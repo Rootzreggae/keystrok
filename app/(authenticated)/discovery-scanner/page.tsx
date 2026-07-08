@@ -85,7 +85,12 @@ export default function DiscoveryScreen() {
   // wizard) shows progress here, and findings refresh the moment it completes.
   useQuery({
     queryKey: ['scan-status'],
-    refetchInterval: 2500,
+    // Tight poll only while a scan is running; the idle poll still catches
+    // externally-started scans (cron/continuous) within ~15s.
+    refetchInterval: (q) => {
+      const c = (q.state.data as { currentScan?: { status?: string } } | undefined)?.currentScan
+      return c && c.status !== 'completed' && c.status !== 'failed' ? 2500 : 15000
+    },
     queryFn: async () => {
       const r = await fetch('/api/discovery/status?active=true')
       const j = await r.json()

@@ -43,36 +43,37 @@ export async function GET(request: NextRequest) {
       whereClause.action = actionFilter
     }
 
-    // Get recent activities from the Activity table
-    const activities = await prisma.activity.findMany({
-      where: whereClause,
-      orderBy: { createdAt: 'desc' },
-      take: limit,
-      skip: offset,
-      select: {
-        id: true,
-        action: true,
-        description: true,
-        createdAt: true
-      }
-    })
-
-    // Also get recent audit logs for additional activity data (shared workspace)
-    const auditLogs = await prisma.auditLog.findMany({
-      where: {
-        eventCategory: { in: ['security', 'user_action'] } // Focus on relevant categories
-      },
-      orderBy: { createdAt: 'desc' },
-      take: Math.max(5, limit - activities.length), // Fill remaining slots
-      select: {
-        id: true,
-        eventType: true,
-        description: true,
-        createdAt: true,
-        severity: true,
-        resourceType: true
-      }
-    })
+    // Both sources in one round-trip; each fetches `limit` and the merge below
+    // keeps the newest `limit` overall (the DB is remote, serial queries add up).
+    const [activities, auditLogs] = await Promise.all([
+      prisma.activity.findMany({
+        where: whereClause,
+        orderBy: { createdAt: 'desc' },
+        take: limit,
+        skip: offset,
+        select: {
+          id: true,
+          action: true,
+          description: true,
+          createdAt: true
+        }
+      }),
+      prisma.auditLog.findMany({
+        where: {
+          eventCategory: { in: ['security', 'user_action'] } // Focus on relevant categories
+        },
+        orderBy: { createdAt: 'desc' },
+        take: limit,
+        select: {
+          id: true,
+          eventType: true,
+          description: true,
+          createdAt: true,
+          severity: true,
+          resourceType: true
+        }
+      })
+    ])
 
     // Combine and format activity data
     const combinedActivities = [
@@ -112,49 +113,11 @@ export async function GET(request: NextRequest) {
       emoji: activity.emoji
     }))
 
-    // Get activity summary stats (shared workspace)
-    const totalActivities = await prisma.activity.count({
-      where: {}
-    })
-
-    const totalAuditLogs = await prisma.auditLog.count({
-      where: {
-        eventCategory: { in: ['security', 'user_action'] }
-      }
-    })
-
-    // Get activity breakdown by action type (last 7 days)
-    const weekAgo = new Date()
-    weekAgo.setDate(weekAgo.getDate() - 7)
-
-    const weeklyActivityBreakdown = await prisma.activity.groupBy({
-      by: ['action'],
-      where: {
-        createdAt: { gte: weekAgo }
-      },
-      _count: {
-        id: true
-      },
-      orderBy: {
-        _count: {
-          id: 'desc'
-        }
-      }
-    })
-
+    // No meta block: the counts + weekly groupBy were 3 more DB round-trips and
+    // nothing consumes them (the dashboard reads only `data`).
     return NextResponse.json({
       success: true,
-      data: formattedActivities,
-      meta: {
-        total: totalActivities + totalAuditLogs,
-        limit,
-        offset,
-        hasMore: offset + limit < totalActivities + totalAuditLogs,
-        weeklyBreakdown: weeklyActivityBreakdown.reduce((acc, item) => {
-          acc[item.action] = item._count.id
-          return acc
-        }, {} as Record<string, number>)
-      }
+      data: formattedActivities
     })
 
   } catch (error) {
