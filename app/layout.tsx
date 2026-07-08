@@ -39,7 +39,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" style={{ margin: 0, padding: 0, overflowX: 'hidden', maxWidth: '100vw' }}>
+    // suppressHydrationWarning: the no-flash script below sets data-theme before
+    // React hydrates, so the html attributes never match the server render.
+    <html lang="en" suppressHydrationWarning style={{ margin: 0, padding: 0, overflowX: 'hidden', maxWidth: '100vw' }}>
       <head>
         {/* No-flash theme resolve: set data-theme before paint from the user's
             saved preference, else the system. Dark is the default identity. */}

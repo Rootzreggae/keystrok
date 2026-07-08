@@ -1,5 +1,5 @@
-import { dehydrate, HydrationBoundary } from '@tanstack/react-query'
-import { getQueryClient } from '@/lib/query/server'
+import { HydrationBoundary } from '@tanstack/react-query'
+import { getQueryClient, dehydrateQueries } from '@/lib/query/server'
 import { getPlatforms } from '@/lib/platforms'
 import PlatformsScreen from './platforms-client'
 
@@ -15,7 +15,7 @@ export default async function PlatformsPage() {
   await qc.prefetchQuery({ queryKey: ['platforms'], queryFn: getPlatforms })
 
   return (
-    <HydrationBoundary state={dehydrate(qc)}>
+    <HydrationBoundary state={dehydrateQueries(qc, 'platforms')}>
       <PlatformsScreen />
     </HydrationBoundary>
   )

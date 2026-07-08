@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { getFindings } from '@/lib/findings'
 
 // GET /api/discovery/results - Fetch scan results and findings
 export async function GET(request: NextRequest) {
@@ -80,92 +81,15 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Build the where clause for filtering (shared workspace: no userId filter)
-    const whereClause: any = {}
-
-    if (sessionId) whereClause.sessionId = sessionId
-    if (severity) whereClause.severity = severity
-    if (status) whereClause.status = status
-    if (keyType) whereClause.keyType = keyType
-
-    // Count + page in one round-trip (remote DB, serial queries add up)
-    const [totalCount, findings] = await Promise.all([
-      prisma.localScanFinding.count({
-        where: whereClause
-      }),
-      prisma.localScanFinding.findMany({
-      where: whereClause,
-      include: {
-        session: {
-          select: {
-            id: true,
-            name: true,
-            completedAt: true,
-            status: true
-          }
-        },
-        fileScan: {
-          select: {
-            id: true,
-            fileName: true,
-            fileExtension: true,
-            isEnvFile: true,
-            isConfigFile: true,
-            isCodeFile: true
-          }
-        },
-        keyHash: {
-          select: {
-            id: true,
-            keyType: true,
-            seenCount: true,
-            isRevoked: true
-          }
-        }
-      },
-      orderBy: [
-        { severity: 'asc' }, // Critical first
-        { createdAt: 'desc' }
-      ],
-      skip: offset,
-      take: limit
-      })
-    ])
-
-    // Transform findings to match the required response format
-    const transformedFindings = findings.map(finding => ({
-      id: finding.id,
-      filePath: finding.relativePath || finding.filePath,
-      lineNumber: finding.lineNumber,
-      keyType: finding.keyType,
-      platform: finding.keyType.split('_')[0] || 'unknown', // Extract platform from keyType (e.g., 'aws' from 'aws_access')
-      severity: finding.severity,
-      confidence: finding.confidence,
-      keyPreview: finding.keyPreview,
-      status: finding.status,
-      isLikelyActive: finding.isLikelyActive,
-      createdAt: finding.createdAt.toISOString(),
-
-      // Additional context
-      fileName: finding.fileName,
-      lineContent: finding.lineContent,
-      detectionRule: finding.detectionRule,
-      patternName: finding.patternName,
-      riskLevel: finding.riskLevel,
-
-      // File context
-      isEnvFile: finding.isInEnvFile,
-      isConfigFile: finding.fileScan?.isConfigFile || false,
-      isCodeFile: finding.fileScan?.isCodeFile || false,
-      isInComment: finding.isInComment,
-      isTestKey: finding.isTestKey,
-      isExampleKey: finding.isExampleKey,
-
-      // Validation and deduplication info
-      isValidated: finding.isValidated,
-      seenCount: finding.keyHash?.seenCount || 1,
-      isRevoked: finding.keyHash?.isRevoked || false
-    }))
+    // Count + page + transform live in lib/findings.ts, shared with the SSR prefetch.
+    const { totalCount, findings: transformedFindings } = await getFindings({
+      sessionId,
+      severity,
+      status,
+      keyType,
+      limit,
+      offset
+    })
 
     // Get session metadata if sessionId provided
     let sessionMetadata = null

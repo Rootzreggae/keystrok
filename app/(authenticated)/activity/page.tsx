@@ -1,5 +1,5 @@
-import { dehydrate, HydrationBoundary } from '@tanstack/react-query'
-import { getQueryClient } from '@/lib/query/server'
+import { HydrationBoundary } from '@tanstack/react-query'
+import { getQueryClient, dehydrateQueries } from '@/lib/query/server'
 import { getActivityFeed } from '@/lib/activity'
 import ActivityScreen from './activity-client'
 
@@ -14,7 +14,7 @@ export default async function ActivityPage() {
   await qc.prefetchQuery({ queryKey: ['activity-feed'], queryFn: getActivityFeed })
 
   return (
-    <HydrationBoundary state={dehydrate(qc)}>
+    <HydrationBoundary state={dehydrateQueries(qc, 'activity-feed')}>
       <ActivityScreen />
     </HydrationBoundary>
   )

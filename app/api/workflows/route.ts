@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { createWorkflowFromTemplate, getWorkflowTemplates } from '@/lib/workflow-templates'
+import { createWorkflowFromTemplate } from '@/lib/workflow-templates'
+import { getWorkflowList } from '@/lib/workflows'
 
-// GET /api/workflows - List all workflows for the authenticated user
+// GET /api/workflows - List all workflows for the authenticated user.
+// Query + stats live in lib/workflows.ts, shared with the SSR prefetch.
 export async function GET(request: NextRequest) {
   try {
     const session = await auth()
@@ -12,95 +14,22 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url)
-    const status = searchParams.get('status')
-    const platform = searchParams.get('platform')
-    const priority = searchParams.get('priority')
     const limit = searchParams.get('limit')
     const offset = searchParams.get('offset')
 
-    // Build where clause (shared workspace: no userId filter)
-    const where: any = {}
-
-    if (status) {
-      where.status = status
-    }
-
-    if (platform) {
-      where.keyType = platform
-    }
-
-    if (priority) {
-      where.priority = priority
-    }
-
-    // List + stats in one round-trip (remote DB, serial queries add up)
-    const workflowsQuery = prisma.rotationWorkflow.findMany({
-      where,
-      include: {
-        discoveredKey: {
-          select: {
-            id: true,
-            keyName: true,
-            platform: true,
-            severity: true,
-            location: true,
-          },
-        },
-        platform: {
-          select: {
-            id: true,
-            name: true,
-            type: true,
-            category: true,
-          },
-        },
-        steps: {
-          // Full step shape so the rotations view renders entirely from this one
-          // list call — no per-workflow detail round-trip (that waterfall was the
-          // spinner-in-the-detail-pane on refresh). These 4 extra fields are the
-          // only gap the old /workflows/[id] detail query filled.
-          select: {
-            id: true,
-            stepNumber: true,
-            name: true,
-            status: true,
-            isRequired: true,
-            completedAt: true,
-            description: true,
-            instructions: true,
-            isAutomated: true,
-            stepType: true,
-          },
-          orderBy: { stepNumber: 'asc' },
-        },
-      },
-      orderBy: [
-        { priority: 'desc' },
-        { createdAt: 'desc' },
-      ],
-      take: limit ? parseInt(limit) : undefined,
-      skip: offset ? parseInt(offset) : undefined,
+    const { workflows, stats } = await getWorkflowList({
+      status: searchParams.get('status'),
+      platform: searchParams.get('platform'),
+      priority: searchParams.get('priority'),
+      limit: limit ? parseInt(limit) : undefined,
+      offset: offset ? parseInt(offset) : undefined,
     })
-
-    const [workflows, stats] = await Promise.all([
-      workflowsQuery,
-      prisma.rotationWorkflow.groupBy({
-        by: ['status'],
-        where: {},
-        _count: { status: true },
-      }),
-    ])
-
-    const statusStats = stats.reduce((acc, stat) => {
-      acc[stat.status] = stat._count.status
-      return acc
-    }, {} as Record<string, number>)
 
     return NextResponse.json({
       success: true,
       data: {
         workflows,
-        stats: statusStats,
+        stats,
         total: workflows.length,
       },
     })
