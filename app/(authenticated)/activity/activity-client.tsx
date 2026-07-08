@@ -211,7 +211,9 @@ export default function ActivityScreen() {
                   <div className="ks-act__none">no {cls === 'all' ? '' : cls + ' '}events in this window</div>
                 ) : (
                   view.days.map((day, i) => {
-                    const open = dayOpen[day.key] ?? i < 3
+                    // 3 newest days open; a day with a revocation/failure never
+                    // auto-collapses (severity overrides recency). Manual toggle wins.
+                    const open = dayOpen[day.key] ?? (i < 3 || day.byClass.crit > 0)
                     return (
                       <div className="ks-act__daysec" key={day.key}>
                         <button
