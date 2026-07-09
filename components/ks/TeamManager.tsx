@@ -8,7 +8,7 @@ import { ago } from '@/lib/keys-display'
 type Role = 'admin' | 'member'
 interface Member { id: string; email: string; role: Role; createdAt: string; you: boolean }
 interface Invite { id: string; email: string; role: Role; createdAt: string }
-interface TeamData { members: Member[]; invites: Invite[]; mailConfigured: boolean }
+interface TeamData { members: Member[]; invites: Invite[]; mailConfigured: boolean; mail: { transport: string; detail: string; catcher: boolean } }
 
 const joined = (iso: string) => new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
 const cap = (r: Role) => (r === 'admin' ? 'Admin' : 'Member')
@@ -80,7 +80,7 @@ export function TeamManager() {
       <div className="ks-team__hd">
         <div className="ks-team__title">
           <h2>Team</h2>
-          {!isLoading && <span className="ks-team__meta">{members.length} {members.length === 1 ? 'member' : 'members'} · {adminCount} {adminCount === 1 ? 'admin' : 'admins'}</span>}
+          {!isLoading && <span className="ks-team__meta">{members.length} {members.length === 1 ? 'member' : 'members'} · {adminCount} {adminCount === 1 ? 'admin' : 'admins'}{data?.mailConfigured && <> · invites via {data.mail.detail}</>}</span>}
         </div>
         {!inviting && (
           <button className="ks-btn ks-btn--primary ks-team__invite" onClick={() => { setErr(null); setInviting(true) }}>
@@ -95,6 +95,16 @@ export function TeamManager() {
           <AlertTriangle size={15} style={{ flex: 'none', marginTop: 1, color: 'var(--high)' }} />
           <div>
             <b style={{ color: 'var(--tx)' }}>Email isn&apos;t configured, so invites won&apos;t send.</b> This instance has no mail transport, invited people never get the sign-in link (and neither do magic-link logins). Set <code>RESEND_API_KEY</code>, or <code>EMAIL_SERVER_*</code> for your own SMTP, then restart. Until then, add someone by allowing their email and having them sign in at <code>/auth/signin</code> directly.
+          </div>
+        </div>
+      )}
+
+      {/* Transport exists but is a local dev catcher: mail "sends" fine yet never reaches a real inbox. */}
+      {data?.mail?.catcher && (
+        <div role="alert" style={{ margin: '0 0 16px', padding: '12px 14px', background: 'var(--high-dim)', border: '1px solid var(--high-line)', display: 'flex', gap: 10, alignItems: 'flex-start', fontSize: 12.5, lineHeight: 1.55, color: 'var(--tx-2)' }}>
+          <AlertTriangle size={15} style={{ flex: 'none', marginTop: 1, color: 'var(--high)' }} />
+          <div>
+            <b style={{ color: 'var(--tx)' }}>Invites are going to the local mail catcher, not real inboxes.</b> This instance sends through {data.mail.detail}, the bundled dev catcher. Invited people will never receive anything; caught mail is viewable at <code>http://localhost:8025</code>. To deliver for real, point <code>EMAIL_SERVER_*</code> at an actual SMTP server (or set <code>RESEND_API_KEY</code>), then restart.
           </div>
         </div>
       )}

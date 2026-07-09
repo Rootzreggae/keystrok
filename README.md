@@ -48,6 +48,8 @@ docker compose up --build
 
 Prefer a prebuilt image? `docker compose pull && docker compose up` uses the published `ghcr.io/rootzreggae/keystrok` instead of building. See [`DEPLOYMENT.md`](DEPLOYMENT.md) for the bring-your-own-infra path (managed Postgres + SMTP).
 
+> **Note on email:** the bundled mail catcher traps everything locally (that's the inbox at `:8025`), so solo use works with zero email setup, but **team invites will never reach a real inbox**. To invite teammates, set `EMAIL_SERVER_*` in `.env` to a real SMTP server (or `RESEND_API_KEY`); the Team page shows where invites are currently being delivered.
+
 ## Local development
 
 ```bash
@@ -65,8 +67,9 @@ npm run dev -- -p 3001    # http://localhost:3001
 | `DATABASE_URL` | PostgreSQL connection string |
 | `NEXTAUTH_URL` / `NEXTAUTH_SECRET` | App URL + session signing secret |
 | `ENCRYPTION_KEY` | AES-256-GCM key for encrypting stored credentials (`openssl rand -base64 32`) |
-| `EMAIL_SERVER_*` / `EMAIL_FROM` | SMTP for magic-link email |
+| `EMAIL_SERVER_*` / `EMAIL_FROM` | SMTP for magic-link and invite email (a real server, or the bundled catcher) |
 | `ALLOWED_EMAILS` | Invite-only sign-in allowlist |
+| `CRON_SECRET` | Secret for the scheduled-job endpoints (repo re-scans, liveness checks) |
 
 ## Project layout
 

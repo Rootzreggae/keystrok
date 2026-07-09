@@ -40,14 +40,20 @@ export function mailConfigured(): boolean {
   return resolveTransport() !== 'none'
 }
 
-/** Human-readable mail delivery status for the Settings UI. No secrets. */
-export function mailStatus(): { transport: Transport; from: string; detail: string } {
+/** Human-readable mail delivery status for the Settings UI. No secrets.
+ *  `catcher` = mail is going to a local dev catcher (Mailpit/MailHog), so it is
+ *  "delivered" but never reaches a real inbox; callers should warn the operator. */
+export function mailStatus(): { transport: Transport; from: string; detail: string; catcher: boolean } {
   const transport = resolveTransport()
   const from = defaultFrom()
+  const host = process.env.EMAIL_SERVER_HOST || ''
+  const port = Number(process.env.EMAIL_SERVER_PORT) || 587
   const detail = transport === 'resend' ? 'Resend'
-    : transport === 'smtp' ? `SMTP · ${process.env.EMAIL_SERVER_HOST}:${Number(process.env.EMAIL_SERVER_PORT) || 587}`
+    : transport === 'smtp' ? `SMTP · ${host}:${port}`
     : 'not configured'
-  return { transport, from, detail }
+  // 1025 is the Mailpit/MailHog convention; "mailpit" is the bundled compose service.
+  const catcher = transport === 'smtp' && (port === 1025 || host === 'mailpit')
+  return { transport, from, detail, catcher }
 }
 
 /**
