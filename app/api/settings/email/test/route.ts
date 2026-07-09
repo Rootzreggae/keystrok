@@ -10,7 +10,7 @@ export async function POST() {
   if (!s?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const denied = await requireAdmin(s.user.id)
   if (denied) return denied
-  if (!mailConfigured()) return NextResponse.json({ ok: false, error: 'No mail transport configured' }, { status: 400 })
+  if (!(await mailConfigured())) return NextResponse.json({ ok: false, error: 'No mail transport configured' }, { status: 400 })
   const to = s.user.email
   if (!to) return NextResponse.json({ ok: false, error: 'Your account has no email address' }, { status: 400 })
 

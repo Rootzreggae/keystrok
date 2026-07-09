@@ -1,12 +1,11 @@
 import NextAuth from "next-auth"
 import EmailProvider from "next-auth/providers/email"
 import { PrismaAdapter } from "@auth/prisma-adapter"
-import { createTransport } from "nodemailer"
 import { prisma } from "@/lib/prisma"
 import type { Adapter } from "next-auth/adapters"
 import { isAllowedEmail } from "@/lib/allowlist"
 import { checkRateLimit } from "@/lib/rate-limit"
-import { smtpConfig } from "@/lib/mailer"
+import { getMail, sendMail } from "@/lib/mailer"
 
 // Magic-link throttle: at most 4 sign-in emails per address per 15 minutes.
 // Keyed by email (the inbox we'd otherwise let someone spam, and the thing
@@ -26,7 +25,7 @@ async function sendVerificationRequest(params: {
   url: string
   provider: any
 }) {
-  const { identifier, url, provider } = params
+  const { identifier, url } = params
 
   const rl = await checkRateLimit(`magiclink:${identifier.toLowerCase()}`, {
     limit: MAGIC_LINK_LIMIT,
@@ -40,20 +39,20 @@ async function sendVerificationRequest(params: {
 
   // Dev convenience: with no real mail transport configured, print the magic link
   // to the server console instead of failing to send it. ponytail: never fires in
-  // production, there EMAIL_SERVER_HOST (or Resend) is a real host, not a placeholder.
+  // production, there the transport points at a real host, not a placeholder.
+  const mail = await getMail()
   if (
     process.env.NODE_ENV !== "production" &&
-    (!provider.server?.host || provider.server.host === "REPLACE")
+    (mail.transport === "none" || (mail.transport === "smtp" && (!mail.host || mail.host === "REPLACE")))
   ) {
     console.log(`\n🔑 [auth] Magic link for ${identifier}:\n${url}\n`)
     return
   }
 
-  const { host } = new URL(url)
-  const transport = createTransport(provider.server)
-  const result = await transport.sendMail({
+  // Send through the unified mailer, so magic links honor the Settings-saved
+  // mail config (and Resend), not just the env SMTP vars.
+  const ok = await sendMail({
     to: identifier,
-    from: provider.from,
     subject: `Sign in to Keystrok`,
     text: `Sign in to Keystrok\n\n${url}\n\nIf you did not request this, you can safely ignore this email.\n`,
     html: `<body style="font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;background:#0a0a0a;color:#d4d4d4;padding:24px">
@@ -65,10 +64,8 @@ async function sendVerificationRequest(params: {
   </div>
 </body>`,
   })
-
-  const failed = result.rejected.concat((result as any).pending ?? []).filter(Boolean)
-  if (failed.length) {
-    throw new Error(`Magic-link email (${failed.join(", ")}) could not be sent`)
+  if (!ok) {
+    throw new Error(`Magic-link email to ${identifier} could not be sent`)
   }
 }
 
@@ -113,9 +110,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   },
   providers: [
     EmailProvider({
-      // Shared SMTP config: omits auth when no EMAIL_SERVER_USER is set, so the
-      // bundled MailHog (and other open dev relays) work without credentials.
-      server: smtpConfig(),
+      // server/from are unused: sendVerificationRequest delivers through the
+      // unified mailer (lib/mailer.ts), which resolves Settings-saved config
+      // with env fallback at send time.
+      server: {},
       from: process.env.EMAIL_FROM,
       maxAge: 24 * 60 * 60, // 24 hours for magic links
       sendVerificationRequest,

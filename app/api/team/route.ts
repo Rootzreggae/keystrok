@@ -24,8 +24,8 @@ export async function GET() {
     members: members.map((m) => ({ ...m, you: m.id === session.user.id })),
     invites,
     // when false, invites + magic links are silently dropped (no mail transport)
-    mailConfigured: mailConfigured(),
+    mailConfigured: await mailConfigured(),
     // where invites actually go (transport + catcher flag), so admins can see it
-    mail: mailStatus(),
+    mail: await mailStatus(),
   })
 }

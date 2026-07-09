@@ -1,16 +1,21 @@
 import { createTransport } from 'nodemailer'
 import { Resend } from 'resend'
+import { prisma } from './prisma'
+import { decryptSecret } from './crypto'
 
 /**
  * Unified outbound email. Self-hosters use SMTP (nodemailer), point it at any
- * mail server, including the bundled MailHog for local/dev. Hosted setups can
- * use Resend by setting RESEND_API_KEY. Both the magic-link sign-in
- * (lib/auth.ts) and the waitlist confirmation (lib/email.ts) send through here.
+ * mail server, including the bundled Mailpit for local/dev. Hosted setups can
+ * use Resend. Magic-link sign-in (lib/auth.ts), team invites, and the waitlist
+ * confirmation (lib/email.ts) all send through here.
  *
- * Transport selection:
- *   - EMAIL_TRANSPORT=smtp|resend forces a transport.
- *   - Otherwise: Resend if RESEND_API_KEY is set, else SMTP if EMAIL_SERVER_HOST
- *     is set, else a no-op (logged) so the app still runs without mail wired up.
+ * Config resolution (same precedence as GithubAppConfig):
+ *   1. The MailConfig row saved in Settings > Email delivery, when present.
+ *   2. Env fallback: EMAIL_TRANSPORT=smtp|resend forces a transport; otherwise
+ *      Resend if RESEND_API_KEY is set, else SMTP if EMAIL_SERVER_HOST is set,
+ *      else a no-op (logged) so the app still runs without mail wired up.
+ *      Env remains the bootstrap path: the first magic link must send before
+ *      any UI exists.
  */
 
 export interface MailMessage {
@@ -22,77 +27,120 @@ export interface MailMessage {
 
 type Transport = 'resend' | 'smtp' | 'none'
 
-function resendApiKey(): string | undefined {
-  return process.env.RESEND_API_KEY || undefined
+export interface EffectiveMail {
+  transport: Transport
+  host: string
+  port: number
+  username: string
+  password: string
+  resendKey: string
+  from: string
+  source: 'settings' | 'env'
 }
 
-function resolveTransport(): Transport {
+function envMail(): EffectiveMail {
   const explicit = process.env.EMAIL_TRANSPORT?.toLowerCase()
-  if (explicit === 'resend' || explicit === 'smtp') return explicit
-  if (resendApiKey()) return 'resend'
-  if (process.env.EMAIL_SERVER_HOST) return 'smtp'
-  return 'none'
+  const resendKey = process.env.RESEND_API_KEY || ''
+  const host = process.env.EMAIL_SERVER_HOST || ''
+  const transport: Transport =
+    explicit === 'resend' || explicit === 'smtp' ? explicit
+    : resendKey ? 'resend'
+    : host ? 'smtp'
+    : 'none'
+  return {
+    transport,
+    host,
+    port: Number(process.env.EMAIL_SERVER_PORT) || 587,
+    username: process.env.EMAIL_SERVER_USER || '',
+    password: process.env.EMAIL_SERVER_PASSWORD || '',
+    resendKey,
+    from: process.env.EMAIL_FROM || 'Keystrok <onboarding@resend.dev>',
+    source: 'env',
+  }
+}
+
+// ponytail: per-process cache, same trade-off as the session cache in lib/auth.
+const MAIL_CACHE_TTL_MS = 30_000
+let mailCache: { value: EffectiveMail; exp: number } | null = null
+
+/** Call after saving/deleting the MailConfig row so changes apply immediately. */
+export function invalidateMailCache() {
+  mailCache = null
+}
+
+/** Effective mail config: the Settings row when present, env otherwise. */
+export async function getMail(): Promise<EffectiveMail> {
+  if (mailCache && mailCache.exp > Date.now()) return mailCache.value
+  let value = envMail()
+  try {
+    const row = await prisma.mailConfig.findUnique({ where: { id: 'default' } })
+    if (row) {
+      const env = value
+      value = {
+        transport: row.transport === 'resend' ? 'resend' : 'smtp',
+        host: row.host,
+        port: row.port || 587,
+        username: row.username,
+        password: row.passwordEnc ? decryptSecret(row.passwordEnc) : '',
+        resendKey: row.resendKeyEnc ? decryptSecret(row.resendKeyEnc) : '',
+        from: row.from || env.from,
+        source: 'settings',
+      }
+    }
+  } catch {
+    // table missing (pre-migration) or DB down: fall back to env
+  }
+  mailCache = { value, exp: Date.now() + MAIL_CACHE_TTL_MS }
+  return value
 }
 
 /** Whether an outbound mail transport is wired up. False = invites/magic links
  *  are silently dropped (the 'none' no-op), so callers can warn the operator. */
-export function mailConfigured(): boolean {
-  return resolveTransport() !== 'none'
+export async function mailConfigured(): Promise<boolean> {
+  return (await getMail()).transport !== 'none'
 }
 
 /** Human-readable mail delivery status for the Settings UI. No secrets.
  *  `catcher` = mail is going to a local dev catcher (Mailpit/MailHog), so it is
  *  "delivered" but never reaches a real inbox; callers should warn the operator. */
-export function mailStatus(): { transport: Transport; from: string; detail: string; catcher: boolean } {
-  const transport = resolveTransport()
-  const from = defaultFrom()
-  const host = process.env.EMAIL_SERVER_HOST || ''
-  const port = Number(process.env.EMAIL_SERVER_PORT) || 587
-  const detail = transport === 'resend' ? 'Resend'
-    : transport === 'smtp' ? `SMTP · ${host}:${port}`
+export async function mailStatus(): Promise<{ transport: Transport; from: string; detail: string; catcher: boolean; source: 'settings' | 'env' }> {
+  const m = await getMail()
+  const detail = m.transport === 'resend' ? 'Resend'
+    : m.transport === 'smtp' ? `SMTP · ${m.host}:${m.port}`
     : 'not configured'
   // 1025 is the Mailpit/MailHog convention; "mailpit" is the bundled compose service.
-  const catcher = transport === 'smtp' && (port === 1025 || host === 'mailpit')
-  return { transport, from, detail, catcher }
+  const catcher = m.transport === 'smtp' && (m.port === 1025 || m.host === 'mailpit')
+  return { transport: m.transport, from: m.from, detail, catcher, source: m.source }
 }
 
 /**
- * SMTP transport config from EMAIL_SERVER_* env. Auth is omitted entirely when
- * no user is set so unauthenticated dev servers (MailHog on :1025) work without
+ * SMTP transport config for nodemailer. Auth is omitted entirely when no user
+ * is set so unauthenticated dev servers (Mailpit on :1025) work without
  * tripping nodemailer's auth flow. `secure` is true only on the implicit-TLS
  * port 465; 587/1025 use STARTTLS / plaintext.
  */
-export function smtpConfig() {
-  const port = Number(process.env.EMAIL_SERVER_PORT) || 587
-  const user = process.env.EMAIL_SERVER_USER
-  const pass = process.env.EMAIL_SERVER_PASSWORD
+function smtpOptions(m: EffectiveMail) {
   return {
-    host: process.env.EMAIL_SERVER_HOST,
-    port,
-    secure: port === 465,
-    auth: user ? { user, pass } : undefined,
+    host: m.host,
+    port: m.port,
+    secure: m.port === 465,
+    auth: m.username ? { user: m.username, pass: m.password } : undefined,
   }
-}
-
-function defaultFrom(): string {
-  return process.env.EMAIL_FROM || 'Keystrok <onboarding@resend.dev>'
 }
 
 /** Send one message. Returns true on success, false on any failure (never throws). */
 export async function sendMail(msg: MailMessage): Promise<boolean> {
-  const transport = resolveTransport()
-  const from = defaultFrom()
+  const m = await getMail()
 
   try {
-    if (transport === 'resend') {
-      const key = resendApiKey()
-      if (!key) {
-        console.warn('[mailer] EMAIL_TRANSPORT=resend but RESEND_API_KEY is missing')
+    if (m.transport === 'resend') {
+      if (!m.resendKey) {
+        console.warn('[mailer] resend transport selected but no API key is set')
         return false
       }
-      const resend = new Resend(key)
+      const resend = new Resend(m.resendKey)
       const { error } = await resend.emails.send({
-        from,
+        from: m.from,
         to: msg.to,
         subject: msg.subject,
         html: msg.html,
@@ -105,13 +153,13 @@ export async function sendMail(msg: MailMessage): Promise<boolean> {
       return true
     }
 
-    if (transport === 'smtp') {
-      if (!process.env.EMAIL_SERVER_HOST) {
-        console.warn('[mailer] EMAIL_TRANSPORT=smtp but EMAIL_SERVER_HOST is missing')
+    if (m.transport === 'smtp') {
+      if (!m.host) {
+        console.warn('[mailer] smtp transport selected but no host is set')
         return false
       }
-      const result = await createTransport(smtpConfig()).sendMail({
-        from,
+      const result = await createTransport(smtpOptions(m)).sendMail({
+        from: m.from,
         to: msg.to,
         subject: msg.subject,
         html: msg.html,

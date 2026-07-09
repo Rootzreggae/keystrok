@@ -50,10 +50,19 @@ async function main() {
     assert(raw.apiKey !== PLAINTEXT, 'stored apiKey is not the plaintext')
     assert(isEncrypted(raw.apiKey), 'stored apiKey is in enc:v1: envelope format')
     assert(decryptSecret(raw.apiKey) === PLAINTEXT, 'decryptSecret round-trips to original plaintext')
-    console.log('\nENCRYPTION-AT-REST: PASS')
   } finally {
     await prisma.user.delete({ where: { id: user.id } }) // cascades to platform
   }
+
+  // MailConfig: the saved SMTP password / Resend key must be ciphertext too.
+  // Only checks a real row when one exists (the settings form is optional).
+  const mail = await prisma.mailConfig.findUnique({ where: { id: 'default' } })
+  for (const [name, value] of [['passwordEnc', mail?.passwordEnc], ['resendKeyEnc', mail?.resendKeyEnc]] as const) {
+    if (value) assert(isEncrypted(value), `mail_config.${name} is in enc:v1: envelope format`)
+  }
+  if (!mail) console.log('  - mail_config: no saved row (env-only), nothing to check')
+
+  console.log('\nENCRYPTION-AT-REST: PASS')
 }
 
 main()

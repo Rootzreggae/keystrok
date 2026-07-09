@@ -113,6 +113,24 @@ model GithubAppConfig {
   @@map("github_app_config")
 }
 
+// Instance-wide outbound mail, editable in Settings. Overrides the EMAIL_* env
+// vars when present (env stays as the bootstrap/break-glass path, same
+// precedence as GithubAppConfig). Secrets encrypted via lib/crypto.
+model MailConfig {
+  id           String   @id @default("default")
+  transport    String // "smtp" | "resend"
+  host         String   @default("")
+  port         Int      @default(587)
+  username     String   @default("")
+  passwordEnc  String   @default("") // encrypted
+  resendKeyEnc String   @default("") // encrypted
+  from         String   @default("")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("mail_config")
+}
+
 // Instance-wide alert delivery. Single-tenant (one instance = one team), so a
 // singleton row like GithubAppConfig. One channel in v1 (telegram | webhook).
 // Secrets (telegramToken, webhookUrl) encrypted at rest. See lib/alerting.ts.
