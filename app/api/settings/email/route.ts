@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { requireAdmin } from '@/lib/roles'
-import { mailStatus, invalidateMailCache } from '@/lib/mailer'
+import { mailStatus, invalidateMailCache, getMail } from '@/lib/mailer'
 import { encryptSecret, isMaskedSecret } from '@/lib/crypto'
 
 // Mail delivery settings. Admin-only. The saved row overrides the EMAIL_* env
@@ -11,9 +11,21 @@ import { encryptSecret, isMaskedSecret } from '@/lib/crypto'
 
 async function payload(youEmail: string | null) {
   const row = await prisma.mailConfig.findUnique({ where: { id: 'default' } })
+  const m = await getMail()
   return {
     ...(await mailStatus()),
     youEmail,
+    // effective form values (saved row, or env fallback), secrets as has* flags
+    effective: {
+      host: m.host,
+      port: m.port,
+      username: m.username,
+      from: m.from,
+      hasPassword: !!m.password,
+      hasResendKey: !!m.resendKey,
+    },
+    // where the From value comes from, for the per-field source tag
+    fromSource: row?.from ? 'saved' : process.env.EMAIL_FROM ? 'environment' : 'default',
     config: row
       ? {
           transport: row.transport,
