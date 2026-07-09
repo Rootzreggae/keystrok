@@ -1,6 +1,18 @@
 // API key patterns and detection rules for various platforms
 
-import { KeyPattern } from './types'
+import type { KeyPattern } from './types'
+
+// Placeholder bodies like "xxxxxxxxxxxxxxxxxxxxxxxx" have near-zero entropy;
+// real key bodies are random. Guards prefix-keyed patterns against docs examples.
+function isRandomBody(body: string): boolean {
+  return calculateEntropy(body) > 3
+}
+
+// A captured "value" that is itself code reading the environment
+// (password = process.env.ADMIN_PASSWORD) is the fix, not the leak.
+function isEnvReference(value: string): boolean {
+  return /^(?:process\.env|import\.meta\.env|os\.environ|deno\.env|ENV\b)/i.test(value)
+}
 
 // Enhanced API key patterns with better validation and reduced false positives
 export const KEY_PATTERNS: KeyPattern[] = [
@@ -22,7 +34,7 @@ export const KEY_PATTERNS: KeyPattern[] = [
     name: 'AWS Secret Access Key',
     platform: 'AWS',
     keyType: 'aws_secret_key',
-    pattern: /(?:aws.{0,20}secret.{0,20}|secret.{0,20}access.{0,20}key.{0,20})[=:\s]*["']?([A-Za-z0-9/+=]{40})["']?/gi,
+    pattern: /(?:aws.{0,20}secret.{0,20}|secret.{0,20}access.{0,20}key.{0,20})["']?[=:\s]*["']?([A-Za-z0-9/+=]{40})["']?/gi,
     confidence: 0.85,
     severity: 'critical',
     description: 'AWS Secret Access Key for authentication',
@@ -35,7 +47,7 @@ export const KEY_PATTERNS: KeyPattern[] = [
     name: 'AWS Session Token',
     platform: 'AWS',
     keyType: 'aws_session_token',
-    pattern: /(?:aws.{0,20}session.{0,20}token.{0,20})[=:\s]*["']?([A-Za-z0-9/+=]{100,})["']?/gi,
+    pattern: /(?:aws.{0,20}session.{0,20}token.{0,20})["']?[=:\s]*["']?([A-Za-z0-9/+=]{100,})["']?/gi,
     confidence: 0.90,
     severity: 'high',
     description: 'AWS temporary session token',
@@ -55,7 +67,7 @@ export const KEY_PATTERNS: KeyPattern[] = [
     description: 'Stripe live secret key - provides full access to Stripe account',
     examples: ['sk_live_EXAMPLE'],
     validationFn: (key: string) => {
-      return key.startsWith('sk_live_') && key.length >= 32
+      return key.startsWith('sk_live_') && key.length >= 32 && isRandomBody(key.slice(8))
     }
   },
   {
@@ -68,7 +80,7 @@ export const KEY_PATTERNS: KeyPattern[] = [
     description: 'Stripe test secret key',
     examples: ['sk_test_EXAMPLE'],
     validationFn: (key: string) => {
-      return key.startsWith('sk_test_') && key.length >= 32
+      return key.startsWith('sk_test_') && key.length >= 32 && isRandomBody(key.slice(8))
     }
   },
   {
@@ -81,7 +93,7 @@ export const KEY_PATTERNS: KeyPattern[] = [
     description: 'Stripe live publishable key',
     examples: ['pk_live_EXAMPLE'],
     validationFn: (key: string) => {
-      return key.startsWith('pk_live_') && key.length >= 32
+      return key.startsWith('pk_live_') && key.length >= 32 && isRandomBody(key.slice(8))
     }
   },
   {
@@ -94,7 +106,7 @@ export const KEY_PATTERNS: KeyPattern[] = [
     description: 'Stripe test publishable key',
     examples: ['pk_test_EXAMPLE'],
     validationFn: (key: string) => {
-      return key.startsWith('pk_test_') && key.length >= 32
+      return key.startsWith('pk_test_') && key.length >= 32 && isRandomBody(key.slice(8))
     }
   },
   {
@@ -106,7 +118,7 @@ export const KEY_PATTERNS: KeyPattern[] = [
     severity: 'high',
     description: 'Stripe restricted API key',
     validationFn: (key: string) => {
-      return (key.startsWith('rk_test_') || key.startsWith('rk_live_')) && key.length >= 32
+      return (key.startsWith('rk_test_') || key.startsWith('rk_live_')) && key.length >= 32 && isRandomBody(key.slice(8))
     }
   },
 
@@ -195,7 +207,7 @@ export const KEY_PATTERNS: KeyPattern[] = [
     name: 'Grafana API Key (Legacy)',
     platform: 'Grafana',
     keyType: 'grafana_api_key',
-    pattern: /(?:grafana.{0,20}api.{0,20}key.{0,20})[=:\s]*["']?([a-zA-Z0-9]{32,})["']?/gi,
+    pattern: /(?:grafana.{0,20}api.{0,20}key.{0,20})["']?[=:\s]*["']?([a-zA-Z0-9]{32,})["']?/gi,
     confidence: 0.80,
     severity: 'high',
     description: 'Legacy Grafana API key',
@@ -209,7 +221,7 @@ export const KEY_PATTERNS: KeyPattern[] = [
     name: 'Datadog API Key',
     platform: 'Datadog',
     keyType: 'datadog_api',
-    pattern: /(?:dd_api_key|datadog.{0,20}api.{0,20}key)[=:\s]*["']?([a-z0-9]{32})["']?/gi,
+    pattern: /(?:dd_api_key|datadog.{0,20}api.{0,20}key)["']?[=:\s]*["']?([a-z0-9]{32})["']?/gi,
     confidence: 0.90,
     severity: 'high',
     description: 'Datadog API key for metrics and logs',
@@ -222,7 +234,7 @@ export const KEY_PATTERNS: KeyPattern[] = [
     name: 'Datadog Application Key',
     platform: 'Datadog',
     keyType: 'datadog_app',
-    pattern: /(?:dd_app_key|datadog.{0,20}app.{0,20}key)[=:\s]*["']?([a-z0-9]{40})["']?/gi,
+    pattern: /(?:dd_app_key|datadog.{0,20}app.{0,20}key)["']?[=:\s]*["']?([a-z0-9]{40})["']?/gi,
     confidence: 0.90,
     severity: 'high',
     description: 'Datadog Application key for full API access',
@@ -250,7 +262,7 @@ export const KEY_PATTERNS: KeyPattern[] = [
     name: 'New Relic License Key',
     platform: 'New Relic',
     keyType: 'newrelic_license',
-    pattern: /(?:new.{0,10}relic.{0,20}license.{0,20}key)[=:\s]*["']?([a-z0-9]{40})["']?/gi,
+    pattern: /(?:new.{0,10}relic.{0,20}license.{0,20}key)["']?[=:\s]*["']?([a-z0-9]{40})["']?/gi,
     confidence: 0.85,
     severity: 'high',
     description: 'New Relic License key for agent data ingestion',
@@ -292,24 +304,24 @@ export const KEY_PATTERNS: KeyPattern[] = [
     name: 'Generic API Key Pattern',
     platform: 'Generic',
     keyType: 'generic_api_key',
-    pattern: /(?:api[_-]?key|apikey|access[_-]?token|auth[_-]?token|secret)[_-]?[=:]\s*["']?([a-zA-Z0-9_\-\.]{20,})["']?/gi,
+    pattern: /(?:api[_-]?key|apikey|access[_-]?token|auth[_-]?token|secret)[_-]?["']?\s*[=:]\s*["']?([a-zA-Z0-9_\-\.]{20,})["']?/gi,
     confidence: 0.65,
     severity: 'medium',
     description: 'Generic API key pattern based on common naming conventions',
     validationFn: (key: string) => {
-      return key.length >= 20 && !/^(test|example|sample|demo|placeholder|dummy|null|undefined)$/i.test(key)
+      return key.length >= 20 && !isEnvReference(key) && !/^(test|example|sample|demo|placeholder|dummy|null|undefined)$/i.test(key)
     }
   },
   {
     name: 'Generic Secret Pattern',
     platform: 'Generic',
     keyType: 'generic_secret',
-    pattern: /(?:secret|password|passwd|pwd)[_-]?[=:]\s*["']?([a-zA-Z0-9_\-\.!@#$%^&*]{12,})["']?/gi,
+    pattern: /(?:secret|password|passwd|pwd)[_-]?["']?\s*[=:]\s*["']?([a-zA-Z0-9_\-\.!@#$%^&*]{12,})["']?/gi,
     confidence: 0.60,
     severity: 'medium',
     description: 'Generic secret pattern',
     validationFn: (key: string) => {
-      return key.length >= 12 && !/^(test|example|sample|demo|placeholder|dummy|password|123456)$/i.test(key)
+      return key.length >= 12 && !isEnvReference(key) && !/^(test|example|sample|demo|placeholder|dummy|password|123456)$/i.test(key)
     }
   },
   {
@@ -351,7 +363,7 @@ export const OBSERVABILITY_PATTERNS: KeyPattern[] = [
     name: 'Prometheus Bearer Token',
     platform: 'Prometheus',
     keyType: 'prometheus_bearer',
-    pattern: /(?:prometheus.{0,20}bearer.{0,20}token)[=:\s]*["']?([a-zA-Z0-9_\-\.]{32,})["']?/gi,
+    pattern: /(?:prometheus.{0,20}bearer.{0,20}token)["']?[=:\s]*["']?([a-zA-Z0-9_\-\.]{32,})["']?/gi,
     confidence: 0.80,
     severity: 'high',
     description: 'Prometheus Bearer token for authentication'
@@ -362,32 +374,33 @@ export const OBSERVABILITY_PATTERNS: KeyPattern[] = [
     name: 'Elasticsearch API Key',
     platform: 'Elasticsearch',
     keyType: 'elasticsearch_api',
-    pattern: /(?:elastic.{0,20}api.{0,20}key)[=:\s]*["']?([a-zA-Z0-9_\-\.]{20,})["']?/gi,
+    pattern: /(?:elastic.{0,20}api.{0,20}key)["']?[=:\s]*["']?([a-zA-Z0-9_\-\.]{20,})["']?/gi,
     confidence: 0.75,
     severity: 'high',
     description: 'Elasticsearch API key'
   },
 
-  // Splunk
+  // Splunk. Context-gated: a bare UUID matches every request/trace id in a
+  // codebase, so the token must be introduced by a splunk/hec-ish name.
   {
     name: 'Splunk Token',
     platform: 'Splunk',
     keyType: 'splunk_token',
-    pattern: /\b([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})\b/gi,
-    confidence: 0.70,
+    pattern: /(?:splunk.{0,20}(?:token|key)|hec.{0,10}token)["']?[=:\s]*["']?([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})\b/gi,
+    confidence: 0.85,
     severity: 'high',
-    description: 'Splunk authentication token (UUID format)'
+    description: 'Splunk authentication token (UUID format, requires splunk/hec context)'
   },
 
-  // PagerDuty
+  // PagerDuty. Context-gated for the same reason: bare 32-hex matches every md5.
   {
     name: 'PagerDuty Integration Key',
     platform: 'PagerDuty',
     keyType: 'pagerduty_integration',
-    pattern: /\b([a-f0-9]{32})\b/gi,
-    confidence: 0.60,
+    pattern: /(?:pagerduty.{0,20}key|(?:pd|routing|integration)[_-]?key)["']?[=:\s]*["']?([a-zA-Z0-9]{32})\b/gi,
+    confidence: 0.80,
     severity: 'medium',
-    description: 'PagerDuty integration key (requires context validation)'
+    description: 'PagerDuty integration/routing key (requires pagerduty context)'
   }
 ]
 

@@ -1,6 +1,6 @@
 // Contextual risk analysis for detected API keys and secrets
 
-import { Finding, RiskAssessment, ContextAnalysis, KeyValidation } from './types'
+import type { Finding, RiskAssessment, ContextAnalysis, KeyValidation } from './types'
 import { calculateEntropy } from './utils'
 
 // Risk assessment thresholds
