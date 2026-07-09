@@ -5,7 +5,7 @@ import * as path from 'path'
 import * as crypto from 'crypto'
 import { promisify } from 'util'
 import { exec } from 'child_process'
-import { FileInfo, ScanError } from './types'
+import type { FileInfo, ScanError } from './types'
 
 const execAsync = promisify(exec)
 
@@ -34,7 +34,9 @@ export const SCANNABLE_EXTENSIONS = [
   '.gitignore', '.gitattributes',
   '.terraform', '.tf', '.tfvars',
   '.ansible', '.playbook',
-  '.k8s', '.kube', '.kubernetes'
+  '.k8s', '.kube', '.kubernetes',
+  '.md', '.mdx', '.markdown', '.rst',
+  '.ipynb'
 ]
 
 // Directories to exclude from scanning
