@@ -15,7 +15,10 @@ export default function SignIn() {
     setLoading(true)
     setError('')
     try {
-      const result = await signIn('email', { email, redirect: false })
+      // "Open Keystrok on" preference (Settings > Appearance, per-browser):
+      // decides where the magic link lands after sign-in.
+      const callbackUrl = localStorage.getItem('ks-open-on') === 'keys' ? '/inventory' : '/dashboard'
+      const result = await signIn('email', { email, redirect: false, callbackUrl })
       if (result?.error) setError('Could not send the link. Check the address and try again.')
       else setSent(true)
     } catch {

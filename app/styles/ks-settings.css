@@ -37,9 +37,9 @@
 .kb .ks-set__status { display: flex; align-items: center; gap: 8px; font-family: var(--font-mono); font-size: 11.5px; color: var(--tx-mut); }
 
 /* ── Email delivery v2 (design/mock: email-delivery content column) ───────── */
-.kb .ks-mail__title { display: flex; align-items: baseline; gap: 10px; }
-.kb .ks-mail__title h2 { margin: 0; font-size: 16px; font-weight: 650; color: var(--tx); letter-spacing: -0.01em; }
-.kb .ks-mail__meta { font-family: var(--font-mono); font-size: 11px; color: var(--tx-dim); }
+.kb .ks-mail__title, .kb .ks-set__title { display: flex; align-items: baseline; gap: 10px; }
+.kb .ks-mail__title h2, .kb .ks-set__title h2 { margin: 0; font-size: 16px; font-weight: 650; color: var(--tx); letter-spacing: -0.01em; }
+.kb .ks-mail__meta, .kb .ks-set__titlemeta { font-family: var(--font-mono); font-size: 11px; color: var(--tx-dim); }
 .kb .ks-mail__card { border: 1px solid var(--div-2); background: var(--panel); margin-top: 16px; max-width: 760px; }
 
 .kb .ks-mail__status { display: flex; align-items: flex-start; gap: 12px; padding: 15px 18px; border-bottom: 1px solid var(--div); }
@@ -58,10 +58,10 @@
 .kb .ks-mail__provider { display: flex; align-items: center; gap: 16px; padding-bottom: 15px; border-bottom: 1px solid var(--div); }
 .kb .ks-mail__provt { font-weight: 650; color: var(--tx); font-size: 13px; }
 .kb .ks-mail__provd { font-size: 11.5px; color: var(--tx-mut); margin-top: 2px; line-height: 1.5; }
-.kb .ks-mail__seg { display: inline-flex; gap: 2px; padding: 3px; background: var(--bg); border: 1px solid var(--div-2); flex: none; }
-.kb .ks-mail__seg button { font-family: var(--font-mono); font-size: 11px; padding: 6px 14px; color: var(--tx-mut); background: none; border: none; border-radius: 0; cursor: pointer; transition: color .12s; }
-.kb .ks-mail__seg button:hover { color: var(--tx-2); }
-.kb .ks-mail__seg button.on { background: var(--elev); color: var(--tx); box-shadow: inset 0 0 0 1px var(--div-2); }
+.kb .ks-mail__seg, .kb .ks-set__seg { display: inline-flex; gap: 2px; padding: 3px; background: var(--bg); border: 1px solid var(--div-2); flex: none; }
+.kb .ks-mail__seg button, .kb .ks-set__seg button { font-family: var(--font-mono); font-size: 11px; padding: 6px 14px; color: var(--tx-mut); background: none; border: none; border-radius: 0; cursor: pointer; transition: color .12s; }
+.kb .ks-mail__seg button:hover, .kb .ks-set__seg button:hover { color: var(--tx-2); }
+.kb .ks-mail__seg button.on, .kb .ks-set__seg button.on { background: var(--elev); color: var(--tx); box-shadow: inset 0 0 0 1px var(--div-2); }
 
 .kb .ks-mail__field { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
 .kb .ks-mail__lblrow { display: flex; align-items: baseline; gap: 8px; }
@@ -82,4 +82,18 @@
 @media (max-width: 560px) {
   .kb .ks-mail__row, .kb .ks-mail__row--hostport { grid-template-columns: minmax(0, 1fr); }
   .kb .ks-mail__provider { flex-direction: column; align-items: flex-start; gap: 10px; }
+}
+
+/* ── Settings v2 preference cards (design/mock: appearance content column) ── */
+.kb .ks-prefcard { border: 1px solid var(--div-2); background: var(--panel); max-width: 760px; margin-top: 16px; }
+.kb .ks-prefcard__hd { display: flex; align-items: baseline; gap: 10px; padding: 14px 18px; border-bottom: 1px solid var(--div); }
+.kb .ks-prefcard__t { font-weight: 650; color: var(--tx); font-size: 13.5px; }
+.kb .ks-prefcard__bd { padding: 16px 18px 18px; display: flex; flex-direction: column; gap: 16px; }
+.kb .ks-pref { display: flex; align-items: center; gap: 16px; }
+.kb .ks-pref:not(:last-child) { padding-bottom: 16px; border-bottom: 1px solid var(--div); }
+.kb .ks-pref__txt { flex: 1; }
+.kb .ks-pref__t { font-weight: 650; color: var(--tx); font-size: 13px; }
+.kb .ks-pref__d { font-size: 12px; color: var(--tx-mut); margin-top: 3px; line-height: 1.5; max-width: 480px; }
+@media (max-width: 560px) {
+  .kb .ks-pref { flex-direction: column; align-items: flex-start; gap: 10px; }
 }
