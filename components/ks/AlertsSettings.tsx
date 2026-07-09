@@ -4,11 +4,12 @@ import { useEffect, useState } from 'react'
 import { Send, Bell, Check, AlertTriangle } from 'lucide-react'
 import { InlineLoading } from '@/components/ks/Loading'
 
-type Channel = 'telegram' | 'webhook'
+type Channel = 'telegram' | 'webhook' | 'email'
 interface Cfg {
   enabled: boolean; channel: Channel
   telegramChatId: string; telegramToken: string; hasTelegramToken: boolean
   webhookUrl: string; hasWebhookUrl: boolean
+  emailTo: string; mailReady: boolean
   lastDeliveryOk: boolean | null; lastDeliveryAt: string | null; lastDeliveryMsg: string | null
 }
 
@@ -35,7 +36,7 @@ export function AlertsSettings() {
       const r = await fetch('/api/alerts/config', {
         method: 'PUT', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          enabled: c.enabled, channel: c.channel, telegramChatId: c.telegramChatId,
+          enabled: c.enabled, channel: c.channel, telegramChatId: c.telegramChatId, emailTo: c.emailTo,
           // only send secrets the user actually typed (not the mask)
           telegramToken: c.telegramToken && c.telegramToken !== MASK ? c.telegramToken : undefined,
           webhookUrl: c.webhookUrl && c.webhookUrl !== MASK ? c.webhookUrl : undefined,
@@ -91,9 +92,9 @@ export function AlertsSettings() {
         <div>
           <div className="ks-set__k" style={{ marginBottom: 8 }}>Channel</div>
           <div className="ks-seg">
-            {(['telegram', 'webhook'] as Channel[]).map((ch) => (
+            {(['telegram', 'webhook', 'email'] as Channel[]).map((ch) => (
               <button key={ch} className={'ks-seg__b' + (c.channel === ch ? ' active' : '')} onClick={() => set({ channel: ch })}>
-                {ch === 'telegram' ? 'Telegram' : 'Webhook'}
+                {ch === 'telegram' ? 'Telegram' : ch === 'webhook' ? 'Webhook' : 'Email'}
               </button>
             ))}
           </div>
@@ -116,12 +117,24 @@ export function AlertsSettings() {
               <span className="ks-set__hint">Send your bot any message first, then click Get chat ID.{idMsg ? ` ${idMsg}` : ''}</span>
             </label>
           </>
-        ) : (
+        ) : c.channel === 'webhook' ? (
           <label className="ks-set__field">
             <span>Webhook URL</span>
             <input className="ks-input" type="password" value={c.webhookUrl} placeholder={c.hasWebhookUrl ? MASK : 'https://hooks.slack.com/services/...'}
               onChange={(e) => set({ webhookUrl: e.target.value })} spellCheck={false} autoCapitalize="off" />
             <span className="ks-set__hint">A Slack/Discord incoming webhook, or any HTTPS endpoint. Slack renders the summary; a generic consumer also gets structured JSON.</span>
+          </label>
+        ) : (
+          <label className="ks-set__field">
+            <span>Recipients</span>
+            <input className="ks-input" value={c.emailTo} placeholder="blank = every admin" onChange={(e) => set({ emailTo: e.target.value })} spellCheck={false} autoCapitalize="off" />
+            <span className="ks-set__hint">Comma-separated addresses. Blank sends to every admin on this instance. Delivery uses the transport in Settings &gt; Email delivery.</span>
+            {!c.mailReady && (
+              <span className="ks-set__hint" style={{ color: 'var(--high)' }}>
+                <AlertTriangle size={12} style={{ verticalAlign: -2, marginRight: 5 }} />
+                No mail transport is configured, so email alerts cannot send. Set one up under Email delivery first.
+              </span>
+            )}
           </label>
         )}
 

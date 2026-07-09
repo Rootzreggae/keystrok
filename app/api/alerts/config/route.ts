@@ -3,6 +3,7 @@ import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { requireAdmin } from '@/lib/roles'
 import { encryptSecret, isMaskedSecret } from '@/lib/crypto'
+import { mailConfigured } from '@/lib/mailer'
 
 // Alert config is a singleton (single-tenant instance). Secrets are returned
 // masked, never in plaintext. Admin-gated: it holds delivery credentials.
@@ -22,6 +23,9 @@ export async function GET() {
     telegramToken: c?.telegramToken ? MASK : '',
     hasWebhookUrl: !!c?.webhookUrl,
     webhookUrl: c?.webhookUrl ? MASK : '',
+    emailTo: c?.emailTo ?? '',
+    // whether a mail transport exists at all, so the email channel can warn
+    mailReady: await mailConfigured(),
     lastDeliveryOk: c?.lastDeliveryOk ?? null,
     lastDeliveryAt: c?.lastDeliveryAt ?? null,
     lastDeliveryMsg: c?.lastDeliveryMsg ?? null,
@@ -35,11 +39,12 @@ export async function PUT(req: NextRequest) {
   if (denied) return denied
 
   const b = await req.json().catch(() => ({}))
-  const channel = b.channel === 'webhook' ? 'webhook' : 'telegram'
+  const channel = b.channel === 'webhook' || b.channel === 'email' ? b.channel : 'telegram'
   const data: Record<string, unknown> = {
     enabled: !!b.enabled,
     channel,
     telegramChatId: typeof b.telegramChatId === 'string' ? b.telegramChatId.trim() : undefined,
+    emailTo: typeof b.emailTo === 'string' ? b.emailTo.trim() : undefined,
   }
   // A masked/empty secret means "leave unchanged"; a real value is re-encrypted.
   if (typeof b.telegramToken === 'string' && b.telegramToken && !isMaskedSecret(b.telegramToken) && b.telegramToken !== MASK) {

@@ -7,7 +7,7 @@ import { isRecentlyUsed, rotationFailed } from './liveness.ts'
 import { riskStart, daysUntilDue } from './rotation-policy.ts'
 
 export type AlertKind = 'live_and_used' | 'rotation_failed' | 'sla_crossed'
-export type ChannelType = 'telegram' | 'webhook'
+export type ChannelType = 'telegram' | 'webhook' | 'email'
 
 export interface AlertableKey {
   id: string
@@ -74,12 +74,32 @@ export function recoveryText(k: AlertableKey, kind: AlertKind, baseUrl?: string)
   return `✅ Keystrok: ${bareName(k.keyName)} (${k.platform}) resolved — ${why}${link}`
 }
 
-export interface ChannelConfig { channel: ChannelType; telegramToken?: string | null; telegramChatId?: string | null; webhookUrl?: string | null }
+export interface ChannelConfig { channel: ChannelType; telegramToken?: string | null; telegramChatId?: string | null; webhookUrl?: string | null; emailTo?: string | null }
+
+/** Render an alert line as an email. The line doubles as the subject (minus the
+ *  status emoji) so the inbox list reads like the alert feed. */
+export function emailForAlert(text: string): { subject: string; text: string; html: string } {
+  const subject = text.replace(/^[^\w]*\s*/, '').replace(/ https?:\/\/\S+$/, '')
+  const link = text.match(/ (https?:\/\/\S+)$/)?.[1]
+  const esc = (v: string) => v.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  return {
+    subject,
+    text,
+    html: `<body style="font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;background:#0a0a0a;color:#d4d4d4;padding:24px">
+  <div style="max-width:520px;margin:0 auto;background:#1a1a1a;border:1px solid #333;border-radius:8px;padding:28px">
+    <p style="margin:0;line-height:1.6">${esc(text.replace(/ https?:\/\/\S+$/, ''))}</p>
+    ${link ? `<a href="${esc(link)}" style="display:inline-block;margin-top:20px;background:#4ade80;color:#0a0a0a;text-decoration:none;font-weight:bold;padding:10px 20px;border-radius:6px">Open in Keystrok</a>` : ''}
+  </div>
+</body>`,
+  }
+}
 
 /** Map a config + a rendered message to the concrete (url, body) to POST. Null
- *  when the channel isn't fully configured. This is the whole per-vendor surface. */
+ *  when the channel isn't fully configured. This is the whole per-vendor surface.
+ *  HTTP channels only: email delivers through lib/mailer (see alert-runner). */
 export function buildRequest(cfg: ChannelConfig, text: string, incident?: Incident & { key: AlertableKey } | null):
   { url: string; body: unknown } | null {
+  if (cfg.channel === 'email') return null
   if (cfg.channel === 'telegram') {
     if (!cfg.telegramToken || !cfg.telegramChatId) return null
     return {
