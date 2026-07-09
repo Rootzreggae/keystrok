@@ -5,7 +5,8 @@
 import { prisma } from './prisma.ts'
 import { decryptSecret } from './crypto.ts'
 import { assertSafePlatformUrl } from './ssrf.ts'
-import { incidentFor, summaryText, recoveryText, buildRequest, deliver, type AlertableKey, type ChannelConfig } from './alerting.ts'
+import { incidentFor, summaryText, recoveryText, buildRequest, deliver, emailForAlert, type AlertableKey, type ChannelConfig } from './alerting.ts'
+import { sendMail } from './mailer.ts'
 
 async function loadChannel(): Promise<{ cfg: ChannelConfig; baseUrl?: string } | null> {
   const c = await prisma.alertConfig.findUnique({ where: { id: 'default' } })
@@ -15,11 +16,27 @@ async function loadChannel(): Promise<{ cfg: ChannelConfig; baseUrl?: string } |
     telegramToken: c.telegramToken ? decryptSecret(c.telegramToken) : null,
     telegramChatId: c.telegramChatId,
     webhookUrl: c.webhookUrl ? decryptSecret(c.webhookUrl) : null,
+    emailTo: c.emailTo,
   }
   return { cfg, baseUrl: process.env.NEXTAUTH_URL || undefined }
 }
 
-async function send(cfg: ChannelConfig, text: string, incidentBody?: Parameters<typeof buildRequest>[2]): Promise<{ ok: boolean; msg: string }> {
+/** Deliver one alert line on the configured channel. Exported for the test
+ *  route; internal callers use it for every fire/recovery. */
+export async function sendAlert(cfg: ChannelConfig, text: string, incidentBody?: Parameters<typeof buildRequest>[2]): Promise<{ ok: boolean; msg: string }> {
+  if (cfg.channel === 'email') {
+    // explicit recipients, or every active admin (self-host default: zero config)
+    let recipients = (cfg.emailTo || '').split(/[,\s]+/).filter(Boolean)
+    if (!recipients.length) {
+      const admins = await prisma.user.findMany({ where: { role: 'admin', removedAt: null }, select: { email: true } })
+      recipients = admins.map((u) => u.email).filter((e): e is string => !!e)
+    }
+    if (!recipients.length) return { ok: false, msg: 'no recipients' }
+    const msg = emailForAlert(text)
+    let ok = true
+    for (const to of recipients) ok = (await sendMail({ ...msg, to })) && ok
+    return { ok, msg: ok ? 'delivered' : 'email send failed (check mail settings)' }
+  }
   const req = buildRequest(cfg, text, incidentBody)
   if (!req) return { ok: false, msg: 'channel not configured' }
   // webhook URLs are operator-supplied → SSRF-guard. Telegram host is fixed.
@@ -28,6 +45,7 @@ async function send(cfg: ChannelConfig, text: string, incidentBody?: Parameters<
   }
   return deliver(req)
 }
+const send = sendAlert
 
 /**
  * Reconcile alert state for the given keys against their current incident status.

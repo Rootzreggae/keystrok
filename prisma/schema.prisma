@@ -137,10 +137,11 @@ model MailConfig {
 model AlertConfig {
   id              String   @id @default("default")
   enabled         Boolean  @default(false)
-  channel         String   @default("telegram") // 'telegram' | 'webhook'
+  channel         String   @default("telegram") // 'telegram' | 'webhook' | 'email'
   telegramToken   String? // encrypted bot token
   telegramChatId  String?
   webhookUrl      String? // encrypted
+  emailTo         String   @default("") // comma/space-separated; blank = all admins
   lastDeliveryOk  Boolean?
   lastDeliveryAt  DateTime?
   lastDeliveryMsg String?
