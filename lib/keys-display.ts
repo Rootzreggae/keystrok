@@ -20,6 +20,8 @@ export interface ApiKey {
   last_used_source?: string | null
   usage_active?: boolean // still live AND used recently: an active incident
   rotation_failed?: boolean // rotated, but a post-rotation check still found it live
+  radius_sites?: number // distinct exposure sites (findings sharing the key hash)
+  radius_pipes?: number // the subset of sites inside deploy-pipeline files
   daysUntilExpiry: number
   rotatedAt?: string | null
 }

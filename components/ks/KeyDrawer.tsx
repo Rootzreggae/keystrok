@@ -7,6 +7,7 @@ import { useAssistant } from '@/components/ks/Assistant'
 import { X, RotateCw, Sparkles } from 'lucide-react'
 import { Pill, Dot, LiveBadge } from '@/components/ks'
 import { KeyTimeline } from '@/components/ks/KeyTimeline'
+import { BlastRadius } from '@/components/ks/BlastRadius'
 import { slaDays, foundAgoDays, riskStart, daysUntilDue } from '@/lib/rotation-policy'
 import { type ApiKey, SEVL, displayName, urgency, cleanLocation, ago } from '@/lib/keys-display'
 
@@ -143,6 +144,11 @@ export function KeyDrawer({ keyData, onClose }: { keyData: ApiKey | null; onClos
               <b>Active incident.</b> This leaked key is still live on its platform and was used {ago(k.last_used_at)} ago. Rotate it first.
             </div>
           )}
+
+          <div className="ks-dsect">
+            <div className="ks-dsect__l">Blast radius</div>
+            <BlastRadius keyId={k.id} />
+          </div>
 
           <div className="ks-dsect">
             <div className="ks-dsect__l">Incident timeline</div>
