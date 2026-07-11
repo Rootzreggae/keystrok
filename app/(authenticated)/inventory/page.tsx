@@ -173,7 +173,8 @@ export default function KeysScreen() {
                           {k.radius_consumers ? `${k.radius_consumers} svc · ` : ''}
                           {k.radius_sites ?? 1} site{(k.radius_sites ?? 1) === 1 ? '' : 's'}
                           {k.radius_pipes ? ` · ${k.radius_pipes} pipe` : ''}
-                          {k.usage_active && !k.radius_consumers && <span style={{ color: 'var(--crit)' }}> · in use</span>}
+                          {k.usage_active && !k.radius_consumers && !k.break_accepted && <span style={{ color: 'var(--crit)' }}> · in use</span>}
+                          {k.break_accepted && <span style={{ color: 'var(--high)' }}> · break accepted</span>}
                         </span>
                       </td>
                       <td>

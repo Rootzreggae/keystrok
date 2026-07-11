@@ -23,6 +23,7 @@ export interface ApiKey {
   radius_sites?: number // distinct exposure sites (findings sharing the key hash)
   radius_pipes?: number // the subset of sites inside deploy-pipeline files
   radius_consumers?: number // user-asserted consumers on the map
+  break_accepted?: boolean // operator signed the cost of rotating past an unknown consumer
   daysUntilExpiry: number
   rotatedAt?: string | null
 }

@@ -3,6 +3,7 @@ import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { requireAdmin } from '@/lib/roles'
 import { isDestructiveStep } from '@/lib/rotation-policy'
+import { acceptanceHolds } from '@/lib/blast-radius'
 
 type Params = Promise<{
   id: string
@@ -54,6 +55,26 @@ export async function POST(request: NextRequest, context: { params: Params }) {
     if (isDestructiveStep(step)) {
       const denied = await requireAdmin(session.user.id)
       if (denied) return denied
+
+      // Revoke gate: an accepted break was signed against a traffic snapshot.
+      // If the platform has seen the key used since, the unknown consumer is
+      // not the one the operator looked at; the acceptance no longer holds and
+      // the gate re-asks instead of letting the revoke ride on stale evidence.
+      if (workflow.discoveredKeyId) {
+        const key = await prisma.discoveredKey.findUnique({
+          where: { id: workflow.discoveredKeyId },
+          select: { breakAcceptedAt: true, breakAcceptedLastUsedAt: true, lastUsedAt: true },
+        })
+        if (key?.breakAcceptedAt && !acceptanceHolds(key.breakAcceptedLastUsedAt, key.lastUsedAt)) {
+          return NextResponse.json(
+            {
+              success: false,
+              error: `Traffic changed since you accepted the break (the key was used again ${key.lastUsedAt ? key.lastUsedAt.toISOString() : ''}). Re-read the blast radius and accept again before revoking.`,
+            },
+            { status: 409 }
+          )
+        }
+      }
     }
 
     // Validate step can be completed
@@ -182,6 +203,19 @@ export async function POST(request: NextRequest, context: { params: Params }) {
             userNotes: `Key rotated via workflow: ${workflow.name}`,
           },
         })
+      }
+    }
+
+    // The re-verified moment: after the revoke step (and after rotatedAt lands,
+    // so the evidence counts as post-rotation for rotationFailed()), run a
+    // liveness pass instead of waiting for the next scheduled check. Best-effort:
+    // a failed check never undoes the completed step.
+    if (isDestructiveStep(step) && workflow.discoveredKeyId) {
+      try {
+        const { runLivenessCheck } = await import('@/lib/liveness-runner')
+        await runLivenessCheck({ actorId: session.user.id })
+      } catch (e) {
+        console.error('post-revoke liveness re-check failed:', e)
       }
     }
 

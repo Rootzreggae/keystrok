@@ -1,7 +1,7 @@
 // Run: node --import ./scripts/register-alias.mjs lib/blast-radius.test.ts
 // ponytail: plain asserts on the pure derivations; the route is a thin query.
 import assert from 'node:assert/strict'
-import { isPipelinePath, consumerCheck, readinessChecks, radiusSummary, READ_MODES } from './blast-radius.ts'
+import { isPipelinePath, consumerCheck, readinessChecks, radiusSummary, READ_MODES, acceptanceHolds } from './blast-radius.ts'
 
 // Pipeline path classifier: CI/deploy surfaces only, never ordinary code.
 assert.equal(isPipelinePath('.github/workflows/deploy.yml'), true)
@@ -46,6 +46,25 @@ assert.ok(lifted.detail.includes('live and in use')) // the evidence stays visib
 assert.equal(consumerCheck({ ...base, liveStatus: 'revoked', lastUsedAt: null }, 3, NOW).tone, 'ok')
 // read-mode labels exist for every mode the API accepts
 for (const m of ['env_boot', 'env_run', 'secret_store']) assert.ok(READ_MODES[m])
+
+// an accepted break downgrades the hold to warn, but never to ok (a signed cost)
+const acceptedKey = { ...base, liveStatus: 'live', lastUsedAt: daysAgo(1), breakAcceptedAt: daysAgo(0), breakAcceptedBy: 'nilson@x' }
+const accepted = consumerCheck(acceptedKey, 0, NOW)
+assert.equal(accepted.tone, 'warn')
+assert.equal(accepted.title, 'Break accepted')
+assert.ok(accepted.detail.includes('nilson@x'))
+// revoked still outranks an acceptance
+assert.equal(consumerCheck({ ...acceptedKey, liveStatus: 'revoked' }, 0, NOW).tone, 'ok')
+// assertions + acceptance coexist: the mapped state mentions the accepted break
+assert.ok(consumerCheck(acceptedKey, 1, NOW).detail.includes('break accepted'))
+
+// the revoke gate predicate: acceptance holds only on identical traffic evidence
+const t = daysAgo(2)
+assert.equal(acceptanceHolds(t, new Date(t.getTime())), true) // same instant, different objects
+assert.equal(acceptanceHolds(t, daysAgo(1)), false) // used again since acceptance
+assert.equal(acceptanceHolds(null, null), true) // never observed, still never observed
+assert.equal(acceptanceHolds(null, daysAgo(1)), false) // usage appeared after acceptance
+assert.equal(acceptanceHolds(t, null), false) // evidence vanished (platform reset); re-ask
 
 // Readiness rail: guided runbook detection normalizes platform strings.
 const okConsumer = { tone: 'ok', title: 'x', detail: 'y' } as const

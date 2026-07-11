@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { isPipelinePath, consumerCheck, readinessChecks, radiusSummary } from '@/lib/blast-radius'
+import { displayName } from '@/lib/keys-display'
 
 // GET /api/keys/[id]/radius
 // The blast radius of one leaked key: exposure sites (findings sharing its
@@ -17,8 +18,9 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   const key = await prisma.discoveredKey.findUnique({
     where: { id },
     select: {
-      keyHashId: true, location: true, platform: true, foundAt: true,
+      keyHashId: true, location: true, platform: true, foundAt: true, keyName: true,
       liveStatus: true, liveCheckedAt: true, lastUsedAt: true, lastUsedSource: true,
+      breakAcceptedAt: true, breakAcceptedBy: true, breakAcceptedLastUsedAt: true,
     },
   })
   if (!key) return NextResponse.json({ error: 'Key not found' }, { status: 404 })
@@ -71,6 +73,12 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     usage: key.lastUsedAt
       ? { lastUsedAt: key.lastUsedAt.toISOString(), source: key.lastUsedSource, live: key.liveStatus === 'live' }
       : null,
+    breakAccepted: key.breakAcceptedAt
+      ? { at: key.breakAcceptedAt.toISOString(), by: key.breakAcceptedBy, lastUsedAtSnapshot: key.breakAcceptedLastUsedAt?.toISOString() ?? null }
+      : null,
+    // the typed-confirm target for accept-the-break; enforced server-side too
+    confirmName: displayName(key.keyName),
+    liveStatus: key.liveStatus,
     sites: sites.map((s) => ({ ...s, foundAt: s.foundAt.toISOString() })),
     pipelines: pipelines.map((s) => ({ ...s, foundAt: s.foundAt.toISOString() })),
     people,

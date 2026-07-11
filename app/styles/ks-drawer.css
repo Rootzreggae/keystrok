@@ -61,3 +61,13 @@
 .kb .ks-br__seg:last-child { border-radius: 0 2px 2px 0; }
 .kb .ks-br__seg.on { color: var(--tx); border-color: var(--tx-dim); border-left-width: 1px; }
 .kb .ks-br__seg.on + .ks-br__seg { border-left-width: 0; }
+
+/* v0.3: accept-the-break expansion, its evidence grid, and the crit button */
+.kb .ks-br__form--crit { border-color: var(--crit-line); background: var(--crit-dim); }
+.kb .ks-br__grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 14px; }
+.kb .ks-br__grid > div { display: flex; justify-content: space-between; gap: 8px; font-family: var(--font-mono); font-size: 11px; }
+.kb .ks-br__grid .k { color: var(--tx-dim); text-transform: uppercase; font-size: 10px; letter-spacing: 0.05em; }
+.kb .ks-br__grid .v { color: var(--tx); }
+.kb .ks-btn--crit { border-color: var(--crit-line); color: var(--crit); }
+.kb .ks-btn--crit:not(:disabled):hover { background: var(--crit-dim); }
+.kb .ks-btn--crit:disabled { opacity: 0.45; cursor: not-allowed; }

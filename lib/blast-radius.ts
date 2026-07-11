@@ -23,6 +23,8 @@ export interface ConsumerInputs {
   liveStatus: string | null
   lastUsedAt: Date | null
   lastUsedSource: string | null
+  breakAcceptedAt?: Date | null
+  breakAcceptedBy?: string | null
 }
 
 /**
@@ -42,7 +44,14 @@ export function consumerCheck(k: ConsumerInputs, asserted = 0, now: Date = new D
     return {
       tone: 'warn',
       title: `Consumers mapped · ${asserted} user-asserted`,
-      detail: `unconfirmed · verify each one during rotation${k.liveStatus === 'live' && isRecentlyUsed(k.lastUsedAt, now) ? ' · the key is live and in use' : ''}`,
+      detail: `unconfirmed · verify each one during rotation${k.liveStatus === 'live' && isRecentlyUsed(k.lastUsedAt, now) ? ' · the key is live and in use' : ''}${k.breakAcceptedAt ? ' · break accepted' : ''}`,
+    }
+  // An accepted break is a cost the operator signed for, not a pass: warn, never ok.
+  if (k.breakAcceptedAt)
+    return {
+      tone: 'warn',
+      title: 'Break accepted',
+      detail: `by ${k.breakAcceptedBy ?? 'unknown'} · re-verified at the revoke step · re-asked if traffic changes`,
     }
   if (k.liveStatus === 'live' && isRecentlyUsed(k.lastUsedAt, now))
     return {
@@ -55,6 +64,15 @@ export function consumerCheck(k: ConsumerInputs, asserted = 0, now: Date = new D
   if (!isListable(k.platform))
     return { tone: 'warn', title: 'Consumers unknown', detail: 'this provider cannot report key usage' }
   return { tone: 'warn', title: 'Consumers unknown', detail: 'liveness never checked · connect the platform to verify' }
+}
+
+/**
+ * The revoke gate's re-verification: an accepted break holds only if the
+ * traffic evidence hasn't moved since it was signed. If lastUsedAt changed,
+ * the unknown consumer is not the one the operator looked at; re-ask.
+ */
+export function acceptanceHolds(snapshot: Date | null | undefined, current: Date | null | undefined): boolean {
+  return (snapshot?.getTime() ?? null) === (current?.getTime() ?? null)
 }
 
 /** Human labels for how an asserted consumer reads the key; drives the
