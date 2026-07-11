@@ -1,7 +1,7 @@
 // Run: node --import ./scripts/register-alias.mjs lib/blast-radius.test.ts
 // ponytail: plain asserts on the pure derivations; the route is a thin query.
 import assert from 'node:assert/strict'
-import { isPipelinePath, consumerCheck, readinessChecks, radiusSummary } from './blast-radius.ts'
+import { isPipelinePath, consumerCheck, readinessChecks, radiusSummary, READ_MODES } from './blast-radius.ts'
 
 // Pipeline path classifier: CI/deploy surfaces only, never ordinary code.
 assert.equal(isPipelinePath('.github/workflows/deploy.yml'), true)
@@ -21,21 +21,31 @@ const daysAgo = (d: number) => new Date(NOW.getTime() - d * 86400000)
 const base = { platform: 'aws', lastUsedSource: 'aws · us-east-1 / s3' }
 
 // revoked: nothing left to break
-assert.equal(consumerCheck({ ...base, liveStatus: 'revoked', lastUsedAt: daysAgo(1) }, NOW).tone, 'ok')
+assert.equal(consumerCheck({ ...base, liveStatus: 'revoked', lastUsedAt: daysAgo(1) }, 0, NOW).tone, 'ok')
 // live + recently used: the hold trigger, and the evidence names the source
-const hold = consumerCheck({ ...base, liveStatus: 'live', lastUsedAt: daysAgo(1) }, NOW)
+const hold = consumerCheck({ ...base, liveStatus: 'live', lastUsedAt: daysAgo(1) }, 0, NOW)
 assert.equal(hold.tone, 'crit')
 assert.equal(hold.title, 'Hold before rotating')
 assert.ok(hold.detail.includes('us-east-1'))
 // live but idle (outside the recency window): warn, not hold
-assert.equal(consumerCheck({ ...base, liveStatus: 'live', lastUsedAt: daysAgo(30) }, NOW).tone, 'warn')
+assert.equal(consumerCheck({ ...base, liveStatus: 'live', lastUsedAt: daysAgo(30) }, 0, NOW).tone, 'warn')
 // unknown + provider can't list keys: terminal unknown, says so
-const grafana = consumerCheck({ platform: 'grafana', liveStatus: null, lastUsedAt: null, lastUsedSource: null }, NOW)
+const grafana = consumerCheck({ platform: 'grafana', liveStatus: null, lastUsedAt: null, lastUsedSource: null }, 0, NOW)
 assert.equal(grafana.tone, 'warn')
 assert.ok(grafana.detail.includes('cannot report'))
 // unknown + listable provider never checked: points at connecting
-const unchecked = consumerCheck({ platform: 'datadog_api_key', liveStatus: null, lastUsedAt: null, lastUsedSource: null }, NOW)
+const unchecked = consumerCheck({ platform: 'datadog_api_key', liveStatus: null, lastUsedAt: null, lastUsedSource: null }, 0, NOW)
 assert.ok(unchecked.detail.includes('never checked'))
+
+// user assertions lift the hold (mapped by a human, labeled unconfirmed)...
+const lifted = consumerCheck({ ...base, liveStatus: 'live', lastUsedAt: daysAgo(1) }, 2, NOW)
+assert.equal(lifted.tone, 'warn')
+assert.ok(lifted.title.includes('2 user-asserted'))
+assert.ok(lifted.detail.includes('live and in use')) // the evidence stays visible
+// ...but never outrank a revoked key's all-clear
+assert.equal(consumerCheck({ ...base, liveStatus: 'revoked', lastUsedAt: null }, 3, NOW).tone, 'ok')
+// read-mode labels exist for every mode the API accepts
+for (const m of ['env_boot', 'env_run', 'secret_store']) assert.ok(READ_MODES[m])
 
 // Readiness rail: guided runbook detection normalizes platform strings.
 const okConsumer = { tone: 'ok', title: 'x', detail: 'y' } as const
@@ -46,8 +56,10 @@ assert.ok(dd[2].detail.includes('4 sites'))
 assert.ok(dd[2].detail.includes('1 in deploy pipelines'))
 assert.equal(readinessChecks('stripe_secret_live', okConsumer, 1, 0)[0].tone, 'warn') // no stripe template
 
-// Summary: counts only, no invented consumers.
+// Summary: counts only, no invented consumers; asserted consumers lead when present.
 assert.equal(radiusSummary(1, 0, 0), 'Rotating this key touches 1 exposure site.')
 assert.equal(radiusSummary(4, 2, 1), 'Rotating this key touches 4 exposure sites and 2 deploy pipelines. 1 person touched the exposing commits.')
+assert.equal(radiusSummary(1, 0, 0, 2), 'Rotating this key touches 2 asserted consumers and 1 exposure site.')
+assert.equal(radiusSummary(4, 2, 0, 1), 'Rotating this key touches 1 asserted consumer, 4 exposure sites and 2 deploy pipelines.')
 
 console.log('blast-radius: all assertions passed')

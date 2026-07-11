@@ -23,14 +23,21 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   })
   if (!key) return NextResponse.json({ error: 'Key not found' }, { status: 404 })
 
-  const findings = await prisma.localScanFinding.findMany({
-    where: { keyHashId: key.keyHashId },
-    select: {
-      relativePath: true, lineNumber: true, createdAt: true,
-      fileScan: { select: { gitAuthor: true, gitLastCommit: true } },
-    },
-    orderBy: { createdAt: 'asc' },
-  })
+  const [findings, assertedConsumers] = await Promise.all([
+    prisma.localScanFinding.findMany({
+      where: { keyHashId: key.keyHashId },
+      select: {
+        relativePath: true, lineNumber: true, createdAt: true,
+        fileScan: { select: { gitAuthor: true, gitLastCommit: true } },
+      },
+      orderBy: { createdAt: 'asc' },
+    }),
+    prisma.assertedConsumer.findMany({
+      where: { discoveredKeyId: id },
+      select: { id: true, name: true, readMode: true, owner: true, assertedBy: true, createdAt: true },
+      orderBy: { createdAt: 'asc' },
+    }),
+  ])
 
   // Collapse multiple hits in one file to a single site (keep the first line).
   const byPath = new Map<string, { path: string; line: number | null; foundAt: Date }>()
@@ -56,10 +63,14 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     lastCommitAt: at?.toISOString() ?? null,
   }))
 
-  const consumer = consumerCheck(key)
+  const consumer = consumerCheck(key, assertedConsumers.length)
   return NextResponse.json({
-    summary: radiusSummary(all.length, pipelines.length, people.length),
+    summary: radiusSummary(all.length, pipelines.length, people.length, assertedConsumers.length),
     consumer,
+    consumers: assertedConsumers.map((c) => ({ ...c, createdAt: c.createdAt.toISOString() })),
+    usage: key.lastUsedAt
+      ? { lastUsedAt: key.lastUsedAt.toISOString(), source: key.lastUsedSource, live: key.liveStatus === 'live' }
+      : null,
     sites: sites.map((s) => ({ ...s, foundAt: s.foundAt.toISOString() })),
     pipelines: pipelines.map((s) => ({ ...s, foundAt: s.foundAt.toISOString() })),
     people,

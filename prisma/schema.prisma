@@ -294,6 +294,7 @@ model DiscoveredKey {
   platformRef       Platform?          @relation(fields: [platformId], references: [id])
   user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   rotationWorkflows RotationWorkflow[]
+  assertedConsumers AssertedConsumer[]
 
   @@index([userId, status])
   @@index([keyHashId])
@@ -303,6 +304,25 @@ model DiscoveredKey {
   @@index([foundAt])
   @@index([userId, keyType, status])
   @@map("discovered_keys")
+}
+
+// A consumer of a leaked key that a human asserted, because the map missed it.
+// Provenance, not truth: rows stay labeled "user-asserted" in the blast radius
+// (Keystrok has no channel to observe consumers directly yet). Deletable, since
+// a wrong assertion poisons the map.
+model AssertedConsumer {
+  id              String        @id @default(cuid())
+  discoveredKeyId String
+  name            String
+  readMode        String // 'env_boot' | 'env_run' | 'secret_store'
+  owner           String?
+  assertedBy      String // email of the member who asserted it
+  createdAt       DateTime      @default(now())
+  discoveredKey   DiscoveredKey @relation(fields: [discoveredKeyId], references: [id], onDelete: Cascade)
+
+  @@unique([discoveredKeyId, name])
+  @@index([discoveredKeyId])
+  @@map("asserted_consumers")
 }
 
 model Activity {

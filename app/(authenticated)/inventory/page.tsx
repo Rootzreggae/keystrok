@@ -166,12 +166,14 @@ export default function KeysScreen() {
                       <td><span className="ks-tbl__sev"><Dot sev={k.severity as 'critical'} />{SEVL[k.severity] ?? k.severity}</span></td>
                       <td>{livenessPill(k)}</td>
                       <td><span className="ks-tbl__u" style={{ color: 'var(--tx-mut)' }}>{foundAgo}d ago</span></td>
-                      {/* radius summary: what rotating touches; crit ink only for the hold signal */}
+                      {/* radius summary: what rotating touches; crit ink only for the
+                          hold signal (in use with nothing mapped). Asserting lifts it. */}
                       <td>
                         <span className="ks-tbl__u" style={{ color: 'var(--tx-mut)' }}>
+                          {k.radius_consumers ? `${k.radius_consumers} svc · ` : ''}
                           {k.radius_sites ?? 1} site{(k.radius_sites ?? 1) === 1 ? '' : 's'}
                           {k.radius_pipes ? ` · ${k.radius_pipes} pipe` : ''}
-                          {k.usage_active && <span style={{ color: 'var(--crit)' }}> · in use</span>}
+                          {k.usage_active && !k.radius_consumers && <span style={{ color: 'var(--crit)' }}> · in use</span>}
                         </span>
                       </td>
                       <td>

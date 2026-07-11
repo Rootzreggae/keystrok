@@ -1,14 +1,19 @@
 'use client'
 
-import { useQuery } from '@tanstack/react-query'
+import { useState } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { X } from 'lucide-react'
 import { Dot } from '@/components/ks'
 import { ago, cleanLocation } from '@/lib/keys-display'
 
 interface RCheck { tone: 'ok' | 'warn' | 'crit'; title: string; detail: string }
 interface RSite { path: string; line: number | null; foundAt: string }
+interface RConsumer { id: string; name: string; readMode: string; owner: string | null; assertedBy: string; createdAt: string }
 interface Radius {
   summary: string
   consumer: RCheck
+  consumers: RConsumer[]
+  usage: { lastUsedAt: string; source: string | null; live: boolean } | null
   sites: RSite[]
   pipelines: RSite[]
   people: { name: string; role: string; lastCommitAt: string | null }[]
@@ -18,6 +23,14 @@ interface Radius {
 
 // Readiness tones map onto the existing dot severities: warn reads as high.
 const TONE_SEV = { ok: 'ok', warn: 'high', crit: 'critical' } as const
+
+// Mirrors READ_MODES in lib/blast-radius (kept inline: this file is client-side).
+const MODES = [
+  ['env_boot', 'env at boot', 'needs restart'],
+  ['env_run', 'env per run', 'picks up the new key'],
+  ['secret_store', 'secret store', 'update the store'],
+] as const
+const MODE_LABEL: Record<string, string> = Object.fromEntries(MODES.map(([k, l, d]) => [k, `${l} · ${d}`]))
 
 const initials = (name: string) =>
   name.split(/[\s._-]+/).filter(Boolean).slice(0, 2).map((w) => w[0]!.toUpperCase()).join('')
@@ -34,10 +47,63 @@ function SiteRow({ s, tag, warnTag }: { s: RSite; tag: string; warnTag?: boolean
   )
 }
 
+// The "Missing something?" flow: assert a consumer the map missed. Lands
+// immediately, labeled user-asserted, logged to Activity as the assertion.
+function AssertForm({ keyId, onDone }: { keyId: string; onDone: () => void }) {
+  const [name, setName] = useState('')
+  const [mode, setMode] = useState<string>('env_boot')
+  const [owner, setOwner] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [err, setErr] = useState<string | null>(null)
+
+  const submit = async () => {
+    setSaving(true)
+    setErr(null)
+    try {
+      const res = await fetch(`/api/keys/${keyId}/consumers`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, readMode: mode, owner: owner || undefined }),
+      })
+      const data = await res.json().catch(() => null)
+      if (!res.ok) throw new Error(data?.error || `Could not add (${res.status})`)
+      onDone()
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Could not add')
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="ks-br__form">
+      <input
+        className="ks-input" placeholder="Consumer name (e.g. legacy-etl-runner)" value={name} autoFocus
+        onChange={(e) => setName(e.target.value)}
+      />
+      <div className="ks-br__segs">
+        {MODES.map(([k, l]) => (
+          <button key={k} className={'ks-br__seg' + (mode === k ? ' on' : '')} onClick={() => setMode(k)}>{l}</button>
+        ))}
+      </div>
+      <input className="ks-input" placeholder="Owner (optional)" value={owner} onChange={(e) => setOwner(e.target.value)} />
+      {err && <div style={{ color: 'var(--crit)', fontSize: 11 }}>{err}</div>}
+      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+        <button className="ks-btn ks-btn--primary ks-btn--sm" disabled={saving || !name.trim()} onClick={submit}>
+          {saving ? 'Adding…' : 'Add to map'}
+        </button>
+        <button className="ks-btn ks-btn--sm" disabled={saving} onClick={onDone}>Cancel</button>
+      </div>
+      <div className="ks-br__cd">Added immediately · logged to Activity as your assertion · stays labeled until observed.</div>
+    </div>
+  )
+}
+
 // The blast radius of one key, inside the key drawer: readiness verdicts up
-// top, then the observed ledgers (sites, pipelines, people). Everything shown
-// is observed; the consumer state says "unknown" out loud when it is.
+// top, then the ledgers (consumers, pipelines, sites, people). Everything
+// shown is observed or labeled as a human assertion; the consumer state says
+// "unknown" out loud when it is.
 export function BlastRadius({ keyId }: { keyId: string }) {
+  const qc = useQueryClient()
+  const [asserting, setAsserting] = useState(false)
   const { data, isLoading } = useQuery<Radius>({
     queryKey: ['radius', keyId],
     queryFn: async () => {
@@ -47,8 +113,20 @@ export function BlastRadius({ keyId }: { keyId: string }) {
     },
   })
 
+  const refresh = () => {
+    setAsserting(false)
+    qc.invalidateQueries({ queryKey: ['radius', keyId] })
+  }
+
+  const removeConsumer = async (cid: string) => {
+    await fetch(`/api/keys/${keyId}/consumers?consumerId=${cid}`, { method: 'DELETE' })
+    refresh()
+  }
+
   if (isLoading) return <div className="ks-tl__loading">Mapping the radius…</div>
   if (!data) return <div className="ks-tl__loading">Radius unavailable.</div>
+
+  const hasConsumers = data.consumers.length > 0 || data.usage != null
 
   return (
     <div className="ks-br">
@@ -65,6 +143,30 @@ export function BlastRadius({ keyId }: { keyId: string }) {
           </div>
         ))}
       </div>
+
+      <div className="ks-br__l">
+        <span>Consumed by{hasConsumers ? '' : ' · nothing mapped'}</span>
+        {!asserting && <button className="ks-br__miss" onClick={() => setAsserting(true)}>Missing something?</button>}
+      </div>
+      {data.usage && (
+        <div className="ks-br__row">
+          <div className="ks-br__path">
+            platform usage · last used {ago(data.usage.lastUsedAt)} ago{data.usage.source ? ` · ${data.usage.source}` : ''}
+          </div>
+          <span className="ks-br__tag">observed</span>
+        </div>
+      )}
+      {data.consumers.map((c) => (
+        <div className="ks-br__row" key={c.id}>
+          <div className="ks-br__who" style={{ flex: 1 }}>
+            <div className="ks-br__ct">{c.name}</div>
+            <div className="ks-br__cd">{MODE_LABEL[c.readMode] ?? c.readMode}{c.owner ? ` · owner: ${c.owner}` : ''}</div>
+          </div>
+          <span className="ks-br__tag ks-br__tag--warn">user-asserted</span>
+          <button className="ks-br__x" title="Remove this assertion" onClick={() => removeConsumer(c.id)}><X size={12} /></button>
+        </div>
+      ))}
+      {asserting && <AssertForm keyId={keyId} onDone={refresh} />}
 
       {data.pipelines.length > 0 && (
         <>
@@ -93,7 +195,7 @@ export function BlastRadius({ keyId }: { keyId: string }) {
       )}
 
       <div className="ks-br__foot">
-        Radius mapped from scans, git history and platform liveness · Keystrok never rotates or revokes on its own.
+        Radius mapped from scans, git history, platform liveness and your assertions, labeled as such · Keystrok never rotates or revokes on its own.
       </div>
     </div>
   )
