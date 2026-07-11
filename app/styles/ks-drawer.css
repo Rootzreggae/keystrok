@@ -47,3 +47,17 @@
 .kb .ks-br__av { flex: none; width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; font-family: var(--font-mono); font-size: 10px; color: var(--tx-mut); background: var(--bg-2); border: 1px solid var(--div-2); border-radius: 2px; }
 .kb .ks-br__who { min-width: 0; }
 .kb .ks-br__foot { font-family: var(--font-mono); font-size: 10.5px; color: var(--tx-dim); line-height: 1.5; margin-top: 14px; }
+
+/* v0.2: consumed-by ledger, the assert form, and its segmented read-mode control */
+.kb .ks-br__l { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.kb .ks-br__miss { background: none; border: none; padding: 0; cursor: pointer; font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.05em; color: var(--tx-dim); text-decoration: underline; text-underline-offset: 3px; text-transform: none; }
+.kb .ks-br__miss:hover { color: var(--tx); }
+.kb .ks-br__x { flex: none; background: none; border: none; padding: 2px; cursor: pointer; color: var(--tx-dim); display: flex; }
+.kb .ks-br__x:hover { color: var(--crit); }
+.kb .ks-br__form { display: flex; flex-direction: column; gap: 8px; padding: 12px; background: var(--inset); border: 1px solid var(--div-2); border-radius: 2px; margin-bottom: 6px; }
+.kb .ks-br__segs { display: flex; gap: 0; }
+.kb .ks-br__seg { flex: 1; padding: 6px 4px; font-family: var(--font-mono); font-size: 10.5px; color: var(--tx-dim); background: var(--bg-2); border: 1px solid var(--div-2); border-left-width: 0; cursor: pointer; }
+.kb .ks-br__seg:first-child { border-left-width: 1px; border-radius: 2px 0 0 2px; }
+.kb .ks-br__seg:last-child { border-radius: 0 2px 2px 0; }
+.kb .ks-br__seg.on { color: var(--tx); border-color: var(--tx-dim); border-left-width: 1px; }
+.kb .ks-br__seg.on + .ks-br__seg { border-left-width: 0; }

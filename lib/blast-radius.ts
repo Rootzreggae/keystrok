@@ -26,16 +26,24 @@ export interface ConsumerInputs {
 }
 
 /**
- * The honest "Consumed by" state. Four truths, one row:
+ * The honest "Consumed by" state. The truths, one row:
  *  - revoked on the platform: nothing left to break
- *  - live AND recently used: hold before rotating (the v0 hold trigger)
+ *  - live AND recently used, nothing mapped: hold before rotating (the hold trigger)
+ *  - anything user-asserted: mapped by a human, labeled, unconfirmed; the hold
+ *    lifts because the operator now knows what the rotation must touch
  *  - live, idle: consumers unknown, but nothing observed using it
  *  - unknown: either the provider can't report usage (terminal, most keys)
  *    or liveness was simply never checked
  */
-export function consumerCheck(k: ConsumerInputs, now: Date = new Date()): RadiusCheck {
+export function consumerCheck(k: ConsumerInputs, asserted = 0, now: Date = new Date()): RadiusCheck {
   if (k.liveStatus === 'revoked')
     return { tone: 'ok', title: 'Nothing left to break', detail: 'the key is revoked on its platform' }
+  if (asserted > 0)
+    return {
+      tone: 'warn',
+      title: `Consumers mapped · ${asserted} user-asserted`,
+      detail: `unconfirmed · verify each one during rotation${k.liveStatus === 'live' && isRecentlyUsed(k.lastUsedAt, now) ? ' · the key is live and in use' : ''}`,
+    }
   if (k.liveStatus === 'live' && isRecentlyUsed(k.lastUsedAt, now))
     return {
       tone: 'crit',
@@ -47,6 +55,14 @@ export function consumerCheck(k: ConsumerInputs, now: Date = new Date()): Radius
   if (!isListable(k.platform))
     return { tone: 'warn', title: 'Consumers unknown', detail: 'this provider cannot report key usage' }
   return { tone: 'warn', title: 'Consumers unknown', detail: 'liveness never checked · connect the platform to verify' }
+}
+
+/** Human labels for how an asserted consumer reads the key; drives the
+ *  "what rotation must touch" subtitle on its row. */
+export const READ_MODES: Record<string, string> = {
+  env_boot: 'env at boot · needs restart',
+  env_run: 'env per run · picks up the new key',
+  secret_store: 'secret store · update the store',
 }
 
 /** The rotation-readiness rail: replacement path, consumers, exposure sites. */
@@ -73,10 +89,11 @@ export function readinessChecks(
 }
 
 /** Plain-language rollup for the top of the radius. Counts only, no guesses. */
-export function radiusSummary(sites: number, pipes: number, people: number): string {
+export function radiusSummary(sites: number, pipes: number, people: number, asserted = 0): string {
   const parts = [`${sites} exposure site${sites === 1 ? '' : 's'}`]
+  if (asserted) parts.unshift(`${asserted} asserted consumer${asserted === 1 ? '' : 's'}`)
   if (pipes) parts.push(`${pipes} deploy pipeline${pipes === 1 ? '' : 's'}`)
-  const touched = parts.join(' and ')
+  const touched = parts.length > 2 ? `${parts.slice(0, -1).join(', ')} and ${parts.at(-1)}` : parts.join(' and ')
   const who = people ? ` ${people === 1 ? '1 person' : `${people} people`} touched the exposing commits.` : ''
   return `Rotating this key touches ${touched}.${who}`
 }

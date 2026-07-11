@@ -22,6 +22,7 @@ export interface ApiKey {
   rotation_failed?: boolean // rotated, but a post-rotation check still found it live
   radius_sites?: number // distinct exposure sites (findings sharing the key hash)
   radius_pipes?: number // the subset of sites inside deploy-pipeline files
+  radius_consumers?: number // user-asserted consumers on the map
   daysUntilExpiry: number
   rotatedAt?: string | null
 }

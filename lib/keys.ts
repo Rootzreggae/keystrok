@@ -32,6 +32,13 @@ export async function getKeys() {
     if (isPipelinePath(p.relativePath)) r.pipes++
     radius.set(p.keyHashId, r)
   }
+  // User-asserted consumers per key (the map's engine until direct observation exists)
+  const assertedCounts = await prisma.assertedConsumer.groupBy({
+    by: ['discoveredKeyId'],
+    where: { discoveredKeyId: { in: keys.map(k => k.id) } },
+    _count: true,
+  })
+  const asserted = new Map(assertedCounts.map(a => [a.discoveredKeyId, a._count]))
 
   return keys.map(key => {
     // Rotation recommendation anchored to when the key was at-risk: exposedAt if
@@ -88,7 +95,8 @@ export async function getKeys() {
       // Blast radius counts. A key with no linked findings still has its own
       // finding location, so sites never reads 0.
       radius_sites: Math.max(radius.get(key.keyHashId)?.sites ?? 0, 1),
-      radius_pipes: radius.get(key.keyHashId)?.pipes ?? (isPipelinePath(key.location || '') ? 1 : 0)
+      radius_pipes: radius.get(key.keyHashId)?.pipes ?? (isPipelinePath(key.location || '') ? 1 : 0),
+      radius_consumers: asserted.get(key.id) ?? 0
     }
   })
 }
