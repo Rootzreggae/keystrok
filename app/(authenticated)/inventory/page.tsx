@@ -142,12 +142,13 @@ export default function KeysScreen() {
                   <th style={{ width: 120 }}>Severity</th>
                   <th style={{ width: 130 }}>Liveness</th>
                   <th style={{ width: 90 }}>Found</th>
+                  <th style={{ width: 120 }}>Radius</th>
                   <th style={{ width: 200 }}>Rotation window</th>
                 </tr>
               </thead>
               <tbody>
                 {rows.length === 0 && (
-                  <tr><td colSpan={6} style={{ padding: '28px 16px', fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--tx-dim)' }}>No keys match the current filters.</td></tr>
+                  <tr><td colSpan={7} style={{ padding: '28px 16px', fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--tx-dim)' }}>No keys match the current filters.</td></tr>
                 )}
                 {rows.map((k) => {
                   const u = urgency(k)
@@ -165,6 +166,14 @@ export default function KeysScreen() {
                       <td><span className="ks-tbl__sev"><Dot sev={k.severity as 'critical'} />{SEVL[k.severity] ?? k.severity}</span></td>
                       <td>{livenessPill(k)}</td>
                       <td><span className="ks-tbl__u" style={{ color: 'var(--tx-mut)' }}>{foundAgo}d ago</span></td>
+                      {/* radius summary: what rotating touches; crit ink only for the hold signal */}
+                      <td>
+                        <span className="ks-tbl__u" style={{ color: 'var(--tx-mut)' }}>
+                          {k.radius_sites ?? 1} site{(k.radius_sites ?? 1) === 1 ? '' : 's'}
+                          {k.radius_pipes ? ` · ${k.radius_pipes} pipe` : ''}
+                          {k.usage_active && <span style={{ color: 'var(--crit)' }}> · in use</span>}
+                        </span>
+                      </td>
                       <td>
                         {/* one urgency encoding: overdue = text only; healthy = "Nd left" + a window-used bar */}
                         {u.overdue ? (

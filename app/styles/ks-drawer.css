@@ -28,3 +28,22 @@
 
 .kb .ks-drawer__err { flex: none; margin: 0 22px; padding: 9px 12px; font-size: 12px; color: var(--crit); background: var(--crit-dim); border: 1px solid var(--crit-line); border-radius: 6px; }
 .kb .ks-drawer__foot { flex: none; display: flex; gap: 10px; padding: 14px 22px; border-top: 1px solid var(--div); }
+
+/* Blast radius section inside the drawer: readiness checks + observed ledgers.
+ * Same grammar as the rest of the drawer: mono data, square, token-driven. */
+.kb .ks-br__sum { font-size: 12.5px; line-height: 1.55; color: var(--tx-mut); margin: 0 0 14px; }
+.kb .ks-br__sum, .kb .ks-br__cd { overflow-wrap: break-word; }
+.kb .ks-br__checks { display: flex; flex-direction: column; gap: 10px; margin-bottom: 4px; }
+.kb .ks-br__check { display: flex; gap: 9px; align-items: flex-start; }
+.kb .ks-br__check .ks-dot { margin-top: 4px; flex: none; }
+.kb .ks-br__ct { font-size: 12.5px; color: var(--tx); }
+.kb .ks-br__cd { font-family: var(--font-mono); font-size: 11px; color: var(--tx-dim); margin-top: 2px; line-height: 1.5; }
+.kb .ks-br__l { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--tx-dim); margin: 16px 0 8px; }
+.kb .ks-br__row { display: flex; align-items: center; gap: 10px; padding: 7px 10px; background: var(--inset); border: 1px solid var(--div); border-radius: 2px; margin-bottom: 6px; }
+.kb .ks-br__path { flex: 1; min-width: 0; font-family: var(--font-mono); font-size: 11px; color: var(--tx-mut); word-break: break-all; }
+.kb .ks-br__ln { color: var(--tx-dim); }
+.kb .ks-br__tag { flex: none; font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.04em; color: var(--tx-dim); border: 1px solid var(--div-2); border-radius: 2px; padding: 1px 6px; white-space: nowrap; }
+.kb .ks-br__tag--warn { color: var(--high); border-color: var(--high); opacity: 0.85; }
+.kb .ks-br__av { flex: none; width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; font-family: var(--font-mono); font-size: 10px; color: var(--tx-mut); background: var(--bg-2); border: 1px solid var(--div-2); border-radius: 2px; }
+.kb .ks-br__who { min-width: 0; }
+.kb .ks-br__foot { font-family: var(--font-mono); font-size: 10.5px; color: var(--tx-dim); line-height: 1.5; margin-top: 14px; }

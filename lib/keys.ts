@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import { rotationDueAt, daysUntilDue, riskStart } from '@/lib/rotation-policy'
 import { isRecentlyUsed, rotationFailed } from '@/lib/liveness'
+import { isPipelinePath } from '@/lib/blast-radius'
 
 // The tracked-key ledger in client shape, shared by BOTH the /api/keys route and
 // the server-side prefetch so the two can never drift. Caller ensures auth.
@@ -14,6 +15,23 @@ export async function getKeys() {
       foundAt: 'desc'
     }
   })
+
+  // Radius counts for the ledger column: distinct exposure sites per key hash,
+  // with the deploy-pipeline subset classified by path. One query for all keys.
+  const hashes = [...new Set(keys.map(k => k.keyHashId))]
+  const sitePaths = hashes.length ? await prisma.localScanFinding.findMany({
+    where: { keyHashId: { in: hashes } },
+    select: { keyHashId: true, relativePath: true },
+    distinct: ['keyHashId', 'relativePath'],
+  }) : []
+  const radius = new Map<string, { sites: number; pipes: number }>()
+  for (const p of sitePaths) {
+    if (!p.keyHashId) continue // findings can predate hash linking
+    const r = radius.get(p.keyHashId) ?? { sites: 0, pipes: 0 }
+    r.sites++
+    if (isPipelinePath(p.relativePath)) r.pipes++
+    radius.set(p.keyHashId, r)
+  }
 
   return keys.map(key => {
     // Rotation recommendation anchored to when the key was at-risk: exposedAt if
@@ -66,7 +84,11 @@ export async function getKeys() {
       rotation_failed: rotationFailed(key),
       daysUntilExpiry,
       isRotated: key.status === 'rotated',
-      rotatedAt: key.rotatedAt?.toISOString() || null
+      rotatedAt: key.rotatedAt?.toISOString() || null,
+      // Blast radius counts. A key with no linked findings still has its own
+      // finding location, so sites never reads 0.
+      radius_sites: Math.max(radius.get(key.keyHashId)?.sites ?? 0, 1),
+      radius_pipes: radius.get(key.keyHashId)?.pipes ?? (isPipelinePath(key.location || '') ? 1 : 0)
     }
   })
 }
