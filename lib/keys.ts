@@ -96,7 +96,8 @@ export async function getKeys() {
       // finding location, so sites never reads 0.
       radius_sites: Math.max(radius.get(key.keyHashId)?.sites ?? 0, 1),
       radius_pipes: radius.get(key.keyHashId)?.pipes ?? (isPipelinePath(key.location || '') ? 1 : 0),
-      radius_consumers: asserted.get(key.id) ?? 0
+      radius_consumers: asserted.get(key.id) ?? 0,
+      break_accepted: !!key.breakAcceptedAt
     }
   })
 }
