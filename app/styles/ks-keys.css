@@ -84,9 +84,12 @@
 
 /* table lens */
 .kb .ks-tbl-scroll { flex: 1; min-height: 0; overflow-y: auto; }
-.kb .ks-tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
-.kb .ks-tbl thead th { position: sticky; top: 0; background: var(--bg); z-index: 2; font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--tx-dim); text-align: left; font-weight: 500; padding: 11px 16px; border-bottom: 1px solid var(--div-2); }
-.kb .ks-tbl tbody tr { border-bottom: 1px solid var(--div); cursor: pointer; transition: background .1s; }
+/* the table is the elevated tier: bordered, content-height (the scroll wrapper
+ * stretches full-height on Keys, so the border must hug the table, not it) */
+.kb .ks-tbl { width: 100%; border-collapse: collapse; font-size: 13px; border: 1px solid var(--edge); }
+.kb .ks-tbl thead th { position: sticky; top: 0; background: var(--bg-2); z-index: 2; font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--tx-dim); text-align: left; font-weight: 500; padding: 11px 16px; border-bottom: 1px solid var(--div-2); }
+.kb .ks-tbl tbody tr { background: var(--panel); border-bottom: 1px solid var(--div); cursor: pointer; transition: background .1s; }
+.kb .ks-tbl tbody tr:last-child { border-bottom: none; }
 .kb .ks-tbl tbody tr:hover { background: var(--elev); }
 .kb .ks-tbl tbody tr.sel { background: var(--a-dim); box-shadow: inset 2px 0 0 var(--a); }
 .kb .ks-tbl td { padding: 12px 16px; vertical-align: middle; }

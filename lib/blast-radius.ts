@@ -106,6 +106,35 @@ export function readinessChecks(
   ]
 }
 
+/**
+ * The radius as one composed sentence (the drawer's collapsed form): a bold
+ * lead of counts, then the consumer truth in its honest variant, then the
+ * runbook situation. Every clause is claimable from stored data; "nothing
+ * observed" is only said when the provider can actually observe.
+ */
+export function radiusSentence(
+  k: ConsumerInputs,
+  sites: number,
+  pipes: number,
+  asserted: number,
+  now: Date = new Date()
+): { lead: string; rest: string } {
+  const lead = `${sites} exposure site${sites === 1 ? '' : 's'}${pipes ? ` (${pipes} in deploy pipelines)` : ''}`
+  const parts: string[] = []
+  parts.push(asserted > 0 ? `${asserted} consumer${asserted === 1 ? '' : 's'} mapped by hand, unconfirmed` : 'no mapped consumers')
+  if (k.liveStatus === 'revoked') parts.push('the key is revoked, nothing left to break')
+  else if (k.liveStatus === 'live' && isRecentlyUsed(k.lastUsedAt, now))
+    parts.push(`an unknown caller used it recently${k.lastUsedSource ? ` (${k.lastUsedSource})` : ''}`)
+  else if (k.liveStatus === 'live') parts.push('nothing observed using it recently')
+  else if (!isListable(k.platform)) parts.push('this provider cannot report usage')
+  else parts.push('liveness never checked')
+  if (k.breakAcceptedAt) parts.push(`break accepted by ${k.breakAcceptedBy ?? 'unknown'}`)
+  const guide = hasTemplate(providerOf(k.platform))
+    ? 'Guided rotation runbook available.'
+    : 'Rotation guide is generic (no platform runbook yet).'
+  return { lead, rest: `, ${parts.join(' · ')}. ${guide}` }
+}
+
 /** Plain-language rollup for the top of the radius. Counts only, no guesses. */
 export function radiusSummary(sites: number, pipes: number, people: number, asserted = 0): string {
   const parts = [`${sites} exposure site${sites === 1 ? '' : 's'}`]

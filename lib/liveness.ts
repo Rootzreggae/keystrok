@@ -14,18 +14,10 @@
 
 export type LiveStatus = 'live' | 'revoked' | 'unknown'
 
-// Providers whose "list keys" API exposes a fingerprint we can match. Others
-// stay 'unknown'. Datadog (header auth) and AWS (SigV4 IAM) so far.
-const LISTABLE = new Set(['datadog', 'aws'])
-
-/** Bare provider from a platform/keyType string ("datadog_api_key" -> "datadog"). */
-export function providerOf(s: string): string {
-  return (s || '').toLowerCase().split('_')[0]
-}
-
-export function isListable(platformType: string): boolean {
-  return LISTABLE.has(providerOf(platformType))
-}
+// providerOf/isListable live in keys-display (client-safe, no node built-ins
+// anywhere in its graph) so client components can use them; re-exported here
+// for all the server-side callers.
+export { providerOf, isListable } from '@/lib/keys-display'
 
 /** Last-4 fingerprint from a masked preview ("sk_t********wxyz" -> "wxyz"). */
 export function last4(preview: string | null | undefined): string | null {

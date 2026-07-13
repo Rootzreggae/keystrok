@@ -31,6 +31,18 @@ export interface ApiKey {
 /** The urgency anchor for client-side math. Falls back to discovery if the API is old. */
 export const anchorOf = (k: ApiKey) => new Date(k.risk_start ?? k.created_at)
 
+/** Bare provider from a platform/keyType string ("datadog_api_key" -> "datadog"). */
+export function providerOf(s: string): string {
+  return (s || '').toLowerCase().split('_')[0]
+}
+
+// Providers whose "list keys" API exposes a fingerprint liveness can match.
+// Others stay 'unknown'. Datadog (header auth) and AWS (SigV4 IAM) so far.
+const LISTABLE = new Set(['datadog', 'aws'])
+export function isListable(platformType: string): boolean {
+  return LISTABLE.has(providerOf(platformType))
+}
+
 // Platform string (often keyType-derived, e.g. "stripe_secret_live") → code + label.
 const PLAT: Record<string, { code: string; label: string }> = {
   aws: { code: 'AWS', label: 'AWS' },

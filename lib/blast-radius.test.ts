@@ -1,7 +1,7 @@
 // Run: node --import ./scripts/register-alias.mjs lib/blast-radius.test.ts
 // ponytail: plain asserts on the pure derivations; the route is a thin query.
 import assert from 'node:assert/strict'
-import { isPipelinePath, consumerCheck, readinessChecks, radiusSummary, READ_MODES, acceptanceHolds } from './blast-radius.ts'
+import { isPipelinePath, consumerCheck, readinessChecks, radiusSummary, radiusSentence, READ_MODES, acceptanceHolds } from './blast-radius.ts'
 
 // Pipeline path classifier: CI/deploy surfaces only, never ordinary code.
 assert.equal(isPipelinePath('.github/workflows/deploy.yml'), true)
@@ -80,5 +80,22 @@ assert.equal(radiusSummary(1, 0, 0), 'Rotating this key touches 1 exposure site.
 assert.equal(radiusSummary(4, 2, 1), 'Rotating this key touches 4 exposure sites and 2 deploy pipelines. 1 person touched the exposing commits.')
 assert.equal(radiusSummary(1, 0, 0, 2), 'Rotating this key touches 2 asserted consumers and 1 exposure site.')
 assert.equal(radiusSummary(4, 2, 0, 1), 'Rotating this key touches 1 asserted consumer, 4 exposure sites and 2 deploy pipelines.')
+
+// The composed sentence: every clause claimable, honest per provider.
+const live = { ...base, liveStatus: 'live', lastUsedAt: daysAgo(30) }
+const s1 = radiusSentence(live, 1, 0, 0, NOW)
+assert.equal(s1.lead, '1 exposure site')
+assert.ok(s1.rest.includes('no mapped consumers'))
+assert.ok(s1.rest.includes('nothing observed using it recently'))
+assert.ok(s1.rest.includes('no platform runbook yet')) // aws has no template
+const s2 = radiusSentence({ platform: 'grafana', liveStatus: null, lastUsedAt: null, lastUsedSource: null }, 2, 1, 0, NOW)
+assert.equal(s2.lead, '2 exposure sites (1 in deploy pipelines)')
+assert.ok(s2.rest.includes('cannot report usage')) // never claims "nothing observed"
+const s3 = radiusSentence({ platform: 'datadog', liveStatus: 'live', lastUsedAt: daysAgo(1), lastUsedSource: 'datadog' }, 1, 0, 2, NOW)
+assert.ok(s3.rest.includes('2 consumers mapped by hand'))
+assert.ok(s3.rest.includes('an unknown caller used it recently'))
+assert.ok(s3.rest.includes('Guided rotation runbook available'))
+const s4 = radiusSentence({ ...live, breakAcceptedAt: daysAgo(0), breakAcceptedBy: 'nilson@x' }, 1, 0, 0, NOW)
+assert.ok(s4.rest.includes('break accepted by nilson@x'))
 
 console.log('blast-radius: all assertions passed')

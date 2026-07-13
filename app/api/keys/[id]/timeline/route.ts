@@ -49,25 +49,28 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 
   push(key.platformCreatedAt, 'created', 'Key created', 'mut', 'on the platform')
   push(key.exposedAt, 'exposed', 'Exposed', 'crit', key.exposedAtSource === 'git' ? 'from git history' : 'attested')
-  push(key.foundAt, 'discovered', 'Discovered by Keystrok', 'high')
+  push(key.foundAt, 'discovered', 'Discovered by Keystrok', 'high', 'committed in a tracked file · window opened')
   push(key.lastUsedAt, 'used', usedDuring ? 'Used while exposed' : 'Last used', usedDuring ? 'crit' : 'mut',
     usedDuring ? `during the exposure window${key.lastUsedSource ? ` · ${key.lastUsedSource}` : ''}` : (key.lastUsedSource ?? undefined))
   if (key.liveCheckedAt) {
     const live = key.liveStatus === 'live'
-    push(key.liveCheckedAt, 'checked', live ? 'Confirmed still live' : key.liveStatus === 'revoked' ? 'Confirmed revoked' : 'Liveness checked',
+    push(key.liveCheckedAt, 'checked',
+      live ? (rotFailed ? 'Liveness check · old key still live' : 'Confirmed still live') : key.liveStatus === 'revoked' ? 'Confirmed revoked' : 'Liveness checked',
       live ? 'crit' : key.liveStatus === 'revoked' ? 'ok' : 'mut',
-      rotFailed ? 'rotation did not revoke this key' : undefined)
+      rotFailed ? `the rotation didn't stick · the old credential answers on ${key.platform.split('_')[0].toUpperCase()}` : undefined)
   }
+  // One receipt line per rotation run, not one per step: the runbook page owns
+  // the step-by-step detail ("runbook & receipts" link in the drawer).
   for (const wf of key.rotationWorkflows) {
-    push(wf.startedAt, 'rotation_started', 'Rotation started', 'ok')
-    for (const s of wf.steps) {
-      if (!s.completedAt) continue
-      const skipped = s.status === 'skipped'
-      const revoke = isDestructiveStep(s)
-      push(s.completedAt, 'step', s.name, revoke ? 'ok' : 'ok', skipped ? 'skipped' : revoke ? 'irreversible, old key revoked' : undefined)
+    const total = wf.steps.length
+    const done = wf.steps.filter((s) => s.status === 'completed').length
+    if (wf.completedAt) {
+      const revokeUnverified = rotFailed || wf.steps.some((s) => isDestructiveStep(s) && s.status !== 'completed')
+      push(wf.completedAt, 'rotated', 'Rotation run completed', rotFailed ? 'mut' : 'ok',
+        `${done} of ${total} steps receipted${revokeUnverified ? ' · the revoke step was never verified' : ''}`)
+    } else if (wf.startedAt) {
+      push(wf.startedAt, 'rotation_started', 'Rotation in progress', 'ok', `${done} of ${total} steps receipted so far`)
     }
-    push(wf.completedAt, 'rotated', rotFailed ? 'Rotated, but the key stayed live' : 'Rotated, exposure closed',
-      rotFailed ? 'crit' : 'ok', rotFailed ? 'the old credential was never revoked' : undefined)
   }
 
   ev.sort((a, b) => Date.parse(a.at) - Date.parse(b.at))

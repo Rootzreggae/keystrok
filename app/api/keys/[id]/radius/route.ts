@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { isPipelinePath, consumerCheck, readinessChecks, radiusSummary } from '@/lib/blast-radius'
+import { isPipelinePath, consumerCheck, readinessChecks, radiusSentence } from '@/lib/blast-radius'
 import { displayName } from '@/lib/keys-display'
 
 // GET /api/keys/[id]/radius
@@ -29,7 +29,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     prisma.localScanFinding.findMany({
       where: { keyHashId: key.keyHashId },
       select: {
-        relativePath: true, lineNumber: true, createdAt: true,
+        relativePath: true, filePath: true, lineNumber: true, createdAt: true,
         fileScan: { select: { gitAuthor: true, gitLastCommit: true } },
       },
       orderBy: { createdAt: 'asc' },
@@ -42,19 +42,19 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   ])
 
   // Collapse multiple hits in one file to a single site (keep the first line).
-  const byPath = new Map<string, { path: string; line: number | null; foundAt: Date }>()
+  const byPath = new Map<string, { path: string; filePath: string | null; line: number | null; foundAt: Date }>()
   const authors = new Map<string, Date | null>()
   let lastScanAt: Date | null = null
   for (const f of findings) {
     if (!byPath.has(f.relativePath))
-      byPath.set(f.relativePath, { path: f.relativePath, line: f.lineNumber, foundAt: f.createdAt })
+      byPath.set(f.relativePath, { path: f.relativePath, filePath: f.filePath, line: f.lineNumber, foundAt: f.createdAt })
     if (f.fileScan?.gitAuthor && !authors.has(f.fileScan.gitAuthor))
       authors.set(f.fileScan.gitAuthor, f.fileScan.gitLastCommit ?? null)
     if (!lastScanAt || f.createdAt > lastScanAt) lastScanAt = f.createdAt
   }
   // A key promoted without linked findings still has its own finding location.
   if (byPath.size === 0 && key.location)
-    byPath.set(key.location, { path: key.location, line: null, foundAt: key.foundAt })
+    byPath.set(key.location, { path: key.location, filePath: null, line: null, foundAt: key.foundAt })
 
   const all = [...byPath.values()]
   const pipelines = all.filter((s) => isPipelinePath(s.path))
@@ -67,7 +67,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 
   const consumer = consumerCheck(key, assertedConsumers.length)
   return NextResponse.json({
-    summary: radiusSummary(all.length, pipelines.length, people.length, assertedConsumers.length),
+    sentence: radiusSentence(key, all.length, pipelines.length, assertedConsumers.length),
     consumer,
     consumers: assertedConsumers.map((c) => ({ ...c, createdAt: c.createdAt.toISOString() })),
     usage: key.lastUsedAt
