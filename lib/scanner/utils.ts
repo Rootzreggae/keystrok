@@ -273,7 +273,18 @@ export async function isFileBinary(filePath: string): Promise<boolean> {
   }
 }
 
-export function shouldExcludeFile(filePath: string): boolean {
+/**
+ * Caller-supplied coverage filters, honored at file discovery (the only place
+ * a scan option may change behavior without touching detection quality).
+ * `extensions`: if given, the file must carry one of them (an `.env*` file
+ * counts as `.env`). `excludeNames`: basenames/globs the caller wants skipped.
+ */
+export interface FileFilter {
+  extensions?: string[]
+  excludeNames?: string[]
+}
+
+export function shouldExcludeFile(filePath: string, filter?: FileFilter): boolean {
   const fileName = path.basename(filePath)
   const fileExtension = path.extname(fileName).toLowerCase()
 
@@ -292,6 +303,18 @@ export function shouldExcludeFile(filePath: string): boolean {
   for (const pattern of EXCLUDED_FILES) {
     if (minimatch(fileName, pattern)) {
       return true
+    }
+  }
+
+  // Caller coverage filters: a toggle that is off must actually skip the file.
+  if (filter?.extensions?.length) {
+    const isEnv = fileName.includes('.env')
+    const allowed = filter.extensions.includes(fileExtension) || (isEnv && filter.extensions.includes('.env'))
+    if (!allowed) return true
+  }
+  if (filter?.excludeNames?.length) {
+    for (const pattern of filter.excludeNames) {
+      if (fileName === pattern || minimatch(fileName, pattern)) return true
     }
   }
 

@@ -41,18 +41,29 @@ const SOURCES = [
   { id: 'source_code', label: 'Source code', meta: 'ts · js · go · py' },
   { id: 'environment_files', label: 'Environment files', meta: '.env*' },
   { id: 'configuration_files', label: 'Config files', meta: 'yaml · toml · json' },
-  { id: 'git_repositories', label: 'Git history', meta: 'committed secrets' },
   { id: 'docker_files', label: 'Docker files', meta: 'Dockerfile · compose' },
 ] as const
 
 type Opts = Record<string, boolean>
+interface ScanSessionView {
+  sessionId: string
+  status?: string
+  totalFiles?: number
+  scannedFiles?: number
+  findingsCount?: number
+  errorMessage?: string | null
+}
+interface ScanStatus {
+  currentScan?: ScanSessionView | null
+  lastScan?: ScanSessionView | null
+}
 
 export default function DiscoveryScreen() {
   const qc = useQueryClient()
   // Coverage toggles moved to Settings per the redesign; here the defaults feed
   // the folder/path scan and the read-only Coverage summary in the rail.
   // ponytail: fixed object until Settings owns coverage; wire it through then.
-  const opts: Opts = { source_code: true, environment_files: true, configuration_files: true, git_repositories: false, docker_files: false }
+  const opts: Opts = { source_code: true, environment_files: true, configuration_files: true, docker_files: false }
   const [scanning, setScanning] = useState(false)
   const [selected, setSelected] = useState<Finding | null>(null)
   const { openConnect } = useSourceConnect()
@@ -83,18 +94,19 @@ export default function DiscoveryScreen() {
   // Poll scan status (always, while on this page) and sync the local `scanning`
   // flag to the server, so a scan started anywhere (e.g. the global connect
   // wizard) shows progress here, and findings refresh the moment it completes.
-  useQuery({
+  const TERMINAL = ['completed', 'failed', 'cancelled']
+  const { data: scanStatus } = useQuery<ScanStatus>({
     queryKey: ['scan-status'],
     // Tight poll only while a scan is running; the idle poll still catches
     // externally-started scans (cron/continuous) within ~15s.
     refetchInterval: (q) => {
-      const c = (q.state.data as { currentScan?: { status?: string } } | undefined)?.currentScan
-      return c && c.status !== 'completed' && c.status !== 'failed' ? 2500 : 15000
+      const c = (q.state.data as ScanStatus | undefined)?.currentScan
+      return c && !TERMINAL.includes(c.status ?? '') ? 2500 : 15000
     },
     queryFn: async () => {
       const r = await fetch('/api/discovery/status?active=true')
-      const j = await r.json()
-      const running = !!j.currentScan && j.currentScan.status !== 'completed' && j.currentScan.status !== 'failed'
+      const j = (await r.json()) as ScanStatus
+      const running = !!j.currentScan && !TERMINAL.includes(j.currentScan.status ?? '')
       setScanning((was) => {
         if (was && !running) qc.invalidateQueries({ queryKey: ['findings'] }) // just finished
         return running
@@ -102,6 +114,24 @@ export default function DiscoveryScreen() {
       return j
     },
   })
+
+  // A scan that failed or was cancelled must never read as a clean inbox. The
+  // last finished scan carries the ending, whatever it was.
+  const last = scanStatus?.lastScan
+  const failed = !scanning && last && (last.status === 'failed' || last.status === 'cancelled') ? last : null
+  const scanProgress = scanning && scanStatus?.currentScan?.totalFiles
+    ? `${scanStatus.currentScan.scannedFiles ?? 0} of ${scanStatus.currentScan.totalFiles} files`
+    : null
+
+  const cancelScan = async () => {
+    const id = scanStatus?.currentScan?.sessionId
+    if (!id) return
+    await fetch('/api/discovery/status', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sessionId: id, action: 'cancel' }),
+    })
+    qc.invalidateQueries({ queryKey: ['scan-status'] })
+  }
 
   const runScan = useMutation({
     mutationFn: async () => {
@@ -291,21 +321,36 @@ export default function DiscoveryScreen() {
             </div>
           )}
 
+          {failed && (
+            <div className="ks-disc__failed" role="alert">
+              <div className="t">{failed.status === 'cancelled' ? 'Scan cancelled' : 'Scan failed'}</div>
+              <div className="s">
+                {failed.errorMessage || (failed.status === 'cancelled' ? 'Stopped before it finished; findings below are from earlier scans.' : 'The scan did not finish. Findings below are from earlier scans.')}
+              </div>
+              <button className="ks-btn ks-btn--sm" onClick={() => runScan.mutate()} disabled={scanning || runScan.isPending}>Run scan again</button>
+            </div>
+          )}
+
           <div className="ks-panel ks-triage__list">
             {inboxLoading ? (
               <InlineLoading />
             ) : inbox.length === 0 ? (
               <div className="ks-empty" style={{ padding: '48px 24px' }}>
                 <span className="ks-empty__ico"><Search size={26} strokeWidth={1.75} /></span>
-                <div className="ks-empty__t">{scanning ? 'Scanning…' : triaged.length > 0 ? 'Inbox clear' : 'Nothing to triage yet'}</div>
+                <div className="ks-empty__t">{scanning ? (scanProgress ? `Scanning… ${scanProgress}` : 'Scanning…') : triaged.length > 0 ? 'Inbox clear' : 'Nothing to triage yet'}</div>
                 <div className="ks-empty__s">
-                  {triaged.length > 0 ? (
+                  {scanning ? (
+                    <>Reading your files. Findings appear the moment they are detected.</>
+                  ) : triaged.length > 0 ? (
                     <>You have triaged everything from your last scan. New findings appear here after your next scan. Read-only, nothing is ever written.</>
                   ) : (
                     <>Keystrok finds exposed keys by scanning your code. Connect a Git source or point it at a
                     local folder to run the first scan. Read-only, nothing is ever written.</>
                   )}
                 </div>
+                {scanning && scanStatus?.currentScan?.sessionId && (
+                  <button className="ks-btn ks-btn--sm" style={{ marginTop: 18 }} onClick={cancelScan}>Cancel scan</button>
+                )}
                 {!scanning && triaged.length === 0 && (
                   <button className="ks-btn ks-btn--primary" style={{ marginTop: 18 }} onClick={() => openConnect(1)}>
                     <Github size={14} /> Connect a source

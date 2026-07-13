@@ -32,7 +32,7 @@ export async function cloneAndScan(sessionId: string, installationId: string, fu
     await prisma.scanSession.update({ where: { id: sessionId }, data: { targetPath: cloneDir } })
     await runScanSession(sessionId, userId, {
       name: `GitHub · ${fullName}`, scanType: 'quick', targetPath: cloneDir,
-      options: { source_code: true, environment_files: true, configuration_files: true, git_repositories: false, docker_files: false },
+      options: { source_code: true, environment_files: true, configuration_files: true, docker_files: false },
     })
   } catch (error) {
     console.error(`[source-scan ${sessionId}] failed:`, error)

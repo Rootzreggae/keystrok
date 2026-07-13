@@ -155,3 +155,8 @@
   .kb .ks-disc *, .kb .ks-disc *::before, .kb .ks-disc *::after { animation: none !important; transition: none !important; }
   .kb .ks-fgroup__rows.is-collapsed { grid-template-rows: 0fr; }
 }
+
+/* A failed or cancelled scan must never read as a clean inbox. */
+.kb .ks-disc__failed { display: flex; align-items: center; gap: 14px; padding: 13px 16px; margin-bottom: 12px; background: var(--crit-dim); border: 1px solid var(--crit-line); border-radius: 2px; }
+.kb .ks-disc__failed .t { font-size: 13px; font-weight: 600; color: var(--crit); flex: none; }
+.kb .ks-disc__failed .s { flex: 1; min-width: 0; font-size: 12.5px; color: var(--tx-mut); line-height: 1.5; }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { requireAdmin } from '@/lib/roles'
 import { prisma } from '@/lib/prisma'
+import { registerScan, unregisterScan } from '@/lib/scan-registry'
 import { SecurityScanner } from '@/lib/scanner/core'
 import { convertFindingToLocalScanFindingData, SCANNER_PRESETS } from '@/lib/scanner/index'
 import type { Finding, ScanResult, ScanOptions, FileInfo, FileScanResult } from '@/lib/scanner/types'
@@ -14,14 +15,12 @@ interface ScanRequestBody {
   name: string
   scanType: 'quick' | 'deep' | 'full'
   options: {
-    git_repositories: boolean
     environment_files: boolean
     configuration_files: boolean
     docker_files: boolean
     source_code: boolean
   }
   targetPath?: string
-  keyTypes?: string[]
 }
 
 interface ScanResponse {
@@ -111,7 +110,7 @@ function validateScanRequest(body: any): { isValid: boolean; data?: ScanRequestB
   if (!body.options || typeof body.options !== 'object') {
     errors.push('Scan options are required')
   } else {
-    const requiredOptions = ['git_repositories', 'environment_files', 'configuration_files', 'docker_files', 'source_code']
+    const requiredOptions = ['environment_files', 'configuration_files', 'docker_files', 'source_code']
     for (const option of requiredOptions) {
       if (typeof body.options[option] !== 'boolean') {
         errors.push(`Option ${option} must be a boolean`)
@@ -124,9 +123,6 @@ function validateScanRequest(body: any): { isValid: boolean; data?: ScanRequestB
     errors.push('Target path must be a string if provided')
   }
 
-  if (body.keyTypes && (!Array.isArray(body.keyTypes) || !body.keyTypes.every((t: any) => typeof t === 'string'))) {
-    errors.push('Key types must be an array of strings if provided')
-  }
 
   if (errors.length > 0) {
     return { isValid: false, errors }
@@ -209,7 +205,7 @@ async function processScanInBackground(sessionId: string, userId: string, config
     let findingsCount = 0
 
     // Set up progress callback
-    scanner.on('progress', async (progress) => {
+    scanner.on('progressUpdate', async (progress) => {
       totalFiles = progress.totalFiles
       scannedFiles = progress.scannedFiles
       findingsCount = progress.findingsCount
@@ -242,14 +238,6 @@ async function processScanInBackground(sessionId: string, userId: string, config
       maxDepth: scannerPreset === 'QUICK' ? 3 : scannerPreset === 'BALANCED' ? 6 : 10,
       fileExtensions,
       excludePaths,
-      keyTypes: config.keyTypes?.length ? config.keyTypes : [
-        'grafana_service_account', 'grafana_api_key',
-        'datadog_api', 'datadog_app',
-        'newrelic_api', 'newrelic_license',
-        'aws_access_key', 'aws_secret_key',
-        'stripe_secret_live', 'stripe_secret_test',
-        'github_pat'
-      ]
     }
 
     console.log(`[SCAN ${sessionId}] Starting advanced security scan with options:`, {
@@ -257,10 +245,15 @@ async function processScanInBackground(sessionId: string, userId: string, config
       scanType: scanOptions.scanType,
       maxDepth: scanOptions.maxDepth,
       preset: scannerPreset,
-      keyTypesCount: scanOptions.keyTypes?.length || 0
     })
 
-    const result: ScanResult = await scanner.scanDirectory(scanOptions)
+    registerScan(sessionId, scanner)
+    let result: ScanResult
+    try {
+      result = await scanner.scanDirectory(scanOptions)
+    } finally {
+      unregisterScan(sessionId)
+    }
     console.log(`[SCAN ${sessionId}] Scan completed successfully:`, {
       totalFiles: result.totalFiles,
       scannedFiles: result.scannedFiles,
@@ -268,8 +261,21 @@ async function processScanInBackground(sessionId: string, userId: string, config
       status: result.status
     })
 
+    // A cancelled scan settles as cancelled; completion never overwrites it.
+    if (result.status === 'cancelled') {
+      await prisma.scanSession.update({
+        where: { id: sessionId },
+        data: { status: 'cancelled', completedAt: new Date() }
+      }).catch(() => {})
+      console.log(`[SCAN ${sessionId}] Cancelled by operator`)
+      return
+    }
+
     // Process findings and save to database
     const processedFindings = await processScanFindings(sessionId, userId, result.findings, result.fileScans)
+
+    // Findings that failed to store are disclosed, never silently dropped.
+    const dropped = result.findings.length - processedFindings.length
 
     // Mark scan as completed
     await prisma.scanSession.update({
@@ -278,7 +284,8 @@ async function processScanInBackground(sessionId: string, userId: string, config
         status: 'completed',
         completedAt: new Date(),
         progress: 1.0,
-        findingsCount: processedFindings.length
+        findingsCount: processedFindings.length,
+        errorMessage: dropped > 0 ? `${dropped} finding${dropped === 1 ? '' : 's'} could not be stored` : null
       }
     })
 
@@ -553,7 +560,6 @@ export async function POST(request: NextRequest): Promise<NextResponse<ScanRespo
         maxDepth: scanConfig.scanType === 'quick' ? 3 : scanConfig.scanType === 'deep' ? 8 : null,
         fileExtensions: scanConfig.options.source_code ? [] : ['.env', '.yml', '.yaml', '.json'],
         excludePaths: ['node_modules', '.git', 'build', 'dist'],
-        keyTypes: scanConfig.keyTypes || [],
         userId
       }
     })

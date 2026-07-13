@@ -14,13 +14,11 @@ export interface KeyPattern {
 
 export interface ScanOptions {
   targetPath: string
-  scanType?: 'quick' | 'deep' | 'git-history' | 'targeted'
+  scanType?: 'quick' | 'deep' | 'targeted'
   includeHidden?: boolean
   maxDepth?: number
   fileExtensions?: string[]
   excludePaths?: string[]
-  keyTypes?: string[]
-  minConfidence?: number
   maxFileSize?: number
   enableContextAnalysis?: boolean
   enableGitIntegration?: boolean
@@ -194,14 +192,12 @@ export interface ScannerConfig {
 // Database integration types
 export interface ScanSessionData {
   name: string
-  scanType: 'quick' | 'deep' | 'git-history' | 'targeted'
+  scanType: 'quick' | 'deep' | 'targeted'
   targetPath: string
   includeHidden: boolean
   maxDepth?: number
   fileExtensions: string[]
   excludePaths: string[]
-  keyTypes: string[]
-  minConfidence?: number
   userId: string
 }
 
