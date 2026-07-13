@@ -247,10 +247,6 @@ export class SecurityScanner extends EventEmitter {
       return { isValid: false, error: 'Max depth must be non-negative' }
     }
 
-    if (options.minConfidence && (options.minConfidence < 0 || options.minConfidence > 1)) {
-      return { isValid: false, error: 'Min confidence must be between 0 and 1' }
-    }
-
     return { isValid: true }
   }
 
@@ -272,7 +268,10 @@ export class SecurityScanner extends EventEmitter {
       )
     }
 
-    return files.filter(file => !shouldExcludeFile(file))
+    // Coverage filters are honored here, at discovery: a toggle that is off
+    // means the file is never read. Detection thresholds stay with the preset.
+    const filter = { extensions: options.fileExtensions, excludeNames: options.excludePaths }
+    return files.filter(file => !shouldExcludeFile(file, filter))
   }
 
   private async walkDirectory(
@@ -305,6 +304,10 @@ export class SecurityScanner extends EventEmitter {
         if (entry.isDirectory()) {
           // Skip excluded directories
           if (shouldExcludeDirectory(fullPath, options.targetPath)) {
+            continue
+          }
+          // caller-excluded directory names (coverage toggles)
+          if (options.excludePaths?.includes(entry.name)) {
             continue
           }
 

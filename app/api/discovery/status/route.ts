@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { cancelRunningScan } from '@/lib/scan-registry'
 
 // Types for query parameters
 interface StatusQuery {
@@ -12,6 +13,7 @@ interface StatusQuery {
 interface ScanStatusResponse {
   success: boolean
   currentScan: ScanStatusData | null
+  lastScan?: ScanStatusData | null
   recentScans?: RecentScanData[]
   error?: string
 }
@@ -26,6 +28,8 @@ interface ScanStatusData {
   findingsCount: number
   startedAt: string
   estimatedCompletion?: string
+  completedAt?: string
+  errorMessage?: string
   scanType: string
   targetPath: string
 }
@@ -193,6 +197,32 @@ export async function GET(request: NextRequest): Promise<NextResponse<ScanStatus
         }
       }
 
+      // The most recent finished scan, whatever its ending. A failed or cancelled
+      // scan must be visible to the operator; without this it read as a clean inbox.
+      const finished = await prisma.scanSession.findFirst({
+        where: { status: { in: ['completed', 'failed', 'cancelled'] } },
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true, name: true, scanType: true, targetPath: true, status: true, progress: true,
+          totalFiles: true, scannedFiles: true, findingsCount: true, createdAt: true,
+          completedAt: true, errorMessage: true,
+        },
+      })
+      const lastScan: ScanStatusData | null = finished ? {
+        sessionId: finished.id,
+        name: finished.name,
+        status: finished.status as ScanStatusData['status'],
+        progress: finished.progress,
+        totalFiles: finished.totalFiles,
+        scannedFiles: finished.scannedFiles,
+        findingsCount: finished.findingsCount,
+        startedAt: finished.createdAt.toISOString(),
+        completedAt: finished.completedAt?.toISOString(),
+        errorMessage: finished.errorMessage ?? undefined,
+        scanType: finished.scanType,
+        targetPath: finished.targetPath,
+      } : null
+
       // Get recent completed scans for context (shared workspace)
       const recentScans = await prisma.scanSession.findMany({
         where: {
@@ -222,6 +252,7 @@ export async function GET(request: NextRequest): Promise<NextResponse<ScanStatus
       return NextResponse.json({
         success: true,
         currentScan,
+        lastScan,
         recentScans: recentScansData
       })
     }
@@ -352,16 +383,21 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     switch (action) {
       case 'cancel':
         if (scanSession.status === 'pending' || scanSession.status === 'running') {
+          // Reach the scanner itself: a DB flag alone would let it keep reading
+          // files and overwrite the status on completion.
+          const stopped = cancelRunningScan(sessionId)
           await prisma.scanSession.update({
             where: { id: sessionId },
             data: {
               status: 'cancelled',
-              completedAt: new Date()
+              completedAt: new Date(),
+              errorMessage: stopped ? null : 'Cancelled; the scan was not running in this process'
             }
           })
           return NextResponse.json({
             success: true,
-            message: 'Scan cancelled successfully'
+            stopped,
+            message: stopped ? 'Scan cancelled' : 'Marked cancelled (scan was not running here)'
           })
         } else {
           return NextResponse.json(

@@ -207,61 +207,6 @@ export async function scanSourceCode(
 }
 
 // Platform-specific scanning functions
-export async function scanForAWSKeys(targetPath: string): Promise<Finding[]> {
-  const scanner = createScanner('THOROUGH')
-
-  const result = await scanner.scanDirectory({
-    targetPath,
-    scanType: 'targeted',
-    keyTypes: ['aws_access_key', 'aws_secret_key', 'aws_session_token']
-  })
-
-  return result.findings.filter(f => f.platform === 'AWS')
-}
-
-export async function scanForStripeKeys(targetPath: string): Promise<Finding[]> {
-  const scanner = createScanner('THOROUGH')
-
-  const result = await scanner.scanDirectory({
-    targetPath,
-    scanType: 'targeted',
-    keyTypes: ['stripe_secret_live', 'stripe_secret_test', 'stripe_publishable_live', 'stripe_publishable_test', 'stripe_restricted']
-  })
-
-  return result.findings.filter(f => f.platform === 'Stripe')
-}
-
-export async function scanForGitHubKeys(targetPath: string): Promise<Finding[]> {
-  const scanner = createScanner('THOROUGH')
-
-  const result = await scanner.scanDirectory({
-    targetPath,
-    scanType: 'targeted',
-    keyTypes: ['github_pat', 'github_oauth', 'github_app', 'github_user', 'github_refresh']
-  })
-
-  return result.findings.filter(f => f.platform === 'GitHub')
-}
-
-export async function scanForObservabilityKeys(targetPath: string): Promise<Finding[]> {
-  const scanner = createScanner('THOROUGH')
-
-  const result = await scanner.scanDirectory({
-    targetPath,
-    scanType: 'targeted',
-    keyTypes: [
-      'grafana_service_account', 'grafana_api_key',
-      'datadog_api', 'datadog_app',
-      'newrelic_api', 'newrelic_license',
-      'prometheus_bearer',
-      'elasticsearch_api'
-    ]
-  })
-
-  return result.findings.filter(f =>
-    ['Grafana', 'Datadog', 'New Relic', 'Prometheus', 'Elasticsearch'].includes(f.platform)
-  )
-}
 
 // Database integration helpers (to be used with Prisma)
 export function convertFindingToLocalScanFindingData(

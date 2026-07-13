@@ -3,6 +3,7 @@
 // and the GitHub "clone a repo and scan it" route, so both behave identically
 // (same dedup, same finding storage).
 import { prisma } from '@/lib/prisma'
+import { registerScan, unregisterScan } from '@/lib/scan-registry'
 import { SecurityScanner } from '@/lib/scanner/core'
 import { convertFindingToLocalScanFindingData, SCANNER_PRESETS } from '@/lib/scanner/index'
 import type { Finding, ScanResult, ScanOptions, FileInfo, FileScanResult } from '@/lib/scanner/types'
@@ -42,13 +43,11 @@ export interface ScanRunConfig {
   scanType: 'quick' | 'deep' | 'full'
   targetPath?: string
   options: {
-    git_repositories: boolean
     environment_files: boolean
     configuration_files: boolean
     docker_files: boolean
     source_code: boolean
   }
-  keyTypes?: string[]
 }
 
 export function validateScanPath(targetPath: string): { isValid: boolean; normalizedPath: string; error?: string } {
@@ -118,7 +117,7 @@ export async function runScanSession(sessionId: string, userId: string, config: 
     if (!config.options.environment_files) excludePaths.push('.env', '.env.local', '.env.production', '.env.development')
     if (!config.options.docker_files) excludePaths.push('Dockerfile', 'docker-compose.yml', 'docker-compose.yaml')
 
-    scanner.on('progress', async (progress) => {
+    scanner.on('progressUpdate', async (progress) => {
       await prisma.scanSession.update({
         where: { id: sessionId },
         data: {
@@ -138,24 +137,40 @@ export async function runScanSession(sessionId: string, userId: string, config: 
       maxDepth: scannerPreset === 'QUICK' ? 3 : scannerPreset === 'BALANCED' ? 6 : 10,
       fileExtensions,
       excludePaths,
-      keyTypes: config.keyTypes?.length ? config.keyTypes : [
-        'grafana_service_account', 'grafana_api_key',
-        'datadog_api', 'datadog_app',
-        'newrelic_api', 'newrelic_license',
-        'aws_access_key', 'aws_secret_key',
-        'stripe_secret_live', 'stripe_secret_test',
-        'github_pat',
-      ],
     }
 
-    const result: ScanResult = await scanner.scanDirectory(scanOptions)
-    const processedFindings = await storeScanFindings(sessionId, userId, result.findings, result.fileScans)
+    registerScan(sessionId, scanner)
+    let result: ScanResult
+    try {
+      result = await scanner.scanDirectory(scanOptions)
+    } finally {
+      unregisterScan(sessionId)
+    }
 
+    // A cancelled scan settles as cancelled; completion must never overwrite it.
+    if (result.status === 'cancelled') {
+      await prisma.scanSession.update({
+        where: { id: sessionId },
+        data: { status: 'cancelled', completedAt: new Date() },
+      }).catch(() => {})
+      return { ok: false as const, error: 'Scan cancelled' }
+    }
+
+    const stored = await storeScanFindings(sessionId, userId, result.findings, result.fileScans)
+
+    // Findings that failed to store are disclosed, never silently dropped.
+    const dropped = result.findings.length - stored.length
     await prisma.scanSession.update({
       where: { id: sessionId },
-      data: { status: 'completed', completedAt: new Date(), progress: 1.0, findingsCount: processedFindings.length },
+      data: {
+        status: 'completed',
+        completedAt: new Date(),
+        progress: 1.0,
+        findingsCount: stored.length,
+        errorMessage: dropped > 0 ? `${dropped} finding${dropped === 1 ? '' : 's'} could not be stored` : null,
+      },
     })
-    return { ok: true as const, findings: processedFindings.length }
+    return { ok: true as const, findings: stored.length }
   } catch (error) {
     await prisma.scanSession.update({
       where: { id: sessionId },

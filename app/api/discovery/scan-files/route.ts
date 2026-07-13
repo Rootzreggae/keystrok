@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
   const session = await prisma.scanSession.create({
     data: {
       name, scanType: 'quick', targetPath: name, status: 'running', progress: 0,
-      includeHidden: false, maxDepth: 1, fileExtensions: [], excludePaths: [], keyTypes: [], userId,
+      includeHidden: false, maxDepth: 1, fileExtensions: [], excludePaths: [], userId,
     },
   })
 
