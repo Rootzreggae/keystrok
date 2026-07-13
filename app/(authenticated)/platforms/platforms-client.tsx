@@ -89,7 +89,7 @@ export default function PlatformsScreen() {
             <span className="ks-empty__ico"><Server size={26} strokeWidth={1.75} /></span>
             <div className="ks-empty__t">No platforms connected</div>
             <div className="ks-empty__s">
-              Connect a platform (Datadog, Grafana, Stripe, GitHub…) to validate that its keys are still live.
+              Connect AWS or Datadog to verify whether a leaked key is still live on the platform. Other providers (Grafana, Stripe, GitHub) can be connected too, but their APIs cannot list keys, so Keystrok cannot verify liveness for them.
               A found key that&apos;s already revoked is far less urgent than one that still works.
             </div>
             <button className="ks-btn ks-btn--primary" style={{ marginTop: 18 }} onClick={() => setConnectOpen(true)}>

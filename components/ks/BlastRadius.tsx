@@ -266,7 +266,9 @@ export function BlastRadius({ keyId, keyPreview }: { keyId: string; keyPreview?:
                 <div className="ks-br__path">
                   platform usage · last used {ago(data.usage.lastUsedAt)} ago{data.usage.source ? ` · ${data.usage.source}` : ''}
                 </div>
-                <span className="ks-br__tag">observed</span>
+                {/* Evidence that the key IS used, not by whom. "observed" stays
+                    reserved for the day we can see a caller identity. */}
+                <span className="ks-br__tag">from platform</span>
               </div>
             )}
             {data.consumers.map((c) => (

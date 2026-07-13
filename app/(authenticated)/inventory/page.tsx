@@ -172,7 +172,8 @@ export default function KeysScreen() {
                         <span className="ks-tbl__u" style={{ color: 'var(--tx-mut)' }}>
                           {k.radius_consumers ? `${k.radius_consumers} svc · ` : ''}
                           {k.radius_sites ?? 1} site{(k.radius_sites ?? 1) === 1 ? '' : 's'}
-                          {k.radius_pipes ? ` · ${k.radius_pipes} pipe` : ''}
+                          {/* pipelines are a SUBSET of sites; say so, never add them up */}
+                          {k.radius_pipes ? ` (${k.radius_pipes} in pipelines)` : ''}
                           {k.usage_active && !k.radius_consumers && !k.break_accepted && <span style={{ color: 'var(--crit)' }}> · in use</span>}
                           {k.break_accepted && <span style={{ color: 'var(--high)' }}> · break accepted</span>}
                         </span>

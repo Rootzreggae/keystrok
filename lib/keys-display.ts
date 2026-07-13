@@ -112,3 +112,28 @@ export function ago(iso: string) {
   if (s < 604800) return `${Math.floor(s / 86400)}d`
   return `${Math.floor(s / 604800)}w`
 }
+
+/**
+ * The OUTCOME of a finished rotation, derived from post-rotation evidence, not
+ * from workflow status. A rotation is not "done" until the old key is verified
+ * dead; every surface that reports a finished rotation renders this, so the
+ * completion card and the outcome ledger can never tell different stories.
+ */
+export interface RotationOutcome {
+  sev: 'ok' | 'high' | 'critical'
+  verdict: string
+  detail: string
+  /** Only a liveness-verified revocation may claim the exposure is closed. */
+  closed: boolean
+}
+
+export function outcomeFor(k?: ApiKey): RotationOutcome {
+  if (!k) return { sev: 'ok', verdict: 'Completed', detail: '', closed: false }
+  if (k.rotation_failed)
+    return { sev: 'critical', verdict: 'Old key still live', detail: "rotation didn't stick · rotate again", closed: false }
+  if (k.live_status === 'revoked')
+    return { sev: 'ok', verdict: 'Old key verified dead', detail: `liveness re-checked${k.live_checked_at ? ` ${ago(k.live_checked_at)} ago` : ''}`, closed: true }
+  if (!isListable(k.platform))
+    return { sev: 'high', verdict: 'Receipted by you', detail: 'this provider cannot verify liveness', closed: false }
+  return { sev: 'high', verdict: 'Verification pending', detail: 'revoke receipted · liveness re-check pending', closed: false }
+}
