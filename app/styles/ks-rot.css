@@ -88,3 +88,14 @@
 .kb .ks-comptbl__row .ok { color: var(--a); display: inline-flex; }
 .kb .ks-comptbl__row .nm { font-weight: 650; color: var(--tx); }
 .kb .ks-comptbl__row .meta { margin-left: auto; color: var(--tx-mut); font-size: 11px; }
+
+/* Verdict ledger: the all-clear hero + completed-rotations table (mock refinement) */
+.kb .ks-rothx__hero { padding: 34px 6px 26px; }
+.kb .ks-rothx__hero h3 { font-size: 20px; font-weight: 650; color: var(--tx); margin: 0 0 12px; }
+.kb .ks-rothx__hero p { font-size: 13px; color: var(--tx-mut); margin: 12px 0 0; }
+.kb .ks-rothx__hero p a { color: var(--tx); text-underline-offset: 3px; }
+.kb .ks-rothx__strip { display: flex; gap: 22px; font-family: var(--font-mono); font-size: 12px; color: var(--tx-dim); }
+.kb .ks-rothx__strip b { font-size: 14px; font-weight: 600; color: var(--tx); margin-right: 6px; }
+.kb .ks-rothx__cap { display: flex; justify-content: space-between; align-items: baseline; font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--tx-dim); margin-bottom: 10px; }
+.kb .ks-rothx__note { font-family: var(--font-mono); font-size: 10.5px; color: var(--tx-dim); margin-top: 12px; }
+

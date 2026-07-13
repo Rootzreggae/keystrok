@@ -23,16 +23,11 @@ export function KeyTimeline({ keyId }: { keyId: string }) {
   if (isLoading) return <div className="ks-tl__loading">Loading…</div>
   if (!data || data.events.length === 0) return <div className="ks-tl__loading">No events yet.</div>
 
+  // The window bar is gone: "Rotation window" lives in the NOW section, and the
+  // open/failed truth is the terminal event below. One fact, one place.
   const w = data.window
   return (
     <div className="ks-tl">
-      {w && (
-        <div className={'ks-tl__win' + (w.open ? ' open' : '')}>
-          <span className="ks-tl__winlbl">Exposure window</span>
-          <span className="ks-tl__windur">{w.open ? `${w.days}d open` : `${w.days}d`}</span>
-          {w.usedDuring && <span className="ks-tl__winflag">used inside it</span>}
-        </div>
-      )}
       <div className="ks-tl__list">
         {data.events.map((e, i) => (
           <div className={'ks-tl__ev' + (e.window ? ' in' : '')} key={i}>
@@ -48,8 +43,8 @@ export function KeyTimeline({ keyId }: { keyId: string }) {
           <div className="ks-tl__ev in open">
             <span className="ks-tl__dot open" aria-hidden />
             <div className="ks-tl__body">
-              <div className="ks-tl__label" style={{ color: 'var(--crit)' }}>Still exposed</div>
-              <div className="ks-tl__detail">{w.rotationFailed ? 'rotated, but never revoked' : 'no rotation yet'}</div>
+              <div className="ks-tl__label" style={{ color: 'var(--crit)' }}>{w.rotationFailed ? 'Still exposed' : 'Awaiting rotation'}</div>
+              {w.rotationFailed && <div className="ks-tl__detail">rotated, but never revoked</div>}
             </div>
             <div className="ks-tl__time">now</div>
           </div>

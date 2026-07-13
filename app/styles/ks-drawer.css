@@ -31,8 +31,12 @@
 
 /* Blast radius section inside the drawer: readiness checks + observed ledgers.
  * Same grammar as the rest of the drawer: mono data, square, token-driven. */
-.kb .ks-br__sum { font-size: 12.5px; line-height: 1.55; color: var(--tx-mut); margin: 0 0 14px; }
-.kb .ks-br__sum, .kb .ks-br__cd { overflow-wrap: break-word; }
+.kb .ks-br__cd { overflow-wrap: break-word; }
+/* stat strip: the numbers ARE the summary */
+.kb .ks-br__stats { display: flex; gap: 18px; margin: 0 0 14px; font-family: var(--font-mono); font-size: 11px; color: var(--tx-dim); }
+.kb .ks-br__stat b { font-size: 15px; font-weight: 600; color: var(--tx); margin-right: 5px; }
+/* masked key value under the drawer title: identity, once */
+.kb .ks-drawer__preview { font-family: var(--font-mono); font-size: 11px; color: var(--tx-dim); margin-top: 4px; word-break: break-all; }
 .kb .ks-br__checks { display: flex; flex-direction: column; gap: 10px; margin-bottom: 4px; }
 .kb .ks-br__check { display: flex; gap: 9px; align-items: flex-start; }
 .kb .ks-br__check .ks-dot { margin-top: 4px; flex: none; }
@@ -71,3 +75,16 @@
 .kb .ks-btn--crit { border-color: var(--crit-line); color: var(--crit); }
 .kb .ks-btn--crit:not(:disabled):hover { background: var(--crit-dim); }
 .kb .ks-btn--crit:disabled { opacity: 0.45; cursor: not-allowed; }
+
+/* Mock-refinement pass: chips header, one-banner policy, NOW note, sentence radius */
+.kb .ks-drawer__chips { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+.kb .ks-drawer__banner { margin: 16px 22px 0; padding: 13px 15px; background: var(--crit-dim); border: 1px solid var(--crit-line); border-radius: 2px; font-size: 12.5px; color: var(--tx-mut); line-height: 1.55; }
+.kb .ks-drawer__banner b { color: var(--tx); }
+.kb .ks-drawer__bannert { color: var(--crit); font-weight: 600; margin-bottom: 6px; font-size: 13px; }
+.kb .ks-drawer__note { font-family: var(--font-mono); font-size: 10.5px; color: var(--tx-dim); line-height: 1.6; margin-top: 10px; }
+.kb .ks-dsect__lrow { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.kb .ks-br__sentence { font-size: 12.5px; line-height: 1.6; color: var(--tx-mut); margin: 12px 0 0; overflow-wrap: break-word; }
+.kb .ks-br__sentence b { color: var(--tx); }
+.kb .ks-br__meta { font-family: var(--font-mono); font-size: 11px; color: var(--tx-dim); margin: 9px 0 8px; line-height: 1.5; overflow-wrap: break-word; }
+.kb .ks-br__meta b { color: var(--tx-mut); font-weight: 500; word-break: break-all; }
+.kb .ks-drawer__advisory { flex: none; padding: 10px 22px 0; font-family: var(--font-mono); font-size: 10.5px; color: var(--tx-dim); }

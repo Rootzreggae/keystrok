@@ -7,10 +7,10 @@ import { Dot } from '@/components/ks'
 import { ago, cleanLocation } from '@/lib/keys-display'
 
 interface RCheck { tone: 'ok' | 'warn' | 'crit'; title: string; detail: string }
-interface RSite { path: string; line: number | null; foundAt: string }
+interface RSite { path: string; filePath: string | null; line: number | null; foundAt: string }
 interface RConsumer { id: string; name: string; readMode: string; owner: string | null; assertedBy: string; createdAt: string }
 interface Radius {
-  summary: string
+  sentence: { lead: string; rest: string }
   consumer: RCheck
   consumers: RConsumer[]
   usage: { lastUsedAt: string; source: string | null; live: boolean } | null
@@ -24,9 +24,6 @@ interface Radius {
   freshness: { lastScanAt: string | null; liveCheckedAt: string | null }
 }
 
-// Readiness tones map onto the existing dot severities: warn reads as high.
-const TONE_SEV = { ok: 'ok', warn: 'high', crit: 'critical' } as const
-
 // Mirrors READ_MODES in lib/blast-radius (kept inline: this file is client-side).
 const MODES = [
   ['env_boot', 'env at boot', 'needs restart'],
@@ -35,17 +32,13 @@ const MODES = [
 ] as const
 const MODE_LABEL: Record<string, string> = Object.fromEntries(MODES.map(([k, l, d]) => [k, `${l} · ${d}`]))
 
-const initials = (name: string) =>
-  name.split(/[\s._-]+/).filter(Boolean).slice(0, 2).map((w) => w[0]!.toUpperCase()).join('')
-
-function SiteRow({ s, tag, warnTag }: { s: RSite; tag: string; warnTag?: boolean }) {
+function SiteRow({ s }: { s: RSite }) {
   return (
     <div className="ks-br__row">
       <div className="ks-br__path">
         {cleanLocation(s.path)}
         {s.line != null && <span className="ks-br__ln">:{s.line}</span>}
       </div>
-      <span className={'ks-br__tag' + (warnTag ? ' ks-br__tag--warn' : '')}>{tag}</span>
     </div>
   )
 }
@@ -101,10 +94,8 @@ function AssertForm({ keyId, onDone }: { keyId: string; onDone: () => void }) {
 }
 
 // Accept-the-break: the operator signs the cost of rotating past an unknown
-// consumer. The evidence stays visible while deciding, the typed confirm is
-// the key name (enforced server-side too), and the break lands at the revoke
-// step, not now. The escape hatch maps a consumer instead; it never cancels
-// by acting.
+// consumer. Evidence stays visible while deciding; the typed confirm is the
+// key name (enforced server-side); the break lands at the revoke step, not now.
 function AcceptBreak({ keyId, data, onDone, onAssertInstead }: {
   keyId: string
   data: Radius
@@ -156,14 +147,15 @@ function AcceptBreak({ keyId, data, onDone, onAssertInstead }: {
   )
 }
 
-// The blast radius of one key, inside the key drawer: readiness verdicts up
-// top, then the ledgers (consumers, pipelines, sites, people). Everything
-// shown is observed or labeled as a human assertion; the consumer state says
-// "unknown" out loud when it is.
-export function BlastRadius({ keyId }: { keyId: string }) {
+// Two drawer sections for one key: EXPOSED IN (the evidence: masked code line,
+// paths, cleanup instruction) and BLAST RADIUS (one composed sentence; the full
+// ledgers and the hold verbs live behind "view full radius", except in the hold
+// state, which auto-expands because accept-the-break must never hide).
+export function BlastRadius({ keyId, keyPreview }: { keyId: string; keyPreview?: string }) {
   const qc = useQueryClient()
   const [asserting, setAsserting] = useState(false)
   const [accepting, setAccepting] = useState(false)
+  const [expanded, setExpanded] = useState(false)
   const { data, isLoading } = useQuery<Radius>({
     queryKey: ['radius', keyId],
     queryFn: async () => {
@@ -189,101 +181,120 @@ export function BlastRadius({ keyId }: { keyId: string }) {
     refresh()
   }
 
-  if (isLoading) return <div className="ks-tl__loading">Mapping the radius…</div>
-  if (!data) return <div className="ks-tl__loading">Radius unavailable.</div>
+  if (isLoading) return <div className="ks-dsect"><div className="ks-tl__loading">Mapping the radius…</div></div>
+  if (!data) return <div className="ks-dsect"><div className="ks-tl__loading">Radius unavailable.</div></div>
 
-  const hasConsumers = data.consumers.length > 0 || data.usage != null
+  const primary = data.sites[0] ?? data.pipelines[0] ?? null
+  const rest = [...data.sites.slice(primary && data.sites.length ? 1 : 0), ...data.pipelines.filter((p) => p !== primary)]
+  const hold = data.consumer.tone === 'crit'
+  const open = expanded || hold || asserting || accepting
 
   return (
-    <div className="ks-br">
-      <p className="ks-br__sum">{data.summary}</p>
+    <>
+      <div className="ks-dsect">
+        <div className="ks-dsect__lrow">
+          <span className="ks-dsect__l" style={{ margin: 0 }}>Exposed in</span>
+          {primary?.filePath && (
+            <a className="ks-br__miss" href={`vscode://file${primary.filePath}${primary.line != null ? `:${primary.line}` : ''}`}>open file</a>
+          )}
+        </div>
+        {primary && (
+          <>
+            <div className="ks-code" style={{ marginTop: 12 }}>
+              {primary.line != null && <span className="ln">{primary.line}</span>}
+              const KEY = <span className="hit">&quot;{keyPreview ?? '••••'}&quot;</span>
+            </div>
+            <div className="ks-br__meta">
+              <b>{cleanLocation(primary.path)}</b>
+              {data.freshness.lastScanAt ? ` · scanned ${ago(data.freshness.lastScanAt)} ago` : ''} · remove this line after rotating
+            </div>
+          </>
+        )}
+        {rest.map((s) => <SiteRow key={s.path} s={s} />)}
+      </div>
 
-      <div className="ks-br__checks">
-        {data.readiness.map((c, i) => (
-          <div className="ks-br__check" key={i}>
-            <Dot sev={TONE_SEV[c.tone]} />
+      <div className="ks-dsect">
+        <div className="ks-dsect__lrow">
+          <span className="ks-dsect__l" style={{ margin: 0 }}>Blast radius</span>
+          {!hold && (
+            <button className="ks-br__miss" onClick={() => setExpanded((v) => !v)}>
+              {open ? 'hide full radius' : 'view full radius'}
+            </button>
+          )}
+        </div>
+        <p className="ks-br__sentence">
+          <b>{data.sentence.lead}</b>{data.sentence.rest}{' '}
+          {!asserting && <button className="ks-br__miss" onClick={() => { setAsserting(true) }}>Know a consumer we missed?</button>}
+        </p>
+
+        {hold && (
+          <div className="ks-br__check" style={{ margin: '10px 0' }}>
+            <Dot sev="critical" />
             <div>
-              <div className="ks-br__ct" style={c.tone === 'crit' ? { color: 'var(--crit)' } : undefined}>{c.title}</div>
-              <div className="ks-br__cd">{c.detail}</div>
+              <div className="ks-br__ct" style={{ color: 'var(--crit)' }}>{data.consumer.title}</div>
+              <div className="ks-br__cd">{data.consumer.detail}</div>
             </div>
           </div>
-        ))}
-      </div>
-
-      {/* The hold state's two recovery verbs: map what's using it, or sign the cost. */}
-      {data.consumer.tone === 'crit' && !accepting && !asserting && (
-        <div style={{ display: 'flex', gap: 8, margin: '2px 0 4px' }}>
-          <button className="ks-btn ks-btn--sm" onClick={() => setAsserting(true)}>Map a consumer…</button>
-          <button className="ks-btn ks-btn--sm" onClick={() => setAccepting(true)}>Accept the break…</button>
-        </div>
-      )}
-      {accepting && <AcceptBreak keyId={keyId} data={data} onDone={refresh} onAssertInstead={() => { setAccepting(false); setAsserting(true) }} />}
-      {data.breakAccepted && (
-        <div className="ks-br__row">
-          <div className="ks-br__who" style={{ flex: 1 }}>
-            <div className="ks-br__ct">Accepted break</div>
-            <div className="ks-br__cd">
-              by {data.breakAccepted.by ?? 'unknown'} · {ago(data.breakAccepted.at)} ago · logged to Activity · lands at the revoke step
-            </div>
+        )}
+        {hold && !accepting && !asserting && (
+          <div style={{ display: 'flex', gap: 8, margin: '2px 0 8px' }}>
+            <button className="ks-btn ks-btn--sm" onClick={() => setAsserting(true)}>Map a consumer…</button>
+            <button className="ks-btn ks-btn--sm" onClick={() => setAccepting(true)}>Accept the break…</button>
           </div>
-          <span className="ks-br__tag ks-br__tag--warn">break accepted</span>
-          <button className="ks-br__x" title="Withdraw the acceptance" onClick={withdrawBreak}><X size={12} /></button>
-        </div>
-      )}
+        )}
+        {accepting && <AcceptBreak keyId={keyId} data={data} onDone={refresh} onAssertInstead={() => { setAccepting(false); setAsserting(true) }} />}
+        {asserting && <AssertForm keyId={keyId} onDone={refresh} />}
 
-      <div className="ks-br__l">
-        <span>Consumed by{hasConsumers ? '' : ' · nothing mapped'}</span>
-        {!asserting && <button className="ks-br__miss" onClick={() => setAsserting(true)}>Missing something?</button>}
-      </div>
-      {data.usage && (
-        <div className="ks-br__row">
-          <div className="ks-br__path">
-            platform usage · last used {ago(data.usage.lastUsedAt)} ago{data.usage.source ? ` · ${data.usage.source}` : ''}
-          </div>
-          <span className="ks-br__tag">observed</span>
-        </div>
-      )}
-      {data.consumers.map((c) => (
-        <div className="ks-br__row" key={c.id}>
-          <div className="ks-br__who" style={{ flex: 1 }}>
-            <div className="ks-br__ct">{c.name}</div>
-            <div className="ks-br__cd">{MODE_LABEL[c.readMode] ?? c.readMode}{c.owner ? ` · owner: ${c.owner}` : ''}</div>
-          </div>
-          <span className="ks-br__tag ks-br__tag--warn">user-asserted</span>
-          <button className="ks-br__x" title="Remove this assertion" onClick={() => removeConsumer(c.id)}><X size={12} /></button>
-        </div>
-      ))}
-      {asserting && <AssertForm keyId={keyId} onDone={refresh} />}
-
-      {data.pipelines.length > 0 && (
-        <>
-          <div className="ks-br__l">Deploy pipelines · from repo scan</div>
-          {data.pipelines.map((s) => <SiteRow key={s.path} s={s} tag="pipeline" warnTag />)}
-        </>
-      )}
-
-      <div className="ks-br__l">Exposed in · from scans{data.freshness.lastScanAt ? ` · ${ago(data.freshness.lastScanAt)} ago` : ''}</div>
-      {data.sites.map((s) => <SiteRow key={s.path} s={s} tag="remove after rotate" warnTag />)}
-      {data.sites.length === 0 && <div className="ks-br__cd">No sites outside the pipelines above.</div>}
-
-      {data.people.length > 0 && (
-        <>
-          <div className="ks-br__l">People · from git history</div>
-          {data.people.map((p) => (
-            <div className="ks-br__row" key={p.name}>
-              <span className="ks-br__av">{initials(p.name)}</span>
-              <div className="ks-br__who">
-                <div className="ks-br__ct">{p.name}</div>
-                <div className="ks-br__cd">{p.role}</div>
+        {data.breakAccepted && (
+          <div className="ks-br__row" style={{ marginTop: 8 }}>
+            <div className="ks-br__who" style={{ flex: 1 }}>
+              <div className="ks-br__ct">Accepted break</div>
+              <div className="ks-br__cd">
+                by {data.breakAccepted.by ?? 'unknown'} · {ago(data.breakAccepted.at)} ago · lands at the revoke step
               </div>
             </div>
-          ))}
-        </>
-      )}
+            <span className="ks-br__tag ks-br__tag--warn">break accepted</span>
+            <button className="ks-br__x" title="Withdraw the acceptance" onClick={withdrawBreak}><X size={12} /></button>
+          </div>
+        )}
 
-      <div className="ks-br__foot">
-        Radius mapped from scans, git history, platform liveness and your assertions, labeled as such · Keystrok never rotates or revokes on its own.
+        {open && (
+          <div style={{ marginTop: 10 }}>
+            {(data.usage || data.consumers.length > 0) && <div className="ks-br__l">Consumed by</div>}
+            {data.usage && (
+              <div className="ks-br__row">
+                <div className="ks-br__path">
+                  platform usage · last used {ago(data.usage.lastUsedAt)} ago{data.usage.source ? ` · ${data.usage.source}` : ''}
+                </div>
+                <span className="ks-br__tag">observed</span>
+              </div>
+            )}
+            {data.consumers.map((c) => (
+              <div className="ks-br__row" key={c.id}>
+                <div className="ks-br__who" style={{ flex: 1 }}>
+                  <div className="ks-br__ct">{c.name}</div>
+                  <div className="ks-br__cd">{MODE_LABEL[c.readMode] ?? c.readMode}{c.owner ? ` · owner: ${c.owner}` : ''}</div>
+                </div>
+                <span className="ks-br__tag ks-br__tag--warn">user-asserted</span>
+                <button className="ks-br__x" title="Remove this assertion" onClick={() => removeConsumer(c.id)}><X size={12} /></button>
+              </div>
+            ))}
+            {data.people.length > 0 && (
+              <>
+                <div className="ks-br__l">People · from git history</div>
+                {data.people.map((p) => (
+                  <div className="ks-br__row" key={p.name}>
+                    <div className="ks-br__who">
+                      <div className="ks-br__ct">{p.name}</div>
+                      <div className="ks-br__cd">{p.role}</div>
+                    </div>
+                  </div>
+                ))}
+              </>
+            )}
+          </div>
+        )}
       </div>
-    </div>
+    </>
   )
 }

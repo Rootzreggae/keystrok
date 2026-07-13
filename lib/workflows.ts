@@ -26,6 +26,7 @@ export async function getWorkflowList(filters: WorkflowListFilters = {}) {
           select: {
             id: true,
             keyName: true,
+            keyPreview: true,
             platform: true,
             severity: true,
             location: true,

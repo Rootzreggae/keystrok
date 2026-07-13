@@ -6,7 +6,7 @@ import { useSearchParams } from 'next/navigation'
 import { Check, Lock, RotateCw, ShieldAlert, KeyRound, ChevronRight, ChevronDown } from 'lucide-react'
 import { Mark, Dot, Pill } from '@/components/ks'
 import { PanelLoading } from '@/components/ks/Loading'
-import { platOf, SEVL, displayName, needsAction, urgency, type ApiKey } from '@/lib/keys-display'
+import { platOf, SEVL, displayName, needsAction, urgency, ago, isListable, type ApiKey } from '@/lib/keys-display'
 import { isDestructiveStep } from '@/lib/rotation-policy'
 
 interface WfStep {
@@ -19,16 +19,31 @@ interface WfStep {
   status: string
   isAutomated?: boolean
 }
-interface WfKey { keyName?: string; platform?: string; severity?: string; location?: string }
+interface WfKey { keyName?: string; keyPreview?: string; platform?: string; severity?: string; location?: string }
 // The list endpoint now returns full steps, so one Workflow shape serves both the
 // queue and the detail pane — no separate detail type / query.
 interface Workflow {
   id: string
   status: string
   startedAt?: string | null
+  completedAt?: string | null
   discoveredKeyId?: string
   discoveredKey?: WfKey
   steps?: WfStep[]
+}
+
+// The OUTCOME of a finished rotation, from post-rotation evidence. A rotation
+// is not "done" until the old key is verified dead; the ledger says which
+// truth each one earned, including the ugly one.
+function outcomeFor(k?: ApiKey) {
+  if (!k) return { sev: 'ok' as const, verdict: 'Completed', detail: '' }
+  if (k.rotation_failed)
+    return { sev: 'critical' as const, verdict: 'Old key still live', detail: "rotation didn't stick · rotate again" }
+  if (k.live_status === 'revoked')
+    return { sev: 'ok' as const, verdict: 'Old key verified dead', detail: `liveness re-checked${k.live_checked_at ? ` ${ago(k.live_checked_at)} ago` : ''}` }
+  if (!isListable(k.platform))
+    return { sev: 'high' as const, verdict: 'Receipted by you', detail: 'this provider cannot verify liveness' }
+  return { sev: 'high' as const, verdict: 'Verification pending', detail: 'revoke receipted · liveness re-check pending' }
 }
 
 const hhmm =(iso?: string | null) => (iso ? new Date(iso).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : '')
@@ -218,6 +233,18 @@ function RotationsInner() {
     const overdueDue = dueKeys.filter((k) => urgency(k).overdue)
     const top = overdueDue[0] ?? dueKeys[0]
     const restDue = dueKeys.filter((k) => k.id !== top?.id)
+    // The verdict ledger: finished rotations joined to their key's post-rotation
+    // evidence, newest first, last 30 days (full history lives in Activity).
+    const keyById = new Map(keys.map((k) => [k.id, k]))
+    const cutoff = Date.now() - 30 * 86400000
+    const ledger = done
+      .filter((w) => !w.completedAt || Date.parse(w.completedAt) >= cutoff)
+      .map((w) => ({ w, k: w.discoveredKeyId ? keyById.get(w.discoveredKeyId) : undefined }))
+      .map((r) => ({ ...r, o: outcomeFor(r.k) }))
+      .sort((a, b) => Date.parse(b.w.completedAt ?? '') - Date.parse(a.w.completedAt ?? ''))
+    const deadN = ledger.filter((r) => r.o.verdict === 'Old key verified dead').length
+    const pendN = ledger.filter((r) => r.o.sev === 'high').length
+    const failN = ledger.filter((r) => r.o.sev === 'critical').length
     return (
       <div className="ks-page--wide">
         <div className="ks-rot3">
@@ -242,13 +269,17 @@ function RotationsInner() {
               </button>
             </div>
           ) : (
-            <div className="ks-rot3__hero">
-              <div className="ico"><Check size={22} /></div>
-              <h3>All caught up</h3>
-              <p>No open rotations, and every tracked key is inside its window. Finished rotations stay on the record, on their key and in Activity.</p>
-              <a href="/inventory" className="ks-rot3__btn ks-rot3__btn--ghost" style={{ textDecoration: 'none' }}>
-                <RotateCw size={13} /> Start a rotation
-              </a>
+            <div className="ks-rothx__hero">
+              <h3>Nothing needs you</h3>
+              {ledger.length > 0 && (
+                <div className="ks-rothx__strip">
+                  <span><b>{ledger.length}</b> completed</span>
+                  {deadN > 0 && <span><b style={{ color: 'var(--ok)' }}>{deadN}</b> old key{deadN === 1 ? '' : 's'} verified dead</span>}
+                  {pendN > 0 && <span><b style={{ color: 'var(--high)' }}>{pendN}</b> verification pending</span>}
+                  {failN > 0 && <span><b style={{ color: 'var(--crit)' }}>{failN}</b> still live</span>}
+                </div>
+              )}
+              <p>Every tracked key is inside its window. New rotations start from <a href="/discovery-scanner">Discovery</a>.</p>
             </div>
           )}
 
@@ -268,19 +299,51 @@ function RotationsInner() {
             </div>
           )}
 
-          {done.length > 0 && (
-            <div className="ks-comptbl" style={{ marginTop: 16 }}>
-              <div className="ks-comptbl__cap">Completed · {done.length}<a className="lnk" href="/activity">full history →</a></div>
-              {done.map((w) => {
-                const total = w.steps?.length ?? 0
-                return (
-                  <div key={w.id} className="ks-comptbl__row" style={{ cursor: 'pointer' }} onClick={() => setSelId(w.id)}>
-                    <span className="ok"><Check size={14} /></span>
-                    <span className="nm">{displayName(w.discoveredKey?.keyName ?? 'Rotation')}</span>
-                    <span className="meta">{platOf(w.discoveredKey?.platform ?? '').label} · {total}/{total} steps</span>
-                  </div>
-                )
-              })}
+          {ledger.length > 0 && (
+            <div style={{ marginTop: 20 }}>
+              <div className="ks-rothx__cap">
+                <span>Completed · last 30 days</span>
+                <a className="ks-br__miss" href="/activity">full history</a>
+              </div>
+              {/* System table (ks-tbl), same grammar as the Keys ledger. Pending
+                  renders as a hollow ring: an open loop, not a filled verdict. */}
+              <div className="ks-tbl-scroll">
+                <table className="ks-tbl">
+                  <thead>
+                    <tr>
+                      <th style={{ width: 36 }} />
+                      <th>Key</th>
+                      <th style={{ width: 130 }}>Platform</th>
+                      <th>Outcome</th>
+                      <th style={{ width: 100, textAlign: 'right' }}>Finished</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {ledger.map(({ w, k, o }) => (
+                      <tr key={w.id} onClick={() => setSelId(w.id)} style={{ cursor: 'pointer' }}>
+                        <td style={{ textAlign: 'center' }}>
+                          {o.sev === 'high'
+                            ? <span className="ks-dot" style={{ display: 'inline-block', background: 'transparent', border: '2px solid var(--high)', boxSizing: 'border-box' }} />
+                            : <Dot sev={o.sev} />}
+                        </td>
+                        <td>
+                          <div className="ks-tbl__name">{displayName(w.discoveredKey?.keyName ?? 'Rotation')}</div>
+                          {(w.discoveredKey?.keyPreview || k?.key_preview) && (
+                            <div className="ks-tbl__src" style={{ marginTop: 4 }}>{w.discoveredKey?.keyPreview ?? k?.key_preview}</div>
+                          )}
+                        </td>
+                        <td><span className="ks-tbl__sev"><Mark>{platOf(w.discoveredKey?.platform ?? '').code}</Mark> {platOf(w.discoveredKey?.platform ?? '').label}</span></td>
+                        <td>
+                          <b style={{ fontSize: 12.5, color: o.sev === 'critical' ? 'var(--crit)' : 'var(--tx)' }}>{o.verdict}</b>
+                          {o.detail && <span style={{ fontSize: 12, color: 'var(--tx-mut)' }}> · {o.detail}</span>}
+                        </td>
+                        <td><span className="ks-tbl__u" style={{ color: 'var(--tx-dim)', display: 'block', textAlign: 'right', whiteSpace: 'nowrap' }}>{w.completedAt ? `${ago(w.completedAt)} ago` : ''}</span></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div className="ks-rothx__note">Finished rotations stay on the record · here, on their key, and in Activity.</div>
             </div>
           )}
         </div>
