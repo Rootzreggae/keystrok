@@ -28,7 +28,7 @@ Branch: `exp/scanner-honesty`. Ship as one or two PRs with screenshots; the benc
 
 ## 6. Verify
 - [x] Drive the real app: toggle a category off and confirm excluded files are unread; cancel mid-scan; force a failure and see the banner; watch progress move.
-- [ ] Screenshots for the visible states; PR per the standing convention; merge is Nilson's call.
+- [x] Screenshots for the visible states; shipped as PR #8, squash-merged 2026-07-13 (246cd32).
 
 ## Deferred (tracked, not in this change)
 - Dead code removal (`lib/local-scanner.ts`, the orphaned scanner-dashboard components, `POST /api/keys/[id]/rotate`, the unreachable workflow actions API) goes straight to main as invisible work.
