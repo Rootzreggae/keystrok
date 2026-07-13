@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
   if (!cfg) return new Response('No assistant model connected', { status: 409 })
   if (typeof model === 'string' && model) cfg.model = model
 
-  const system = await buildSystemPrompt(s.user.id)
+  const system = await buildSystemPrompt()
   const encoder = new TextEncoder()
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {

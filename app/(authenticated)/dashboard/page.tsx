@@ -25,7 +25,7 @@ export default async function DashboardPage() {
       queryFn: async () => JSON.parse(JSON.stringify((await getWorkflowList()).workflows)),
     }),
     session?.user?.id
-      ? qc.prefetchQuery({ queryKey: ['posture'], queryFn: () => getPostureData(session.user!.id!) })
+      ? qc.prefetchQuery({ queryKey: ['posture'], queryFn: () => getPostureData() })
       : null,
   ])
 

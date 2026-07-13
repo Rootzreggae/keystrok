@@ -111,11 +111,21 @@ export async function testProvider(c: ProviderConfig): Promise<{ ok: boolean; er
 }
 
 // ---- Metadata context (no secrets) -----------------------------------------
-export async function buildSystemPrompt(userId: string): Promise<string> {
-  const [keys, findings, workflows] = await Promise.all([
-    prisma.discoveredKey.findMany({ where: { userId, status: { not: 'false_positive' } }, orderBy: { foundAt: 'desc' }, take: 60 }),
-    prisma.localScanFinding.findMany({ where: { userId, status: 'active' }, take: 60 }),
-    prisma.rotationWorkflow.findMany({ where: { userId, status: { not: 'completed' } }, take: 30 }),
+// Context caps. When the workspace exceeds them the prompt says so, so the
+// assistant never implies it saw the whole inventory.
+const KEY_CAP = 60
+const FINDING_CAP = 60
+const WORKFLOW_CAP = 30
+
+export async function buildSystemPrompt(): Promise<string> {
+  const [keys, findings, workflows, keyTotal, findingTotal] = await Promise.all([
+    // Workspace-wide, matching what the operator sees on screen. A per-user
+    // slice made the assistant confidently incomplete in a team.
+    prisma.discoveredKey.findMany({ where: { status: { not: 'false_positive' } }, orderBy: { foundAt: 'desc' }, take: KEY_CAP }),
+    prisma.localScanFinding.findMany({ where: { status: 'active' }, take: FINDING_CAP }),
+    prisma.rotationWorkflow.findMany({ where: { status: { not: 'completed' } }, take: WORKFLOW_CAP }),
+    prisma.discoveredKey.count({ where: { status: { not: 'false_positive' } } }),
+    prisma.localScanFinding.count({ where: { status: 'active' } }),
   ])
 
   const keyLines = keys.map((k) => {
@@ -142,11 +152,13 @@ export async function buildSystemPrompt(userId: string): Promise<string> {
     '- A key marked "LIVE on platform" was confirmed still active against a connected platform. "LIVE + USED RECENTLY (active incident)" means it is also being used right now: this is the single most urgent thing, treat it as an incident in progress and rotate it first. "revoked" means it is no longer active, so it is far less urgent (still worth noting as a past leak). Keys with neither marker have not been liveness-checked; do not assume either way.',
     '- Be concise and specific. Reference keys by name. Rank by: active incident (live + recently used) first, then live, then severity, then rotation time remaining.',
     '',
-    `TRACKED KEYS (${keys.length}):`,
+    `TRACKED KEYS (showing ${keys.length}${keyTotal > keys.length ? ` of ${keyTotal}` : ''}):`,
     keyLines || '(none yet)',
+    keyTotal > keys.length ? `(${keyTotal - keys.length} more keys not shown; say so if the user asks for a complete picture)` : '',
     '',
-    `OPEN FINDINGS TO TRIAGE (${findings.length}):`,
+    `OPEN FINDINGS TO TRIAGE (showing ${findings.length}${findingTotal > findings.length ? ` of ${findingTotal}` : ''}):`,
     findLines || '(none)',
+    findingTotal > findings.length ? `(${findingTotal - findings.length} more findings not shown)` : '',
     '',
     `ROTATIONS IN PROGRESS: ${workflows.length}`,
   ].join('\n')

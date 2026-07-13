@@ -6,7 +6,7 @@ import { useSearchParams } from 'next/navigation'
 import { Check, Lock, RotateCw, ShieldAlert, KeyRound, ChevronRight, ChevronDown } from 'lucide-react'
 import { Mark, Dot, Pill } from '@/components/ks'
 import { PanelLoading } from '@/components/ks/Loading'
-import { platOf, SEVL, displayName, needsAction, urgency, ago, isListable, type ApiKey } from '@/lib/keys-display'
+import { platOf, SEVL, displayName, needsAction, urgency, ago, outcomeFor, type ApiKey } from '@/lib/keys-display'
 import { isDestructiveStep } from '@/lib/rotation-policy'
 
 interface WfStep {
@@ -30,20 +30,6 @@ interface Workflow {
   discoveredKeyId?: string
   discoveredKey?: WfKey
   steps?: WfStep[]
-}
-
-// The OUTCOME of a finished rotation, from post-rotation evidence. A rotation
-// is not "done" until the old key is verified dead; the ledger says which
-// truth each one earned, including the ugly one.
-function outcomeFor(k?: ApiKey) {
-  if (!k) return { sev: 'ok' as const, verdict: 'Completed', detail: '' }
-  if (k.rotation_failed)
-    return { sev: 'critical' as const, verdict: 'Old key still live', detail: "rotation didn't stick · rotate again" }
-  if (k.live_status === 'revoked')
-    return { sev: 'ok' as const, verdict: 'Old key verified dead', detail: `liveness re-checked${k.live_checked_at ? ` ${ago(k.live_checked_at)} ago` : ''}` }
-  if (!isListable(k.platform))
-    return { sev: 'high' as const, verdict: 'Receipted by you', detail: 'this provider cannot verify liveness' }
-  return { sev: 'high' as const, verdict: 'Verification pending', detail: 'revoke receipted · liveness re-check pending' }
 }
 
 const hhmm =(iso?: string | null) => (iso ? new Date(iso).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : '')
@@ -92,18 +78,12 @@ function Stepper({ workflowId, steps }: { workflowId: string; steps: WfStep[] })
                     <div className="ks-step__d">{s.description || s.instructions}</div>
                   )}
                   <div className="ks-step__actors">
-                    {s.isAutomated ? (
-                      <><span className="ks-actor ks-actor--sys">Keystrok</span> runs this check</>
-                    ) : (
-                      <>
-                        <span className="ks-actor ks-actor--you">You</span> run this step
-                        <span className="ks-actor ks-actor--sys" style={{ marginLeft: 4 }}>Keystrok</span> records it
-                      </>
-                    )}
+                    <span className="ks-actor ks-actor--you">You</span> run this step on the platform
+                    <span className="ks-actor ks-actor--sys" style={{ marginLeft: 4 }}>Keystrok</span> records it
                   </div>
                   <div className="ks-step__adv">
                     <ShieldAlert size={13} style={{ flex: 'none', marginTop: 1 }} />
-                    Advisory: Keystrok recommends the order and watches traffic; it never rotates or revokes a key on its own.
+                    Advisory: Keystrok recommends the order, gates the irreversible step, and verifies the outcome afterwards. It never rotates or revokes a key on its own, and it does not check your work: a step you mark done is taken on trust.
                   </div>
                   {revoke && (
                     <div className="ks-gate">
@@ -216,6 +196,7 @@ function RotationsInner() {
   // for a stale ?workflow= id or the brief moment after Start before the list
   // refetches, both handled by a quiet placeholder (not a spinner) in the pane.
   const sel = activeId ? workflows.find((w) => w.id === activeId) : undefined
+  const selKey = sel?.discoveredKeyId ? keys.find((k) => k.id === sel.discoveredKeyId) : undefined
   const plat = platOf(sel?.discoveredKey?.platform ?? '')
   const sev = sel?.discoveredKey?.severity ?? 'medium'
   const steps = (sel?.steps ?? []).slice().sort((a, b) => a.stepNumber - b.stepNumber)
@@ -223,7 +204,7 @@ function RotationsInner() {
   const curStep = sel?.status === 'completed' ? steps.length : Math.min(doneCount + 1, steps.length)
   const started = hhmm(sel?.startedAt)
   const progressSub = sel?.status === 'completed'
-    ? `rotation complete · was ${SEVL[sev] ?? sev}`
+    ? `${steps.length} of ${steps.length} steps receipted · was ${SEVL[sev] ?? sev}`
     : `step ${curStep} of ${steps.length}${started ? ` · started ${started}` : ''}`
 
   // No rotation active right now: single-pane, truthful empty state. Gate on
@@ -424,7 +405,12 @@ function RotationsInner() {
                   <div className="ks-rotmain__sub">{progressSub}</div>
                 </div>
                 {sel.status === 'completed' ? (
-                  <Pill tone="a"><Check size={12} /> Resolved</Pill>
+                  (() => {
+                    const o = outcomeFor(selKey)
+                    return o.closed
+                      ? <Pill tone="a"><Check size={12} /> Resolved</Pill>
+                      : <Pill tone={o.sev === 'critical' ? 'crit' : 'high'}><ShieldAlert size={12} /> {o.sev === 'critical' ? 'Still exposed' : 'Unverified'}</Pill>
+                  })()
                 ) : (
                   <Pill tone={sev === 'critical' ? 'crit' : sev === 'high' ? 'high' : 'mut'}>
                     <Dot sev={sev as 'critical'} />{SEVL[sev] ?? sev}
@@ -433,15 +419,32 @@ function RotationsInner() {
               </div>
 
               {sel.status === 'completed' ? (
-                <div style={{ marginTop: 22, padding: '20px 22px', background: 'var(--a-dim)', border: '1px solid var(--a-line)', display: 'flex', gap: 14, alignItems: 'flex-start' }}>
-                  <Check size={22} color="var(--a)" style={{ flexShrink: 0 }} />
-                  <div>
-                    <div style={{ fontSize: 14.5, fontWeight: 600, color: 'var(--tx)' }}>Rotation complete</div>
-                    <div style={{ fontSize: 12.5, color: 'var(--tx-mut)', marginTop: 6, lineHeight: 1.5 }}>
-                      Every step passed: the replacement was issued, rolled out, the old key verified idle, then revoked. The exposure is closed.
+                // The card renders the verdict the rotation EARNED (same helper as
+                // the ledger), so the two can never tell different stories. Only a
+                // liveness-verified revocation may claim the exposure is closed.
+                (() => {
+                  const o = outcomeFor(selKey)
+                  const tone = o.sev === 'critical'
+                    ? { bg: 'var(--crit-dim)', line: 'var(--crit-line)', ink: 'var(--crit)' }
+                    : o.sev === 'high'
+                      ? { bg: 'var(--high-dim)', line: 'var(--high-line)', ink: 'var(--high)' }
+                      : { bg: 'var(--a-dim)', line: 'var(--a-line)', ink: 'var(--a)' }
+                  return (
+                    <div style={{ marginTop: 22, padding: '20px 22px', background: tone.bg, border: `1px solid ${tone.line}`, display: 'flex', gap: 14, alignItems: 'flex-start' }}>
+                      {o.sev === 'ok' ? <Check size={22} color={tone.ink} style={{ flexShrink: 0 }} /> : <ShieldAlert size={22} color={tone.ink} style={{ flexShrink: 0 }} />}
+                      <div>
+                        <div style={{ fontSize: 14.5, fontWeight: 600, color: 'var(--tx)' }}>{o.verdict}</div>
+                        <div style={{ fontSize: 12.5, color: 'var(--tx-mut)', marginTop: 6, lineHeight: 1.5 }}>
+                          {o.closed
+                            ? 'Every step was receipted and a liveness check after the rotation found the old key revoked. The exposure is closed.'
+                            : o.sev === 'critical'
+                              ? "Every step was receipted, but a liveness check after the rotation still found the old key live on its platform. The old credential was never revoked: treat it as still exposed and rotate again."
+                              : `Every step was receipted, but the old key is not verified dead: ${o.detail}. Keystrok will not claim the exposure is closed without post-rotation evidence.`}
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </div>
+                  )
+                })()
               ) : (
                 <Stepper workflowId={sel.id} steps={steps} />
               )}

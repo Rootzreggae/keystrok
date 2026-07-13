@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { X, Server, ArrowLeft, Check } from 'lucide-react'
+import { isListable } from '@/lib/keys-display'
 import { Mark } from '@/components/ks'
 
 interface Preset {
@@ -148,7 +149,17 @@ export function PlatformConnect({ open, onClose, onConnected }: { open: boolean;
               {PRESETS.map((p) => (
                 <button key={p.type} className="ks-prov" onClick={() => pick(p)}>
                   <span className="ks-prov__icon"><Mark>{p.code}</Mark></span>
-                  <div className="ks-prov__main"><div className="ks-prov__name">{p.name}</div><div className="ks-prov__meta">{p.meta}</div></div>
+                  <div className="ks-prov__main">
+                    <div className="ks-prov__name">{p.name}</div>
+                    <div className="ks-prov__meta">
+                      {p.meta}
+                      {/* Say up front what a connection can actually prove. Only a
+                          provider that lists its keys can verify a leaked one is live. */}
+                      {isListable(p.type)
+                        ? <span style={{ color: 'var(--a)' }}> · verifies key liveness</span>
+                        : <span style={{ color: 'var(--tx-dim)' }}> · connection only, cannot verify liveness</span>}
+                    </div>
+                  </div>
                 </button>
               ))}
             </>
