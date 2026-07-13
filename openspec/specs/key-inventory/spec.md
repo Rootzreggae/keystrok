@@ -2,9 +2,7 @@
 
 ## Purpose
 The ledger of tracked keys and the single rotation clock: when each key must be rotated, anchored to when it was actually at risk, never to guessed platform dates.
-
 ## Requirements
-
 ### Requirement: Rotation windows anchored to risk start
 The system SHALL compute one rotation window per key: `riskStart + ROTATION_DAYS[severity]` where `ROTATION_DAYS = {critical: 7, high: 30, medium: 60, low: 90}` (unknown severity reads as high). `riskStart` is discovery time (`foundAt`) unless an attested exposure date exists that is earlier and not in the future, in which case the earlier date wins. An exposure date can only make rotation more urgent, never later. `rotation-policy.ts` is the single source of these numbers.
 
@@ -39,3 +37,15 @@ The key drawer SHALL show at most one banner (worst truth wins: failed rotation 
 #### Scenario: one banner
 - **WHEN** a key is both rotation-failed and live-and-used
 - **THEN** only the failed-rotation banner renders; the worst truth wins and nothing is said twice
+
+### Requirement: One population, every number
+Every metric Keystrok renders SHALL count the same workspace-wide population. Operational counts (needs action, tracked, rotating) and hygiene metrics (SLA compliance, MTTR, open exposure days, trend) SHALL be computed instance-wide, never filtered to the signed-in user. Rotation urgency everywhere, including expiration alerts, SHALL anchor to the risk start (attested or git exposure date when earlier than discovery), never to discovery alone.
+
+#### Scenario: Home's two bands agree
+- **WHEN** a member opens Home in a workspace with several members' keys
+- **THEN** the operational band and the hygiene band count the same keys, so the numbers are comparable
+
+#### Scenario: exposure dates are honored everywhere
+- **WHEN** a key has an attested exposure date earlier than discovery
+- **THEN** every surface that states urgency, including alerts, uses it
+

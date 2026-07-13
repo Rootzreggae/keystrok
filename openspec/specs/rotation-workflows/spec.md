@@ -2,9 +2,7 @@
 
 ## Purpose
 Guided, operator-executed rotation runbooks with receipts. Keystrok recommends the order, gates the irreversible step, and verifies the outcome; it never rotates or revokes on its own.
-
 ## Requirements
-
 ### Requirement: Advisory, operator-gated runbooks
 Every workflow SHALL be manual/guided: no step is automated, every state change is a human click, and Keystrok's server-side actions are limited to recording status, gating completion, and reading liveness. Guided templates exist for Grafana, Datadog, New Relic, and Dynatrace; all other platforms get the generic template. Template choice keys off the key's type.
 
@@ -39,3 +37,18 @@ The completed-rotations ledger SHALL verdict each run from post-rotation evidenc
 #### Scenario: unverifiable provider
 - **WHEN** a rotation completes on a provider that cannot list keys
 - **THEN** the verdict reads 'Receipted by you', never 'verified dead'
+
+### Requirement: A finished rotation states the verdict it earned
+The completion view SHALL render the same evidence-derived verdict as the outcome ledger: a rotation whose old key is still live says so, a rotation on a provider that cannot verify says it was receipted but not verified, and only a liveness-verified revocation SHALL claim the exposure is closed. No screen SHALL assert that the old key was verified idle when no post-rotation evidence exists.
+
+#### Scenario: a failed rotation is not congratulated
+- **WHEN** a post-rotation liveness check still finds the old key live
+- **THEN** the completion view reports it, matching the ledger, instead of declaring the exposure closed
+
+### Requirement: Runbook copy matches runbook behavior
+The runbook SHALL describe only what Keystrok does: recommend the order, gate the irreversible step, and verify the outcome afterwards. It SHALL NOT claim to watch traffic continuously or to pre-fill verification checks, and SHALL NOT render actor chips for automated steps, since no step is automated. The advisory promise (Keystrok never rotates or revokes on its own) stays, because it is true.
+
+#### Scenario: no phantom automation
+- **WHEN** an operator reads any step
+- **THEN** the copy attributes the action to the operator and the recording to Keystrok, with no claim of automated checking
+

@@ -2,9 +2,7 @@
 
 ## Purpose
 Answer "is this leaked key still alive on its platform?" without ever holding the secret, and manage the platform connections that make that possible.
-
 ## Requirements
-
 ### Requirement: Zero-knowledge fingerprint matching
 Liveness SHALL match a leaked key's last-4 fingerprint (from the masked preview) against the keys a connected platform lists. Three states only: live, revoked, unknown. On a fingerprint collision the system fails toward live, never toward safe. The scanner's likelihood heuristics never map to liveness.
 
@@ -46,3 +44,11 @@ Test-before-connect SHALL be available to any member; re-testing and mutating a 
 #### Scenario: member tests before connecting
 - **WHEN** a member tests a platform credential
 - **THEN** the test runs; mutating or re-testing a connected platform requires admin
+
+### Requirement: Platforms disclose what they can verify
+The platforms surface SHALL state, per provider, whether connecting it enables liveness verification. Providers whose API exposes a matchable fingerprint (currently AWS and Datadog) SHALL be named as such; providers that cannot verify key liveness SHALL say so at connect time and in the empty state, rather than being listed as if they could.
+
+#### Scenario: a provider that cannot verify says so
+- **WHEN** a member connects a provider with no listable keys API
+- **THEN** the UI states that the connection cannot verify key liveness, and the key drawer's "cannot report usage" copy is corroborated rather than contradicted
+

@@ -2,9 +2,7 @@
 
 ## Purpose
 Before an operator commits to rotating a key, show what the rotation touches, built strictly from observed data plus labeled human assertions. Unknowns say they are unknown; the map never invents a consumer.
-
 ## Requirements
-
 ### Requirement: Evidence-only panels
 The radius SHALL derive: exposure sites from scan findings sharing the key's hash (deduped per file, falling back to the key's own location so sites never reads zero); deploy pipelines by path classification of those sites (.github/workflows, gitlab-ci, circleci, buildkite, Jenkinsfile, docker-compose, .tf/.tfvars), labeled "from repo scan"; people from git commit authorship, framed as context ("author of the exposing commit"), never blame.
 
@@ -39,3 +37,11 @@ The radius and everything downstream SHALL only observe, verify, and record. Key
 #### Scenario: no autonomous action
 - **WHEN** any radius state is reached
 - **THEN** Keystrok has changed nothing on the platform; every state change was a human click
+
+### Requirement: Counts and labels do not overstate
+Exposure-site counts SHALL NOT be double-counted: pipeline sites are a subset of exposure sites, and any summary that shows both SHALL make the subset relationship explicit. The `observed` label SHALL be reserved for evidence of a consumer's identity; aggregate platform last-used evidence SHALL be labeled as what it is (platform usage), never as an observed consumer.
+
+#### Scenario: the ledger cell does not inflate
+- **WHEN** a key has three exposure sites, one of which is a pipeline file
+- **THEN** the summary reads as three locations, not four
+
