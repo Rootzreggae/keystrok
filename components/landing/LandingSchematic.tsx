@@ -1,6 +1,7 @@
 'use client'
 
 import React from 'react'
+import Link from 'next/link'
 import { Icon } from '@/components/ds/Icon'
 
 const REPO_URL = 'https://github.com/Rootzreggae/keystrok'
@@ -63,6 +64,7 @@ function SchBrand() {
 }
 
 function SchBar({ v, authed }: { v: Variant; authed?: boolean }) {
+  const docs = <span className="cell end"><Link href="/docs">Docs</Link></span>
   const entry = authed
     ? <span className="cell end"><Icon name="arrow-right" size={14} /> <a href="/dashboard">Dashboard</a></span>
     : <span className="cell end"><Icon name="arrow-right" size={14} /> <a href="/auth/signin">Sign in</a></span>
@@ -72,6 +74,7 @@ function SchBar({ v, authed }: { v: Variant; authed?: boolean }) {
         <div className="wrap">
           <SchBrand />
           <span className="cell fill" />
+          {docs}
           {entry}
         </div>
       </header>
@@ -83,6 +86,7 @@ function SchBar({ v, authed }: { v: Variant; authed?: boolean }) {
         <SchBrand />
         <span className="cell">Key lifecycle instrument</span>
         <span className="cell fill" />
+        {docs}
         {entry}
       </div>
     </header>
@@ -389,7 +393,7 @@ function SchFooter() {
           <a href="https://nilsongaspar.omg.lol/" target="_blank" rel="noopener noreferrer">Nilson Gaspar</a>
         </span>
         <div className="links">
-          <a href="#fig-01">How it works</a><a href="#fig-03">Security</a><a href="/auth/signin">Sign in</a>
+          <a href="#fig-01">How it works</a><a href="#fig-03">Security</a><Link href="/docs">Docs</Link><a href="/auth/signin">Sign in</a>
         </div>
       </div>
     </footer>

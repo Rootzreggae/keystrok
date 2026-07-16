@@ -2,7 +2,7 @@
 
 Find exposed API keys in your code, track them, and rotate them safely. Keystrok is a self-hostable security tool for developers who want to get on top of leaked secrets without handing their keys to a third party.
 
-*Also mirrored on [Codeberg](https://codeberg.org/windgodfist/keystrok).*
+*Docs: [keystrok.dev/docs](https://keystrok.dev/docs) (also readable in-repo at [`docs/guide/`](docs/guide/)). Mirrored on [Codeberg](https://codeberg.org/windgodfist/keystrok).*
 
 **Advisory, never automated.** Keystrok ranks what actually needs attention and walks you through each rotation step, but it never rotates or revokes a key on its own. The irreversible actions stay in your hands. It also never claims to know a key's real age: every deadline is anchored to when a key was *discovered*, not a guessed creation date.
 

@@ -17,6 +17,7 @@
     "@types/nodemailer": "^7.0.1",
     "clsx": "^2.1.1",
     "lucide-react": "^0.543.0",
+    "marked": "^18.0.6",
     "next": "15.5.19",
     "next-auth": "^5.0.0-beta.29",
     "nodemailer": "^6.10.1",
