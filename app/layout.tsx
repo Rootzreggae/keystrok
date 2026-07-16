@@ -28,10 +28,31 @@ const plexMono = IBM_Plex_Mono({
   display: "swap",
 });
 
+// Social cards resolve against the instance's own URL, so a self-hosted
+// Keystrok unfurls as itself, not as keystrok.dev.
+const SITE_URL = process.env.NEXTAUTH_URL || "https://keystrok.dev";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: "Keystrok: the key lifecycle, instrumented",
   description:
     "Keystrok scans your code and platforms for exposed API keys, keeps one encrypted inventory, and guides safe rotation. Self-hostable.",
+  openGraph: {
+    title: "Keystrok: the key lifecycle, instrumented",
+    description:
+      "Find exposed API keys, see which are still live, and rotate them safely. Self-hosted, open source, MIT.",
+    url: "/",
+    siteName: "Keystrok",
+    type: "website",
+    images: [{ url: "/og.png", width: 1200, height: 630, alt: "Keystrok: the key lifecycle, instrumented" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Keystrok: the key lifecycle, instrumented",
+    description:
+      "Find exposed API keys, see which are still live, and rotate them safely. Self-hosted, open source, MIT.",
+    images: ["/og.png"],
+  },
 };
 
 export default function RootLayout({
