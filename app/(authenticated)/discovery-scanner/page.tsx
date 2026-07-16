@@ -84,12 +84,20 @@ export default function DiscoveryScreen() {
   const triaged = all.filter((f) => f.status === 'resolved' || f.status === 'dismissed').slice(0, 6)
 
   // Connected GitHub repos, so any of them can be (re)scanned any time, not
-  // just once during the connect wizard.
-  const { data: ghData } = useQuery<{ connected: boolean; sources: { connectionId: string; repos: { fullName: string }[] }[] }>({
+  // just once during the connect wizard. Grouped per connection so each source
+  // account carries its own disconnect affordance.
+  const { data: ghData } = useQuery<{ connected: boolean; sources: { connectionId: string; accountLogin: string; repos: { fullName: string }[] }[] }>({
     queryKey: ['github-repos'],
     queryFn: async () => { const r = await fetch('/api/github/repos'); if (!r.ok) throw new Error('repos'); return r.json() },
   })
-  const ghRepos = (ghData?.sources ?? []).flatMap((s) => s.repos.map((r) => ({ ...r, connectionId: s.connectionId })))
+  const ghSources = ghData?.sources ?? []
+  const repoTotal = ghSources.reduce((n, s) => n + s.repos.length, 0)
+  // Long installs (app on all repos) drown the rail; a local filter keeps it usable.
+  const [repoQ, setRepoQ] = useState('')
+  const q = repoQ.trim().toLowerCase()
+  const visSources = ghSources
+    .map((s) => ({ ...s, shown: q ? s.repos.filter((r) => r.fullName.toLowerCase().includes(q)) : s.repos }))
+    .filter((s) => s.shown.length > 0)
 
   // Poll scan status (always, while on this page) and sync the local `scanning`
   // flag to the server, so a scan started anywhere (e.g. the global connect
@@ -136,7 +144,10 @@ export default function DiscoveryScreen() {
   const runScan = useMutation({
     mutationFn: async () => {
       const tp = target.trim()
-      if (tp) localStorage.setItem('ks-scan-target', tp)
+      // No path, no request: the server-path scan reads the machine running
+      // Keystrok, and scanning it blind guaranteed a dead session on self-host.
+      if (!tp) throw new Error('Type a server path first — this scans the machine running Keystrok. For a repo, use Scan on a connected source instead.')
+      localStorage.setItem('ks-scan-target', tp)
       const r = await fetch('/api/discovery/scan', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: `Quick Scan - ${new Date().toLocaleString()}`, scanType: 'quick', options: opts, targetPath: tp || undefined }),
@@ -156,6 +167,21 @@ export default function DiscoveryScreen() {
     onSuccess: () => setScanning(true),
     onError: (e: Error) => alert(e.message),
   })
+
+  const disconnectSource = useMutation({
+    mutationFn: async (id: string) => {
+      const r = await fetch(`/api/sources/${id}`, { method: 'DELETE' })
+      if (!r.ok) throw new Error((await r.json()).error || 'Disconnect failed')
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['github-repos'] }),
+    onError: (e: Error) => alert(e.message),
+  })
+  const disconnect = (s: { connectionId: string; accountLogin: string; repos: unknown[] }) => {
+    // Honest about scope: this stops Keystrok using the source; it cannot
+    // uninstall the GitHub App — only GitHub settings can revoke that access.
+    if (!confirm(`Disconnect ${s.accountLogin}? Its ${s.repos.length} repo${s.repos.length === 1 ? '' : 's'} leave this list and stop re-scanning. Past findings and scan history stay. To fully revoke Keystrok's access, also uninstall the app in your GitHub settings.`)) return
+    disconnectSource.mutate(s.connectionId)
+  }
 
   // Native folder picker → scans the files the browser reads (no path typing).
   const [browsing, setBrowsing] = useState(false)
@@ -327,7 +353,12 @@ export default function DiscoveryScreen() {
               <div className="s">
                 {failed.errorMessage || (failed.status === 'cancelled' ? 'Stopped before it finished; findings below are from earlier scans.' : 'The scan did not finish. Findings below are from earlier scans.')}
               </div>
-              <button className="ks-btn ks-btn--sm" onClick={() => runScan.mutate()} disabled={scanning || runScan.isPending}>Run scan again</button>
+              {/* retry only when it can succeed: this button re-runs the
+                  server-path scan, which needs a path. Repo-scan failures
+                  retry from their own Scan button in the rail. */}
+              {target.trim() !== '' && (
+                <button className="ks-btn ks-btn--sm" onClick={() => runScan.mutate()} disabled={scanning || runScan.isPending}>Run scan again</button>
+              )}
             </div>
           )}
 
@@ -416,18 +447,33 @@ export default function DiscoveryScreen() {
               <span className="ks-panel__t">Sources</span>
               <span className="ks-panel__sub">last scan {lastScan}</span>
             </div>
-            {ghRepos.length > 0 && (
+            {repoTotal > 8 && (
+              <div className="ks-srcs__filter">
+                <input className="ks-input" value={repoQ} onChange={(e) => setRepoQ(e.target.value)} placeholder={`Filter ${repoTotal} repos…`} spellCheck={false} />
+              </div>
+            )}
+            {ghSources.length > 0 && (
               <div className="ks-srcs">
-                {ghRepos.map((r) => (
-                  <div className="ks-src" key={r.connectionId + r.fullName}>
-                    <Github size={13} className="ks-src__ico" />
-                    <div className="ks-src__body">
-                      <span className="ks-src__name" title={r.fullName}>{r.fullName}</span>
-                      <span className="ks-src__st">re-scans automatically</span>
+                {visSources.length === 0 && <div className="ks-srcs__none">No repos match “{repoQ.trim()}”.</div>}
+                {visSources.map((s) => (
+                  <div key={s.connectionId}>
+                    <div className="ks-srcgrp">
+                      <span className="ks-srcgrp__acct" title={s.accountLogin}>{s.accountLogin}</span>
+                      <span className="ks-srcgrp__n">{q ? `${s.shown.length} of ${s.repos.length}` : s.repos.length} repo{s.repos.length === 1 ? '' : 's'}</span>
+                      <button className="ks-srcgrp__off" disabled={disconnectSource.isPending} onClick={() => disconnect(s)} title={`Disconnect ${s.accountLogin}`}>Disconnect</button>
                     </div>
-                    <button className="ks-btn ks-btn--sm" disabled={scanning || scanRepo.isPending} onClick={() => scanRepo.mutate({ connectionId: r.connectionId, fullName: r.fullName })}>
-                      <Search size={12} /> Scan
-                    </button>
+                    {s.shown.map((r) => (
+                      <div className="ks-src" key={s.connectionId + r.fullName}>
+                        <Github size={13} className="ks-src__ico" />
+                        <div className="ks-src__body">
+                          <span className="ks-src__name" title={r.fullName}>{r.fullName}</span>
+                          <span className="ks-src__st">re-scans automatically</span>
+                        </div>
+                        <button className="ks-btn ks-btn--sm" disabled={scanning || scanRepo.isPending} onClick={() => scanRepo.mutate({ connectionId: s.connectionId, fullName: r.fullName })}>
+                          <Search size={12} /> Scan
+                        </button>
+                      </div>
+                    ))}
                   </div>
                 ))}
               </div>
