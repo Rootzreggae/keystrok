@@ -18,7 +18,7 @@ function calcVariant(): Variant {
   return 'lg'
 }
 
-// Mobile sticky request-access bar (replaces the design's install bar).
+// Mobile sticky self-host bar (replaces the design's install bar).
 function StickyCta() {
   return (
     <div
@@ -30,9 +30,9 @@ function StickyCta() {
       }}
     >
       <span style={{ fontFamily: 'var(--font-plex-mono), monospace', fontSize: 11, color: 'var(--ink, #7d93b8)' }}>
-        Invite-only beta
+        Free &amp; open source
       </span>
-      <a className="btn primary" href="#cta" style={{ textDecoration: 'none' }}>Request access</a>
+      <a className="btn primary" href="#cta" style={{ textDecoration: 'none' }}>Self-host it</a>
     </div>
   )
 }

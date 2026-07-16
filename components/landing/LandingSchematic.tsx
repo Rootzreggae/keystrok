@@ -2,14 +2,15 @@
 
 import React from 'react'
 import { Icon } from '@/components/ds/Icon'
-import { WaitlistForm } from './WaitlistForm'
+
+const REPO_URL = 'https://github.com/Rootzreggae/keystrok'
 
 /**
  * Keystrok landing: "schematic instrument" direction, ported from the design
  * handoff (design/reference/landing-schematic). Markup, class names, and
  * data-* hooks match the design's CSS (schematic.css/-bp.css) and motion
  * (motion.ts) exactly; the COPY is rewritten to describe the real product
- * (hosted + self-hostable, encrypted at rest, invite-only) rather than the
+ * (self-hostable, MIT, encrypted at rest) rather than the
  * handoff's placeholder open-source-CLI text.
  *
  * Variant-aware: renders a tailored layout per breakpoint (lg/md/sm).
@@ -99,7 +100,7 @@ function SchHero() {
             Self-host it on your own database.
           </p>
           <div className="actions">
-            <a className="btn primary" href="#cta"><Icon name="key" size={15} /> Request access</a>
+            <a className="btn primary" href={REPO_URL}><Icon name="github" size={15} /> Self-host it</a>
             <a className="btn" href="#fig-01">How it works</a>
           </div>
         </div>
@@ -324,7 +325,7 @@ function SchCredentials({ v }: { v: Variant }) {
 
 interface SpecRow { k: string; val: string; ok?: boolean }
 const DEPLOY_SPECS: SpecRow[] = [
-  { k: 'Auth', val: 'passwordless, invite-only' },
+  { k: 'Auth', val: 'passwordless magic-link' },
   { k: 'Encryption', val: 'AES-256-GCM at rest', ok: true },
   { k: 'Self-host', val: 'Docker + your Postgres', ok: true },
   { k: 'Teams', val: 'shared workspace, roles', ok: true },
@@ -367,11 +368,11 @@ function SchCta() {
         <div>
           <h2>Put your keys under instrumentation.</h2>
           <p className="sub" style={{ color: 'var(--ink)', fontFamily: 'var(--mono)', fontSize: 12, letterSpacing: '0.04em' }}>
-            Invite-only beta. Request access and we&apos;ll send a sign-in link.
+            Free and open source. Self-host it on your own Postgres in minutes.
           </p>
         </div>
         <div className="actions">
-          <WaitlistForm />
+          <a className="btn primary" href={REPO_URL}><Icon name="github" size={15} /> View on GitHub</a>
           <a className="btn" href="/auth/signin"><Icon name="arrow-right" size={14} /> Sign in</a>
         </div>
       </div>
