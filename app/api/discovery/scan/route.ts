@@ -9,6 +9,7 @@ import type { Finding, ScanResult, ScanOptions, FileInfo, FileScanResult } from 
 import { hashKey, hashIdentifier, maskApiKey, estimateKeyType, classifyKeyFormat } from '@/lib/crypto'
 import path from 'path'
 import os from 'os'
+import fs from 'fs'
 
 // Types for request validation
 interface ScanRequestBody {
@@ -146,8 +147,10 @@ async function processScanInBackground(sessionId: string, userId: string, config
       data: { status: 'running' }
     })
 
-    // Determine target path
-    const targetPath = config.targetPath || path.join(os.homedir(), 'Documents')
+    // Target path is guaranteed by the POST handler (no default: falling back
+    // to ~/Documents meant every pathless scan on a self-hosted container
+    // failed, since that folder doesn't exist there).
+    const targetPath = config.targetPath!
 
     // Validate path again
     const pathValidation = validateScanPath(targetPath)
@@ -533,9 +536,21 @@ export async function POST(request: NextRequest): Promise<NextResponse<ScanRespo
 
     const scanConfig = validation.data!
 
-    // Validate target path if provided
-    const targetPath = scanConfig.targetPath || path.join(os.homedir(), 'Documents')
-    const pathValidation = validateScanPath(targetPath)
+    // A server-path scan needs an explicit folder. There is no default: the
+    // old ~/Documents fallback pointed at a folder that doesn't exist on a
+    // self-hosted container, so every pathless scan was born dead.
+    if (!scanConfig.targetPath?.trim()) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'No folder to scan',
+          error: "This scan reads the filesystem of the server running Keystrok, and no folder was given. If your code lives in a Git repo, scan it from the Sources panel instead — that works everywhere."
+        },
+        { status: 400 }
+      )
+    }
+
+    const pathValidation = validateScanPath(scanConfig.targetPath)
 
     if (!pathValidation.isValid) {
       return NextResponse.json(
@@ -543,6 +558,19 @@ export async function POST(request: NextRequest): Promise<NextResponse<ScanRespo
           success: false,
           message: 'Invalid scan path',
           error: pathValidation.error
+        },
+        { status: 400 }
+      )
+    }
+
+    // Fail a nonexistent path NOW, at the click, instead of minting a scan
+    // session that settles as failed with an opaque message.
+    if (!fs.existsSync(pathValidation.normalizedPath)) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'Folder not found',
+          error: `That folder does not exist on the server: ${pathValidation.normalizedPath}. Paths here are read on the machine running Keystrok, not on your computer — for a repo, use the Sources panel instead.`
         },
         { status: 400 }
       )
