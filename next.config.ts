@@ -1,34 +1,9 @@
 import type { NextConfig } from "next";
 
-const isDev = process.env.NODE_ENV !== "production";
-
-/**
- * Content-Security-Policy.
- *
- * `script-src` keeps 'unsafe-inline' because Next.js injects inline hydration
- * scripts and we are not (yet) wiring nonces through middleware. That is the
- * next CSP hardening step. 'unsafe-eval' is dev-only (HMR / React refresh).
- * `style-src` allows 'unsafe-inline' for Tailwind's injected styles.
- * `connect-src` permits same-origin plus the dev websocket for HMR.
- * `frame-ancestors 'none'` (plus X-Frame-Options) blocks clickjacking.
- */
-const csp = [
-  "default-src 'self'",
-  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}`,
-  "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: blob:",
-  "font-src 'self' data:",
-  `connect-src 'self'${isDev ? " ws: wss:" : ""}`,
-  "object-src 'none'",
-  "base-uri 'self'",
-  // github.com is allowed so the GitHub App Manifest setup form can POST there.
-  "form-action 'self' https://github.com",
-  "frame-ancestors 'none'",
-  ...(isDev ? [] : ["upgrade-insecure-requests"]),
-].join("; ");
-
+// Content-Security-Policy moved to middleware.ts: it is nonce-based, so it
+// must be generated per request. The static headers below still apply
+// everywhere (including API routes and assets the middleware matcher skips).
 const securityHeaders = [
-  { key: "Content-Security-Policy", value: csp },
   {
     key: "Strict-Transport-Security",
     value: "max-age=63072000; includeSubDomains; preload",
@@ -57,6 +32,19 @@ const nextConfig: NextConfig = {
       {
         source: "/:path*",
         headers: securityHeaders,
+      },
+    ];
+  },
+  // First-party proxy for Umami analytics: content blockers block
+  // cloud.umami.is outright (most of our DevOps audience runs one), so the
+  // tracker script and its /api/send beacon are served from our own origin.
+  // The script derives its API root from its own src path, so the single
+  // /stats/* rewrite covers both.
+  async rewrites() {
+    return [
+      {
+        source: "/stats/:path*",
+        destination: "https://cloud.umami.is/:path*",
       },
     ];
   },

@@ -48,10 +48,11 @@ echo "== 2. Auth gate (unauthenticated must NOT get 200) =="
 # /api/test-email sends real mail, must be authenticated-only.
 code=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$BASE/api/test-email" -H 'Content-Type: application/json' -d '{"email":"x@y.com","testType":"send"}')
 if [ "$code" = "401" ]; then pass "/api/test-email (POST) -> 401"; else bad "/api/test-email returned $code (expected 401)"; fi
+# Keep in sync with app/api/ — a 404 here means the route was removed, not protected.
 PROTECTED=(
-  /api/platforms /api/keys /api/keys/stats /api/dashboard/stats
+  /api/platforms /api/keys /api/dashboard/stats
   /api/dashboard/summary /api/discovery/results /api/workflows
-  /api/workflows/stats /api/metrics/trends /api/activity/recent
+  /api/workflows/stats /api/activity/recent
   /api/platforms/risk-distribution
 )
 for route in "${PROTECTED[@]}"; do

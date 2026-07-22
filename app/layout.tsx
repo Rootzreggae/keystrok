@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import { Inter, Archivo, IBM_Plex_Mono } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
@@ -55,11 +56,14 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Per-request CSP nonce from middleware.ts. Reading headers() makes every
+  // route dynamic — accepted cost of dropping script-src 'unsafe-inline'.
+  const nonce = (await headers()).get("x-nonce") ?? undefined;
   return (
     // suppressHydrationWarning: the no-flash script below sets data-theme before
     // React hydrates, so the html attributes never match the server render.
@@ -67,7 +71,7 @@ export default function RootLayout({
       <head>
         {/* No-flash theme resolve: set data-theme before paint from the user's
             saved preference, else the system. Dark is the default identity. */}
-        <script dangerouslySetInnerHTML={{ __html: `(function(){try{var p=localStorage.getItem('ks-theme');var t=(p==='light'||p==='dark')?p:(window.matchMedia('(prefers-color-scheme: light)').matches?'light':'dark');document.documentElement.setAttribute('data-theme',t);}catch(e){}})();` }} />
+        <script nonce={nonce} dangerouslySetInnerHTML={{ __html: `(function(){try{var p=localStorage.getItem('ks-theme');var t=(p==='light'||p==='dark')?p:(window.matchMedia('(prefers-color-scheme: light)').matches?'light':'dark');document.documentElement.setAttribute('data-theme',t);}catch(e){}})();` }} />
       </head>
       <body
         className={`${inter.className} ${archivo.variable} ${plexMono.variable} antialiased`}
@@ -82,9 +86,10 @@ export default function RootLayout({
             keystrok deployment does; self-hosted builds ship no tracking). */}
         {process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID && (
           <Script
-            src="https://cloud.umami.is/script.js"
+            src="/stats/script.js"
             data-website-id={process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID}
             strategy="afterInteractive"
+            nonce={nonce}
           />
         )}
       </body>
