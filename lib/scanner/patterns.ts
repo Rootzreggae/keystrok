@@ -71,6 +71,22 @@ export const KEY_PATTERNS: KeyPattern[] = [
     }
   },
   {
+    name: 'Resend API Key',
+    platform: 'Resend',
+    keyType: 'resend_api_key',
+    // re_ then a random body, optionally with one inner underscore
+    // (re_XXXXXXXX_XXXXXXXXXXXXXXXXXXXXXXXX). The \b + entropy gate keeps
+    // re_-prefixed identifiers (re_run_id) out.
+    pattern: /\b(re_[a-zA-Z0-9]{6,}(?:_[a-zA-Z0-9]{10,})?)\b/g,
+    confidence: 0.9,
+    severity: 'high',
+    description: 'Resend API key - can send email as your domain',
+    examples: ['re_EXAMPLE'],
+    validationFn: (key: string) => {
+      return key.startsWith('re_') && key.length >= 20 && isRandomBody(key.slice(3))
+    }
+  },
+  {
     name: 'Stripe Secret Key (Test)',
     platform: 'Stripe',
     keyType: 'stripe_secret_test',
