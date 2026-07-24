@@ -9,37 +9,17 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    console.log('=== DEBUG: Promote finding endpoint called ===')
-
     // Next.js 15 requires awaiting params
     const { id } = await params
-    console.log('DEBUG: Finding ID:', id)
 
-    // Step 1: Check authentication
     const session = await auth()
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const userId = session.user.id
-    console.log('DEBUG: Using user ID:', userId)
 
-    // Step 2: Test database connection
     try {
-      const userCount = await prisma.user.count()
-      console.log('DEBUG: Database connection successful, user count:', userCount)
-    } catch (error) {
-      console.error('DEBUG: Database connection failed:', error)
-      return NextResponse.json(
-        { success: false, error: 'Database connection failed: ' + (error instanceof Error ? error.message : 'Unknown error') },
-        { status: 500 }
-      )
-    }
-
-    // Step 3: Look for the finding in LocalScanFinding table
-    try {
-      console.log('DEBUG: Searching for finding with ID:', id, 'and userId:', userId)
-
       const finding = await prisma.localScanFinding.findFirst({
         where: {
           id: id
@@ -63,26 +43,19 @@ export async function POST(
         }
       })
 
-      console.log('DEBUG: Finding query result:', finding)
-
       if (!finding) {
-        console.log('DEBUG: Finding not found')
         return NextResponse.json(
           { success: false, error: 'Finding not found' },
           { status: 404 }
         )
       }
 
-      console.log('DEBUG: Found finding:', finding)
-
       // Derive platform from keyType (since LocalScanFinding doesn't have platform field)
       const platform = finding.keyType === 'github' ? 'github' :
                       finding.keyType === 'google' ? 'google' :
                       finding.keyType.toLowerCase()
 
-      console.log('DEBUG: Successfully found LocalScanFinding, now promoting to DiscoveredKey')
-
-      // ACTUAL PROMOTION LOGIC: Create a DiscoveredKey from this LocalScanFinding
+      // Create a DiscoveredKey from this LocalScanFinding
       try {
         // Generate a descriptive key name
         const keyName = `${finding.keyType.toUpperCase()} API Key - ${new Date().toISOString().split('T')[0]}`
@@ -109,7 +82,6 @@ export async function POST(
         // Handle KeyHash - create or use existing one
         let keyHashId = finding.keyHashId
         if (!keyHashId) {
-          console.log('DEBUG: No KeyHash found for finding, creating a new one')
           // Create a new KeyHash since we don't have one
           const keyHash = await prisma.keyHash.create({
             data: {
@@ -123,9 +95,6 @@ export async function POST(
             }
           })
           keyHashId = keyHash.id
-          console.log('DEBUG: Created new KeyHash:', keyHashId)
-        } else {
-          console.log('DEBUG: Using existing KeyHash:', keyHashId)
         }
 
         // Create the DiscoveredKey with proper risk status
@@ -168,8 +137,6 @@ export async function POST(
           }
         })
 
-        console.log('DEBUG: Successfully created DiscoveredKey:', discoveredKey.id)
-
         return NextResponse.json({
           success: true,
           message: `${finding.severity.toUpperCase()} key added to inventory for immediate attention`,
@@ -194,7 +161,7 @@ export async function POST(
         })
 
       } catch (promotionError) {
-        console.error('DEBUG: Error during promotion:', promotionError)
+        console.error('Promote finding failed:', promotionError instanceof Error ? promotionError.message : promotionError)
         return NextResponse.json(
           { success: false, error: 'Failed to promote finding to inventory: ' + (promotionError instanceof Error ? promotionError.message : 'Unknown error') },
           { status: 500 }
@@ -202,7 +169,7 @@ export async function POST(
       }
 
     } catch (error) {
-      console.error('DEBUG: Database query failed:', error)
+      console.error('Promote finding query failed:', error instanceof Error ? error.message : error)
       return NextResponse.json(
         { success: false, error: 'Database query failed: ' + (error instanceof Error ? error.message : 'Unknown error') },
         { status: 500 }
@@ -210,7 +177,7 @@ export async function POST(
     }
 
   } catch (error) {
-    console.error('DEBUG: Unexpected error:', error)
+    console.error('Promote finding unexpected error:', error instanceof Error ? error.message : error)
     return NextResponse.json(
       {
         success: false,
