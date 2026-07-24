@@ -42,4 +42,15 @@ assert.equal(riskStart({ foundAt: ago(3), exposedAt: new Date(now.getTime() + 5 
 // A key found today but exposed 200d ago is deeply overdue even at 'low'.
 assert.equal(rotationStatus({ foundAt: riskStart({ foundAt: now, exposedAt: ago(200) }, now), severity: 'low' }, now), 'overdue')
 
+// --- manual registration: no policy branch needed ---
+// A manual key stores its registration time in foundAt, so the window simply
+// counts from registration...
+assert.equal(riskStart({ foundAt: ago(2), exposedAt: null }, now).getTime(), ago(2).getTime())
+assert.equal(rotationDueAt(riskStart({ foundAt: ago(2), exposedAt: null }, now), 'high').getTime(), ago(2).getTime() + 30 * DAY)
+// ...and a later hash-linked or attested exposure can only pull the anchor
+// EARLIER (a registered key that turns out to have leaked pre-registration),
+// never later (leaking after registration doesn't relax the clock).
+assert.equal(riskStart({ foundAt: ago(60), exposedAt: ago(90) }, now).getTime(), ago(90).getTime())
+assert.equal(riskStart({ foundAt: ago(60), exposedAt: ago(10) }, now).getTime(), ago(60).getTime())
+
 console.log('rotation-policy: all assertions passed')

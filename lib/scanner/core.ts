@@ -15,6 +15,7 @@ import type {
   ScannerConfig
 } from './types'
 import { ALL_PATTERNS } from './patterns'
+import { matchTrackedCandidate, type TrackedKeyCandidate } from './classify.ts'
 import { RiskAnalyzer } from './analyzer'
 import {
   getFileInfo,
@@ -39,6 +40,7 @@ export class SecurityScanner extends EventEmitter {
   private config: ScannerConfig
   private isScanning: boolean = false
   private shouldStop: boolean = false
+  private trackedKeys: TrackedKeyCandidate[] = []
 
   constructor(config?: Partial<ScannerConfig>) {
     super()
@@ -56,6 +58,14 @@ export class SecurityScanner extends EventEmitter {
       timeoutPerFile: 30000, // 30 seconds per file
       ...config
     }
+  }
+
+  /**
+   * Hashes of manually registered keys to link findings against (see
+   * lib/manual-keys.ts trackedKeyCandidates). Set before scanning.
+   */
+  public setTrackedKeys(candidates: TrackedKeyCandidate[]): void {
+    this.trackedKeys = candidates
   }
 
   /**
@@ -501,6 +511,16 @@ export class SecurityScanner extends EventEmitter {
             match.index || 0,
             entropy
           )
+
+          // Tracked-key linking: this is the only scope holding the raw value,
+          // so verify it against manual-key hashes here and carry only the ids
+          // forward. Persistence turns a linked finding into an exposure event
+          // on the tracked key instead of a triage entry.
+          const tracked = matchTrackedCandidate(key, this.trackedKeys)
+          if (tracked) {
+            finding.linkedKeyId = tracked.keyId
+            finding.linkedKeyHashId = tracked.keyHashId
+          }
 
           // Apply risk analysis if enabled
           if (this.config.enableContextAnalysis) {

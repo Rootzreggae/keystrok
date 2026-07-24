@@ -264,7 +264,7 @@ model DiscoveredKey {
   platformId        String?
   foundAt           DateTime           @default(now())
   exposedAt         DateTime?          // "at risk since"; overrides foundAt when earlier. See lib/rotation-policy riskStart().
-  exposedAtSource   String?            // 'user' | 'git' (null = unset). Human-entered beats git-derived.
+  exposedAtSource   String?            // 'user' | 'git' | 'scan' (null = unset). Human-entered beats git-derived beats scan-observed.
   platformCreatedAt DateTime?          // context only in v1; hygiene clock later. Not wired to urgency yet.
   liveStatus        String?            // 'live' | 'revoked' | 'unknown' (null = never checked). See lib/liveness.
   liveCheckedAt     DateTime?          // when liveStatus was last matched against a connected platform.
