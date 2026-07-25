@@ -15,7 +15,7 @@ import type {
   ScannerConfig
 } from './types'
 import { ALL_PATTERNS } from './patterns'
-import { matchTrackedCandidate, type TrackedKeyCandidate } from './classify.ts'
+import { matchTrackedCandidate, type TrackedKeyCandidate } from './tracked.ts'
 import { RiskAnalyzer } from './analyzer'
 import {
   getFileInfo,

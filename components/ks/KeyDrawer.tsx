@@ -28,6 +28,8 @@ export function KeyDrawer({ keyData, onClose }: { keyData: ApiKey | null; onClos
   const [dateDraft, setDateDraft] = useState('')
   const [savingDate, setSavingDate] = useState(false)
   const [dateErr, setDateErr] = useState<string | null>(null)
+  const [deleting, setDeleting] = useState(false)
+  const [deleteErr, setDeleteErr] = useState<string | null>(null)
 
   // Close on Escape.
   useEffect(() => {
@@ -49,6 +51,11 @@ export function KeyDrawer({ keyData, onClose }: { keyData: ApiKey | null; onClos
 
   const k = keyData
   const plat = platOf(k.platform)
+  // Language discipline: a manually registered key was never "found" — it is
+  // registered, tracked since birth, and implies no exposure until evidence
+  // exists. Scan vocabulary (found/discovered/exposed) is reserved for keys
+  // with actual exposure provenance.
+  const isManual = k.source === 'manual'
   const foundDate = new Date(k.created_at)
   const anchor = riskStart({ foundAt: foundDate, exposedAt: exposedAt ? new Date(exposedAt) : null })
   const hasExposure = anchor.getTime() < foundDate.getTime()
@@ -77,6 +84,26 @@ export function KeyDrawer({ keyData, onClose }: { keyData: ApiKey | null; onClos
       setDateErr(e instanceof Error ? e.message : 'Could not save')
     } finally {
       setSavingDate(false)
+    }
+  }
+
+  // Registered keys have no "edit the value": replacement is delete +
+  // re-register (the register drawer's own copy promises this works).
+  const deleteRecord = async () => {
+    if (!window.confirm('Delete this registered key record? The ledger entry and its hash are removed — the value itself was never stored. You can register it again any time.')) return
+    setDeleting(true)
+    setDeleteErr(null)
+    try {
+      const res = await fetch(`/api/keys/${k.id}`, { method: 'DELETE' })
+      if (!res.ok) {
+        const data = await res.json().catch(() => null)
+        throw new Error(res.status === 403 ? 'Only admins can delete records.' : data?.error || `Could not delete (${res.status})`)
+      }
+      await qc.invalidateQueries({ queryKey: ['keys'] })
+      onClose()
+    } catch (e) {
+      setDeleteErr(e instanceof Error ? e.message : 'Could not delete')
+      setDeleting(false)
     }
   }
 
@@ -151,15 +178,15 @@ export function KeyDrawer({ keyData, onClose }: { keyData: ApiKey | null; onClos
               </span>
             </div>
             <div className="ks-kv"><span className="k">Rotation window</span><span className="v" style={{ color: windowCell.color }}>{windowCell.txt}</span></div>
-            <div className="ks-kv"><span className="k">Found</span><span className="v">{foundAgo} days ago</span></div>
+            <div className="ks-kv"><span className="k">{isManual ? 'Registered' : 'Found'}</span><span className="v">{foundAgo} days ago{isManual ? ' · by you' : ''}</span></div>
             {k.last_used_at && (
               <div className="ks-kv"><span className="k">Last used</span><span className="v">{ago(k.last_used_at)} ago{k.last_used_source ? ` · ${k.last_used_source}` : ''}</span></div>
             )}
             <div className="ks-kv">
-              <span className="k">At risk since</span>
+              <span className="k">{isManual && !exposedAt ? 'Exposure' : 'At risk since'}</span>
               <span className="v">
-                {exposedAt ? exposedAt.slice(0, 10) : 'unknown'}
-                {exposedAt && <span style={{ color: 'var(--tx-dim)' }}> · {exposedSource === 'git' ? 'git' : 'you'}</span>}
+                {exposedAt ? exposedAt.slice(0, 10) : isManual ? 'none recorded' : 'unknown'}
+                {exposedAt && <span style={{ color: 'var(--tx-dim)' }}> · {exposedSource === 'git' ? 'git' : exposedSource === 'scan' ? 'scan' : 'you'}</span>}
                 {!editingDate && (
                   <button className="ks-br__miss" style={{ marginLeft: 8 }} onClick={() => { setDateDraft(exposedAt?.slice(0, 10) ?? ''); setDateErr(null); setEditingDate(true) }}>
                     {exposedAt ? 'edit' : 'set'}
@@ -182,7 +209,7 @@ export function KeyDrawer({ keyData, onClose }: { keyData: ApiKey | null; onClos
               </div>
             )}
             <div className="ks-drawer__note">
-              window: {sla} days from {hasExposure ? 'exposure' : 'discovery'} · Keystrok never sees a key&apos;s true creation or expiry date.
+              window: {sla} days from {hasExposure ? 'exposure' : isManual ? 'registration' : 'discovery'} · Keystrok never sees a key&apos;s true creation or expiry date.
             </div>
           </div>
 
@@ -199,14 +226,24 @@ export function KeyDrawer({ keyData, onClose }: { keyData: ApiKey | null; onClos
           </div>
         </div>
 
-        {startError && (
-          <div className="ks-drawer__err" role="alert">{startError}</div>
+        {(startError || deleteErr) && (
+          <div className="ks-drawer__err" role="alert">{startError || deleteErr}</div>
         )}
         <div className="ks-drawer__advisory">Advisory · Keystrok never rotates or revokes on its own.</div>
         <div className="ks-drawer__foot">
           <button className="ks-btn ks-btn--primary" style={{ flex: 1, justifyContent: 'center' }} onClick={startRotation} disabled={starting}>
             <RotateCw size={14} /> {starting ? 'Starting…' : k.rotation_failed ? 'Rotate again & revoke old key' : rotated ? 'Rotate again' : 'Start rotation'}
           </button>
+          {isManual && (
+            <button
+              className="ks-btn"
+              title="Delete this record — the value was never stored, so register again any time"
+              onClick={deleteRecord}
+              disabled={deleting}
+            >
+              {deleting ? 'Deleting…' : 'Delete'}
+            </button>
+          )}
           <button
             className="ks-btn"
             title="Ask the assistant about this key"

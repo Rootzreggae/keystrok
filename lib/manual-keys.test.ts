@@ -4,7 +4,8 @@
 // hash matching, and the static error messages the register route returns.
 import assert from 'node:assert/strict'
 import { createHash, randomBytes } from 'node:crypto'
-import { classifyPastedKey, matchTrackedCandidate, REGISTER_MESSAGES } from './scanner/classify.ts'
+import { classifyPastedKey, REGISTER_MESSAGES } from './scanner/classify.ts'
+import { matchTrackedCandidate } from './scanner/tracked.ts'
 
 // --- classification of recognized shapes ---
 // Fixtures are concatenated so neither Keystrok's own scanner nor GitHub push

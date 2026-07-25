@@ -191,27 +191,32 @@ export function BlastRadius({ keyId, keyPreview }: { keyId: string; keyPreview?:
 
   return (
     <>
-      <div className="ks-dsect">
-        <div className="ks-dsect__lrow">
-          <span className="ks-dsect__l" style={{ margin: 0 }}>Exposed in</span>
-          {primary?.filePath && (
-            <a className="ks-br__miss" href={`vscode://file${primary.filePath}${primary.line != null ? `:${primary.line}` : ''}`}>open file</a>
+      {/* No sites at all (a registered key that never leaked): render no
+          exposure-evidence section rather than an empty "Exposed in" header —
+          the radius must not imply evidence that does not exist. */}
+      {(primary || rest.length > 0) && (
+        <div className="ks-dsect">
+          <div className="ks-dsect__lrow">
+            <span className="ks-dsect__l" style={{ margin: 0 }}>Exposed in</span>
+            {primary?.filePath && (
+              <a className="ks-br__miss" href={`vscode://file${primary.filePath}${primary.line != null ? `:${primary.line}` : ''}`}>open file</a>
+            )}
+          </div>
+          {primary && (
+            <>
+              <div className="ks-code" style={{ marginTop: 12 }}>
+                {primary.line != null && <span className="ln">{primary.line}</span>}
+                const KEY = <span className="hit">&quot;{keyPreview ?? '••••'}&quot;</span>
+              </div>
+              <div className="ks-br__meta">
+                <b>{cleanLocation(primary.path)}</b>
+                {data.freshness.lastScanAt ? ` · scanned ${ago(data.freshness.lastScanAt)} ago` : ''} · remove this line after rotating
+              </div>
+            </>
           )}
+          {rest.map((s) => <SiteRow key={s.path} s={s} />)}
         </div>
-        {primary && (
-          <>
-            <div className="ks-code" style={{ marginTop: 12 }}>
-              {primary.line != null && <span className="ln">{primary.line}</span>}
-              const KEY = <span className="hit">&quot;{keyPreview ?? '••••'}&quot;</span>
-            </div>
-            <div className="ks-br__meta">
-              <b>{cleanLocation(primary.path)}</b>
-              {data.freshness.lastScanAt ? ` · scanned ${ago(data.freshness.lastScanAt)} ago` : ''} · remove this line after rotating
-            </div>
-          </>
-        )}
-        {rest.map((s) => <SiteRow key={s.path} s={s} />)}
-      </div>
+      )}
 
       <div className="ks-dsect">
         <div className="ks-dsect__lrow">

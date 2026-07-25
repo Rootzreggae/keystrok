@@ -14,7 +14,7 @@
 ## 3. Ledger and timeline honesty
 
 - [x] 3.1 Verify `DiscoveredKey.source` is unconstrained string in Prisma (no migration) and ledger queries/metrics include `manual`-sourced keys in the one population (key-inventory spec)
-- [ ] 3.2 Timeline: manual-source keys start at "registered" (no exposure implied); drawer copy reflects tracked-since-birth state
+- [x] 3.2 Timeline: manual-source keys start at "registered" (no exposure implied); drawer copy reflects tracked-since-birth state
 - [x] 3.3 Rotation policy: NO code change — manual keys record registration time in `foundAt` (Prisma default), which `riskStart()` already anchors on; add a test proving a manual key's window counts from registration and attested-exposure re-anchoring still applies
 - [x] 3.4 Docs: `docs/guide/faq.md` gains the honest duplicate limit (pasting a discovery-tracked key creates a separate entry; only manual-vs-manual duplicates are detectable)
 
@@ -25,9 +25,9 @@
 
 ## 5. UI entry point (design by Nilson)
 
-- [ ] 5.1 Nilson designs the registration flow (empty-state CTA + toolbar affordance, paste → masked-preview confirm step)
-- [ ] 5.2 Implement the designed flow against `POST /api/keys/register`
-- [ ] 5.3 Keys empty state gains the second door: "Register a key" alongside "Go to Discovery"
+- [x] 5.1 Nilson designs the registration flow (empty-state CTA + toolbar affordance, paste → masked-preview confirm step)
+- [x] 5.2 Implement the designed flow against `POST /api/keys/register`
+- [x] 5.3 Keys empty state gains the second door: "Register a key" alongside "Go to Discovery"
 
 ## 6. Verification
 

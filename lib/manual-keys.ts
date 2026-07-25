@@ -6,7 +6,8 @@
 import { prisma } from '@/lib/prisma'
 import { hashKey, verifyKeyHash, classifyKeyFormat } from '@/lib/crypto'
 import { riskStart, rotationDueAt } from '@/lib/rotation-policy'
-import { classifyPastedKey, type TrackedKeyCandidate } from '@/lib/scanner/classify'
+import { classifyPastedKey } from '@/lib/scanner/classify'
+import type { TrackedKeyCandidate } from '@/lib/scanner/tracked'
 import { alertTrackedKeyExposed } from '@/lib/alert-runner'
 
 // Severity → status for a key with NO exposure evidence: never 'compromised',

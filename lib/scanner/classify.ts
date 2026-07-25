@@ -1,11 +1,18 @@
 // The pure half of manual key registration: classify a pasted secret with the
-// same detection patterns Discovery uses, and verify raw scan values against
-// tracked manual-key hashes. No prisma import and .ts-extension relative
-// imports only, so the test can run it standalone
-// (node --experimental-strip-types lib/manual-keys.test.ts).
-import { createHash } from 'crypto'
+// same detection patterns Discovery uses. BROWSER-SAFE by design: no node
+// imports at all, so the register drawer can classify live on every keystroke
+// with zero network (the design's core interaction). Also no prisma and
+// .ts-extension relative imports only, so the test runs it standalone
+// (node --experimental-strip-types lib/manual-keys.test.ts). Hash matching
+// lives in ./tracked.ts (needs node crypto, server-only).
 import { ALL_PATTERNS, calculateEntropy } from './patterns.ts'
-import { maskApiKey } from '../crypto.ts'
+
+// Same output shape as crypto.maskApiKey, duplicated here (4 lines) so this
+// module stays free of the node 'crypto' import that file carries.
+function maskKey(v: string): string {
+  if (v.length <= 8) return '*'.repeat(v.length)
+  return v.slice(0, 4) + '*'.repeat(Math.max(v.length - 8, 3)) + v.slice(-4)
+}
 
 export interface PasteClassification {
   /** True when a platform-specific pattern matched; Generic matches don't count. */
@@ -67,7 +74,7 @@ export function classifyPastedKey(raw: string): PasteClassification | null {
       platform: best.platform,
       severity: best.severity,
       confidence: best.confidence,
-      preview: maskApiKey(bestKey),
+      preview: maskKey(bestKey),
       patternName: best.name,
     }
   }
@@ -83,29 +90,7 @@ export function classifyPastedKey(raw: string): PasteClassification | null {
     platform: '',
     severity: 'high',
     confidence: 0.3,
-    preview: maskApiKey(value),
+    preview: maskKey(value),
     patternName: 'manual',
   }
-}
-
-export interface TrackedKeyCandidate {
-  /** DiscoveredKey id of the manually registered key. */
-  keyId: string
-  keyHashId: string
-  hash: string
-  salt: string
-}
-
-/**
- * Verify a raw scan value against tracked manual-key hashes. Same construction
- * as crypto.hashKey() and scanner createSecureKeyHash(): sha256(salt + key).
- * Returns the matching candidate or null.
- * ponytail: O(manual keys) hash per scanned secret; index candidates by key
- * prefix if a workspace ever registers hundreds.
- */
-export function matchTrackedCandidate(key: string, candidates: TrackedKeyCandidate[]): TrackedKeyCandidate | null {
-  for (const c of candidates) {
-    if (createHash('sha256').update(c.salt + key).digest('hex') === c.hash) return c
-  }
-  return null
 }
