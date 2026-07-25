@@ -31,5 +31,5 @@
 
 ## 6. Verification
 
-- [ ] 6.1 Run the security battery (`keystrok-security-test`) — new route must reject unauthenticated access; secret-leak scan stays clean
+- [x] 6.1 Run the security battery (`keystrok-security-test`) — new route must reject unauthenticated access; secret-leak scan stays clean
 - [ ] 6.2 End-to-end dogfood: register the real `n8n-digest` Resend key on the homelab instance; confirm ledger entry, rotation window, and masked-only persistence
