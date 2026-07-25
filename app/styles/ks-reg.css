@@ -1,0 +1,93 @@
+/* Register-a-key drawer: the ledger's second door. From the single-key-workflow
+ * handoff (section C, spec-constrained), remapped onto the app token contract.
+ * Grammar matches the key drawer: right slide-in, mono caps labels, 2px
+ * controls, inset receipts. Color only for security state (amber = required /
+ * rate-limit, ok = confirmation). Scoped .kb like everything else. */
+
+.kb .ks-reg { position: fixed; top: 0; right: 0; bottom: 0; width: 480px; max-width: 92vw; z-index: 61; background: var(--bg-2); border-left: 1px solid var(--div-2); box-shadow: var(--overlay-shadow); display: flex; flex-direction: column; animation: ksslide .18s ease; }
+
+.kb .ks-reg__hd { flex: none; padding: 20px 26px 18px; border-bottom: 1px solid var(--div); position: relative; }
+.kb .ks-reg__steps { display: flex; align-items: center; gap: 7px; font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--tx-dim); margin-bottom: 14px; }
+.kb .ks-reg__steps .seg.on { color: var(--tx); font-weight: 600; }
+.kb .ks-reg__steps .seg.done { color: var(--tx-mut); }
+.kb .ks-reg__steps .bar { width: 16px; height: 1px; background: var(--div-2); }
+.kb .ks-reg__title { font-size: 18px; font-weight: 700; letter-spacing: -0.02em; color: var(--tx); }
+.kb .ks-reg__sub { font-size: 12.5px; color: var(--tx-mut); margin-top: 6px; line-height: 1.55; }
+
+.kb .ks-reg__body { flex: 1; min-height: 0; overflow-y: auto; padding: 20px 26px; display: flex; flex-direction: column; gap: 16px; }
+
+.kb .ks-reg__foot { flex: none; padding: 14px 26px; border-top: 1px solid var(--div); background: var(--inset); display: flex; align-items: center; gap: 12px; }
+.kb .ks-reg__foot .note { font-family: var(--font-mono); font-size: 10.5px; color: var(--tx-dim); line-height: 1.5; }
+.kb .ks-reg__foot .sp { flex: 1; }
+.kb .ks-reg__back { font-size: 12.5px; color: var(--tx-mut); cursor: pointer; white-space: nowrap; background: none; border: none; padding: 4px; font-family: inherit; }
+.kb .ks-reg__back:hover { color: var(--tx); }
+
+/* labels + paste box */
+.kb .ks-reg__lbl { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.07em; text-transform: uppercase; color: var(--tx-dim); margin-bottom: 6px; display: flex; align-items: baseline; gap: 8px; }
+.kb .ks-reg__lbl .opt { text-transform: none; letter-spacing: 0; opacity: 0.75; }
+.kb .ks-reg__lbl .req { font-size: 9px; letter-spacing: 0.05em; color: var(--warn-ink); }
+.kb .ks-reg__paste { width: 100%; box-sizing: border-box; font-family: var(--font-mono); font-size: 12.5px; color: var(--tx); background: var(--inset); border: 1px solid var(--div-2); border-radius: var(--r-ctl); padding: 14px; min-height: 74px; line-height: 1.55; word-break: break-all; resize: none; }
+.kb .ks-reg__paste::placeholder { color: var(--tx-dim); }
+.kb .ks-reg__paste:focus { outline: none; border-color: var(--div-3); }
+
+/* live detect card */
+.kb .ks-reg__detect { border: 1px solid var(--div); border-radius: var(--r-ctl); overflow: hidden; }
+.kb .ks-reg__detect-hd { display: flex; align-items: center; gap: 9px; padding: 10px 13px; background: var(--inset); border-bottom: 1px solid var(--div); font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.07em; text-transform: uppercase; color: var(--tx-mut); }
+.kb .ks-reg__detect-hd b { color: var(--tx); font-weight: 650; }
+.kb .ks-reg__detect-hd .r { margin-left: auto; text-transform: none; letter-spacing: 0; }
+.kb .ks-reg__row { display: flex; gap: 10px; padding: 8px 13px; font-size: 12px; border-bottom: 1px solid var(--div); }
+.kb .ks-reg__row:last-child { border-bottom: 0; }
+.kb .ks-reg__row .k { font-family: var(--font-mono); font-size: 10.5px; color: var(--tx-dim); width: 92px; flex: none; padding-top: 1px; }
+.kb .ks-reg__row .v { color: var(--tx); font-family: var(--font-mono); font-size: 11.5px; word-break: break-all; }
+.kb .ks-reg__row .v b { font-weight: 650; }
+
+/* fields */
+.kb .ks-reg__input { width: 100%; box-sizing: border-box; height: 34px; border: 1px solid var(--div-2); border-radius: var(--r-ctl); background: var(--panel); padding: 0 11px; font-size: 12.5px; color: var(--tx); font-family: var(--font-mono); }
+.kb .ks-reg__input:focus { outline: none; border-color: var(--div-3); }
+.kb .ks-reg__row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.kb .ks-reg__hint { font-size: 11px; color: var(--tx-dim); margin-top: 5px; line-height: 1.5; }
+.kb .ks-reg__hint b { color: var(--tx-mut); font-weight: 600; }
+
+/* confirm: persist card + receipt */
+.kb .ks-reg__receipt { border: 1px solid var(--div); border-radius: var(--r-ctl); overflow: hidden; }
+.kb .ks-reg__receipt-hd { padding: 10px 13px; background: var(--inset); border-bottom: 1px solid var(--div); font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.07em; text-transform: uppercase; color: var(--tx-dim); display: flex; }
+.kb .ks-reg__receipt-hd .r { margin-left: auto; text-transform: none; letter-spacing: 0; }
+.kb .ks-reg__rc { display: flex; gap: 10px; padding: 10px 13px; border-bottom: 1px solid var(--div); font-size: 12px; line-height: 1.55; color: var(--tx-2); }
+.kb .ks-reg__rc:last-child { border-bottom: 0; }
+.kb .ks-reg__rc .ic { flex: none; width: 15px; padding-top: 2px; color: var(--tx-mut); }
+.kb .ks-reg__rc .ic.no { color: var(--tx-dim); }
+.kb .ks-reg__rc b { font-weight: 650; color: var(--tx); }
+
+/* 429 banner */
+.kb .ks-reg__banner { display: flex; gap: 10px; align-items: flex-start; padding: 11px 13px; border: 1px solid var(--high-line); background: var(--high-dim); border-radius: var(--r-ctl); font-size: 12px; line-height: 1.55; color: var(--tx); }
+.kb .ks-reg__banner .ic { color: var(--warn-ink); flex: none; padding-top: 1px; }
+.kb .ks-reg__banner b { font-weight: 650; }
+.kb .ks-reg__banner .sub { font-size: 11px; color: var(--tx-mut); margin-top: 2px; }
+
+/* generic error (400/500): same shape, crit ink */
+.kb .ks-reg__banner--err { border-color: var(--crit-line); background: var(--crit-dim); }
+.kb .ks-reg__banner--err .ic { color: var(--crit); }
+
+/* 409 duplicate key card */
+.kb .ks-reg__dupkey { display: flex; align-items: center; gap: 11px; border: 1px solid var(--div); border-radius: var(--r-ctl); background: var(--inset); padding: 12px 14px; }
+.kb .ks-reg__dupkey > div { min-width: 0; }
+.kb .ks-reg__dupkey .nm { font-family: var(--font-mono); font-size: 12px; font-weight: 600; color: var(--tx); }
+.kb .ks-reg__dupkey .nm .mask { word-break: break-all; }
+.kb .ks-reg__dupkey .nm .mask { font-weight: 400; color: var(--tx-dim); font-size: 10.5px; margin-left: 6px; }
+.kb .ks-reg__dupkey .meta { font-size: 11px; color: var(--tx-mut); margin-top: 3px; }
+.kb .ks-reg__dupkey .sp { flex: 1; }
+.kb .ks-reg__prose { font-size: 11.5px; line-height: 1.6; color: var(--tx-mut); }
+
+/* manual provenance chip: dashed, mono, quiet — the ledger's "you did this" */
+.kb .ks-prov { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.04em; text-transform: uppercase; border: 1px dashed var(--div-3); color: var(--tx-mut); border-radius: 3px; padding: 1px 6px; white-space: nowrap; }
+
+/* landed: inline confirmation bar (not a toast) */
+.kb .ks-reg__landed { display: flex; align-items: center; gap: 10px; border: 1px solid var(--a-line); border-radius: var(--r-ctl); background: var(--a-dim); padding: 10px 14px; font-size: 12.5px; color: var(--tx); margin: 0 16px 4px; }
+.kb .ks-reg__landed .ok { color: var(--ok); display: flex; }
+.kb .ks-reg__landed .mono { font-family: var(--font-mono); font-size: 10.5px; color: var(--tx-mut); }
+.kb .ks-reg__landed .sp { flex: 1; }
+.kb .ks-reg__landed .lnk { font-size: 12px; color: var(--tx-mut); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; white-space: nowrap; background: none; border: none; padding: 0; font-family: inherit; }
+.kb .ks-reg__landed .lnk:hover { color: var(--tx); }
+
+/* empty-state extras: two doors + mono hint */
+.kb .ks-empty__hint { font-family: var(--font-mono); font-size: 10.5px; color: var(--tx-dim); margin-top: 14px; }

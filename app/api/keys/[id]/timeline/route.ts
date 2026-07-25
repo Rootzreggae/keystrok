@@ -20,7 +20,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   const key = await prisma.discoveredKey.findUnique({
     where: { id },
     select: {
-      platformCreatedAt: true, exposedAt: true, exposedAtSource: true, foundAt: true,
+      platformCreatedAt: true, exposedAt: true, exposedAtSource: true, foundAt: true, source: true,
       lastUsedAt: true, lastUsedSource: true, liveStatus: true, liveCheckedAt: true,
       rotatedAt: true, status: true, platform: true,
       rotationWorkflows: {
@@ -36,9 +36,12 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   const rotFailed = rotationFailed(key)
   // The exposure window: at-risk since exposedAt (else discovery) until rotated
   // (else open). A failed rotation keeps it open, the key is still exposed.
+  // A manually registered key with no exposure evidence has NO window at all:
+  // it was never exposed, and the timeline must not imply it was.
+  const isManualUnexposed = key.source === 'manual' && !key.exposedAt
   const windowStart = key.exposedAt ?? key.foundAt
   const windowEnd = rotFailed ? null : key.rotatedAt ?? null
-  const inWindow = (d: Date) => d.getTime() >= windowStart.getTime() && (windowEnd ? d.getTime() <= windowEnd.getTime() : true)
+  const inWindow = (d: Date) => !isManualUnexposed && d.getTime() >= windowStart.getTime() && (windowEnd ? d.getTime() <= windowEnd.getTime() : true)
   const usedDuring = !!key.lastUsedAt && inWindow(key.lastUsedAt)
 
   const ev: TLEvent[] = []
@@ -48,8 +51,15 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   }
 
   push(key.platformCreatedAt, 'created', 'Key created', 'mut', 'on the platform')
-  push(key.exposedAt, 'exposed', 'Exposed', 'crit', key.exposedAtSource === 'git' ? 'from git history' : 'attested')
-  push(key.foundAt, 'discovered', 'Discovered by Keystrok', 'high', 'committed in a tracked file · window opened')
+  push(key.exposedAt, 'exposed', 'Exposed', 'crit',
+    key.exposedAtSource === 'git' ? 'from git history' : key.exposedAtSource === 'scan' ? 'found in a scan' : 'attested')
+  // Registered keys were never "discovered": their record starts clean, at
+  // registration, with no exposure implied.
+  if (key.source === 'manual') {
+    push(key.foundAt, 'registered', 'Registered', 'mut', 'tracked since birth · rotation clock started')
+  } else {
+    push(key.foundAt, 'discovered', 'Discovered by Keystrok', 'high', 'committed in a tracked file · window opened')
+  }
   push(key.lastUsedAt, 'used', usedDuring ? 'Used while exposed' : 'Last used', usedDuring ? 'crit' : 'mut',
     usedDuring ? `during the exposure window${key.lastUsedSource ? ` · ${key.lastUsedSource}` : ''}` : (key.lastUsedSource ?? undefined))
   if (key.liveCheckedAt) {
@@ -78,6 +88,10 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   const days = Math.max(0, Math.floor(((windowEnd ?? now).getTime() - windowStart.getTime()) / 86400000))
   return NextResponse.json({
     events: ev,
-    window: { start: windowStart.toISOString(), end: windowEnd?.toISOString() ?? null, days, open: !windowEnd, usedDuring, rotationFailed: rotFailed },
+    // No window object for an unexposed registered key: the client renders no
+    // "Awaiting rotation / Still exposed" terminal state (nothing is exposed).
+    window: isManualUnexposed
+      ? null
+      : { start: windowStart.toISOString(), end: windowEnd?.toISOString() ?? null, days, open: !windowEnd, usedDuring, rotationFailed: rotFailed },
   })
 }

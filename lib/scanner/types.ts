@@ -65,6 +65,12 @@ export interface Finding {
   entropy?: number
   estimatedLength: number
   detectedAt: Date
+
+  // Set when the raw value verified against a manually registered key's salted
+  // hash (never the value itself): persistence attaches an exposure event to
+  // that DiscoveredKey instead of creating a triage finding.
+  linkedKeyId?: string
+  linkedKeyHashId?: string
 }
 
 export interface FileInfo {

@@ -148,6 +148,25 @@ export async function alertNewFindings(findings: { keyHashId: string; keyType: s
   return rows.length
 }
 
+/**
+ * One-shot alert when a scan finds a manually registered (tracked) key exposed
+ * in source. Same fire-once shape as alertNewFindings: deduped by
+ * (keyId, 'tracked_key_exposed'), the AlertEvent opens and closes at the same
+ * instant. keyId here is the DiscoveredKey id (the tracked key), not a KeyHash.
+ */
+export async function alertTrackedKeyExposed(key: { id: string; keyName: string; severity: string }, relativePath: string): Promise<boolean> {
+  const loaded = await loadChannel().catch(() => null)
+  if (!loaded) return false
+  const already = await prisma.alertEvent.findFirst({ where: { keyId: key.id, kind: 'tracked_key_exposed' }, select: { id: true } })
+  if (already) return false
+  const link = loaded.baseUrl ? ` ${loaded.baseUrl.replace(/\/$/, '')}/inventory` : ''
+  const text = `🔴 Keystrok: tracked key "${key.keyName}" found exposed in ${relativePath} (${key.severity})${link}`
+  const res = await send(loaded.cfg, text)
+  const now = new Date()
+  await prisma.alertEvent.create({ data: { keyId: key.id, kind: 'tracked_key_exposed', severity: key.severity, firedAt: now, resolvedAt: now, deliveredOk: res.ok } })
+  return true
+}
+
 export async function evaluateAllAlerts(): Promise<{ fired: number; resolved: number }> {
   try {
     const all = await prisma.discoveredKey.findMany({

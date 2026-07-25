@@ -7,6 +7,8 @@ import { SecurityScanner } from '@/lib/scanner/core'
 import { convertFindingToLocalScanFindingData, SCANNER_PRESETS } from '@/lib/scanner/index'
 import type { Finding, ScanResult, ScanOptions, FileInfo, FileScanResult } from '@/lib/scanner/types'
 import { hashKey, hashIdentifier, maskApiKey, estimateKeyType, classifyKeyFormat } from '@/lib/crypto'
+import { trackedKeyCandidates, attachExposureToTrackedKey } from '@/lib/manual-keys'
+import { gitExposureDate } from '@/lib/scan-runner'
 import path from 'path'
 import os from 'os'
 import fs from 'fs'
@@ -174,6 +176,9 @@ async function processScanInBackground(sessionId: string, userId: string, config
 
     // Create scanner with appropriate preset
     const scanner = new SecurityScanner(SCANNER_PRESETS[scannerPreset])
+    // Manual-key hashes for tracked-key linking; a load failure degrades to an
+    // unlinked scan rather than failing the session.
+    scanner.setTrackedKeys(await trackedKeyCandidates().catch(() => []))
 
     // Build file extensions filter based on options
     let fileExtensions: string[] | undefined = undefined
@@ -278,7 +283,10 @@ async function processScanInBackground(sessionId: string, userId: string, config
     const processedFindings = await processScanFindings(sessionId, userId, result.findings, result.fileScans)
 
     // Findings that failed to store are disclosed, never silently dropped.
-    const dropped = result.findings.length - processedFindings.length
+    // Linked findings became exposure events on tracked keys, not triage rows,
+    // so they don't count as dropped.
+    const linked = result.findings.filter(f => f.linkedKeyId).length
+    const dropped = result.findings.length - processedFindings.length - linked
 
     // Mark scan as completed
     await prisma.scanSession.update({
@@ -325,6 +333,20 @@ async function processScanFindings(sessionId: string, userId: string, findings: 
   for (const finding of findings) {
     const fileInfo = fileInfoByPath.get(finding.filePath)
     try {
+      // A tracked (manually registered) key leaked into source: exposure event
+      // on the existing key, never an unrelated triage finding.
+      if (finding.linkedKeyId && finding.linkedKeyHashId) {
+        const gitDate = fileInfo?.isGitTracked ? await gitExposureDate(finding.filePath, finding.lineNumber) : null
+        await attachExposureToTrackedKey({
+          keyId: finding.linkedKeyId,
+          keyHashId: finding.linkedKeyHashId,
+          relativePath: finding.relativePath,
+          lineNumber: finding.lineNumber,
+          gitDate,
+        })
+        continue
+      }
+
       // Create a unique identifier for this finding for deduplication.
       // Deterministic hash (no salt) so the same finding hashes the same way on
       // every scan, the salted hashKey() minted a fresh hash each time, which

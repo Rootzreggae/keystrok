@@ -8,6 +8,7 @@ import { SecurityScanner } from '@/lib/scanner/core'
 import { convertFindingToLocalScanFindingData, SCANNER_PRESETS } from '@/lib/scanner/index'
 import type { Finding, ScanResult, ScanOptions, FileInfo, FileScanResult } from '@/lib/scanner/types'
 import { hashIdentifier, classifyKeyFormat } from '@/lib/crypto'
+import { trackedKeyCandidates, attachExposureToTrackedKey } from '@/lib/manual-keys'
 import path from 'path'
 import os from 'os'
 import { execFile } from 'child_process'
@@ -23,7 +24,7 @@ const pexec = promisify(execFile)
  * ponytail: one `git blame` per finding; fine for now, batch by file if a huge
  * repo makes scans slow. Uses last-touch of the line as a proxy for introduction.
  */
-async function gitExposureDate(filePath: string, line: number): Promise<Date | null> {
+export async function gitExposureDate(filePath: string, line: number): Promise<Date | null> {
   try {
     const { stdout } = await pexec(
       'git', ['blame', '-L', `${line},${line}`, '--porcelain', '--', filePath],
@@ -99,6 +100,9 @@ export async function runScanSession(sessionId: string, userId: string, config: 
     else if (config.scanType === 'full') scannerPreset = 'THOROUGH'
 
     const scanner = new SecurityScanner(SCANNER_PRESETS[scannerPreset])
+    // Manual-key hashes for tracked-key linking; a load failure degrades to an
+    // unlinked scan rather than failing the session.
+    scanner.setTrackedKeys(await trackedKeyCandidates().catch(() => []))
 
     let fileExtensions: string[] | undefined = undefined
     if (!config.options.source_code) {
@@ -159,7 +163,10 @@ export async function runScanSession(sessionId: string, userId: string, config: 
     const stored = await storeScanFindings(sessionId, userId, result.findings, result.fileScans)
 
     // Findings that failed to store are disclosed, never silently dropped.
-    const dropped = result.findings.length - stored.length
+    // Linked findings became exposure events on tracked keys, not triage rows,
+    // so they don't count as dropped.
+    const linked = result.findings.filter((f) => f.linkedKeyId).length
+    const dropped = result.findings.length - stored.length - linked
     await prisma.scanSession.update({
       where: { id: sessionId },
       data: {
@@ -191,6 +198,20 @@ export async function storeScanFindings(sessionId: string, userId: string, findi
   for (const finding of findings) {
     const fileInfo = fileInfoByPath.get(finding.filePath)
     try {
+      // A tracked (manually registered) key leaked into source: exposure event
+      // on the existing key, never an unrelated triage finding.
+      if (finding.linkedKeyId && finding.linkedKeyHashId) {
+        const gitDate = fileInfo?.isGitTracked ? await gitExposureDate(finding.filePath, finding.lineNumber) : null
+        await attachExposureToTrackedKey({
+          keyId: finding.linkedKeyId,
+          keyHashId: finding.linkedKeyHashId,
+          relativePath: finding.relativePath,
+          lineNumber: finding.lineNumber,
+          gitDate,
+        })
+        continue
+      }
+
       const findingIdentifier = `${finding.filePath}:${finding.lineNumber}:${finding.detectionRule}:${finding.keyPreview}`
       const keyHash = hashIdentifier(findingIdentifier)
       const salt = ''

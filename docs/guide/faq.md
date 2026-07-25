@@ -22,6 +22,10 @@ Metadata only: key names, platforms, severities, deadlines, liveness verdicts, f
 
 A masked preview (first and last few characters) and a hash for deduplication. Never the full value; there is no "reveal" because there is nothing to reveal. Platform credentials you connect (for liveness checks) are stored encrypted with AES-256-GCM using your `ENCRYPTION_KEY`.
 
+## If I register a key by paste, can I register it twice?
+
+Not the same key twice by paste: registration checks your paste against the hashes of other manually registered keys and refuses a twin. But here is the honest limit: a key that entered the ledger through Discovery **cannot** be duplicate-checked, because Keystrok never kept its raw value (there is nothing to compare a paste against). Pasting a key that Discovery already tracks creates a second, unlinked ledger entry. If you spot a twin, delete one. The reverse direction does work: a scan that finds a manually registered key in your code links to the tracked key and records it as an exposure, instead of opening a new finding.
+
 ## Does Keystrok ever write to my repos?
 
 No. Repo scans are shallow clones into a temp directory, read, then deleted. The GitHub App asks for read-only contents access, so GitHub enforces this independently of our word.

@@ -18,7 +18,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   const key = await prisma.discoveredKey.findUnique({
     where: { id },
     select: {
-      keyHashId: true, location: true, platform: true, foundAt: true, keyName: true,
+      keyHashId: true, location: true, platform: true, foundAt: true, keyName: true, source: true, exposedAt: true,
       liveStatus: true, liveCheckedAt: true, lastUsedAt: true, lastUsedSource: true,
       breakAcceptedAt: true, breakAcceptedBy: true, breakAcceptedLastUsedAt: true,
     },
@@ -53,7 +53,11 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     if (!lastScanAt || f.createdAt > lastScanAt) lastScanAt = f.createdAt
   }
   // A key promoted without linked findings still has its own finding location.
-  if (byPath.size === 0 && key.location)
+  // NOT for an unexposed manual key: its location ("registered by paste") is
+  // provenance, not an exposure site — it was never found in code, and the
+  // radius must not invent evidence.
+  const manualUnexposed = key.source === 'manual' && !key.exposedAt
+  if (byPath.size === 0 && key.location && !manualUnexposed)
     byPath.set(key.location, { path: key.location, filePath: null, line: null, foundAt: key.foundAt })
 
   const all = [...byPath.values()]

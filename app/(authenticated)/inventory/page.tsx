@@ -3,10 +3,11 @@
 import { useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { useQuery } from '@tanstack/react-query'
-import { Search, Key, Clock, SlidersHorizontal, Check } from 'lucide-react'
+import { Search, Key, KeyRound, Clock, SlidersHorizontal, Check } from 'lucide-react'
 import { Mark, Dot } from '@/components/ks'
 import { KeyDrawer } from '@/components/ks/KeyDrawer'
 import { KeysTimeline } from '@/components/ks/KeysTimeline'
+import { RegisterKeyDrawer, type RegisteredKey } from '@/components/ks/RegisterKeyDrawer'
 import { foundAgoDays, slaUsedPct } from '@/lib/rotation-policy'
 import { type ApiKey, platOf, SEVL, sevColor, displayName, urgency, needsAction, cleanLocation, anchorOf } from '@/lib/keys-display'
 
@@ -30,6 +31,10 @@ export default function KeysScreen() {
   const [filterOpen, setFilterOpen] = useState(false)
   const [sevSet, setSevSet] = useState<Set<string>>(new Set())
   const [selected, setSelected] = useState<ApiKey | null>(null)
+  // The ledger's second door: register-by-paste drawer + the landed receipt
+  // bar it leaves behind (server truth, not a toast).
+  const [regOpen, setRegOpen] = useState(false)
+  const [landed, setLanded] = useState<RegisteredKey | null>(null)
   const toggleSev = (s: string) => setSevSet((p) => { const n = new Set(p); n.has(s) ? n.delete(s) : n.add(s); return n })
 
   const { data, isLoading } = useQuery<ApiKey[]>({
@@ -51,6 +56,19 @@ export default function KeysScreen() {
     .filter((k) => !overdueOnly || urgency(k).overdue)
     .filter((k) => sevSet.size === 0 || sevSet.has((k.severity ?? '').toLowerCase()))
 
+  const registerDrawer = (
+    <RegisterKeyDrawer
+      open={regOpen}
+      onClose={() => setRegOpen(false)}
+      onRegistered={(k) => { setLanded(k); setRegOpen(false) }}
+      onViewKey={(id) => {
+        setRegOpen(false)
+        const k = keys.find((x) => x.id === id)
+        if (k) setSelected(k)
+      }}
+    />
+  )
+
   if (!isLoading && keys.length === 0) {
     return (
       <div className="ks-keys">
@@ -60,15 +78,22 @@ export default function KeysScreen() {
             <span className="ks-empty__ico"><Key size={26} strokeWidth={1.75} /></span>
             <div className="ks-empty__t">No keys tracked yet</div>
             <div className="ks-empty__s">
-              The ledger fills as you promote findings from Discovery. Each promoted key starts its rotation
-              clock the moment it lands here, anchored to when it was found, never a creation or expiry date.
+              Keys arrive two ways: promoted from Discovery findings, or registered here by hand — vendor
+              keys no scan will ever see. Any member can register one.
             </div>
-            <a href="/discovery-scanner" className="ks-btn ks-btn--primary" style={{ marginTop: 18, textDecoration: 'none' }}>
-              <Search size={14} /> Go to Discovery
-            </a>
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'center', marginTop: 18 }}>
+              <a href="/discovery-scanner" className="ks-btn ks-btn--primary" style={{ textDecoration: 'none' }}>
+                <Search size={14} /> Go to Discovery
+              </a>
+              <button className="ks-btn" onClick={() => setRegOpen(true)}>
+                <KeyRound size={14} /> Register a key
+              </button>
+            </div>
+            <div className="ks-empty__hint">registered keys are tracked since birth — same ledger, same clock</div>
           </div>
           </div>
         </div>
+        {registerDrawer}
       </div>
     )
   }
@@ -106,6 +131,9 @@ export default function KeysScreen() {
           </button>
         )}
         <div className="ks-keys__filter">
+          <button className="ks-btn ks-btn--sm" onClick={() => setRegOpen(true)}>
+            <KeyRound size={13} /> Register a key
+          </button>
           <div className="ks-fpop__wrap">
             <button className="ks-btn ks-btn--sm" onClick={() => setFilterOpen((v) => !v)}>
               <SlidersHorizontal size={13} /> Filter{sevSet.size ? ` · ${sevSet.size}` : ''}
@@ -129,6 +157,16 @@ export default function KeysScreen() {
         </div>
       </div>
 
+      {landed && (
+        <div className="ks-reg__landed" style={{ marginTop: 14 }}>
+          <span className="ok"><Check size={14} /></span>
+          {displayName(landed.keyName)} registered
+          <span className="mono">rotation due {new Date(landed.rotationDueAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} · from the server&apos;s receipt</span>
+          <span className="sp" />
+          <a className="lnk" href="/activity" style={{ textDecoration: 'underline' }}>View receipt in Activity</a>
+          <button className="lnk" aria-label="Dismiss" onClick={() => setLanded(null)}>dismiss</button>
+        </div>
+      )}
       <div className="ks-keys__body">
         {lens === 'timeline' ? (
           <KeysTimeline keys={rows} onSelect={setSelected} />
@@ -141,7 +179,7 @@ export default function KeysScreen() {
                   <th style={{ width: 130 }}>Platform</th>
                   <th style={{ width: 120 }}>Severity</th>
                   <th style={{ width: 130 }}>Liveness</th>
-                  <th style={{ width: 90 }}>Found</th>
+                  <th style={{ width: 120 }}>Tracked</th>
                   <th style={{ width: 120 }}>Radius</th>
                   <th style={{ width: 200 }}>Rotation window</th>
                 </tr>
@@ -160,12 +198,16 @@ export default function KeysScreen() {
                       {/* severity edge tick: 3px, full row height */}
                       <td style={{ boxShadow: `inset 3px 0 0 ${sevColor(k.severity)}` }}>
                         <div className="ks-tbl__name">{displayName(k.name)}</div>
-                        <div className="ks-tbl__src" style={{ marginTop: 4 }}>{cleanLocation(k.location || k.source)}</div>
+                        {/* Provenance line: scanned keys show where they were found;
+                            manual keys were never found anywhere — the chip says who. */}
+                        {k.source === 'manual'
+                          ? <div style={{ marginTop: 5 }}><span className="ks-prov">manual · you</span></div>
+                          : <div className="ks-tbl__src" style={{ marginTop: 4 }}>{cleanLocation(k.location || k.source)}</div>}
                       </td>
                       <td><span className="ks-tbl__sev"><Mark>{plat.code}</Mark> {plat.label}</span></td>
                       <td><span className="ks-tbl__sev"><Dot sev={k.severity as 'critical'} />{SEVL[k.severity] ?? k.severity}</span></td>
                       <td>{livenessPill(k)}</td>
-                      <td><span className="ks-tbl__u" style={{ color: 'var(--tx-mut)' }}>{foundAgo}d ago</span></td>
+                      <td><span className="ks-tbl__u" style={{ color: 'var(--tx-mut)' }}>{k.source === 'manual' ? 'registered' : 'found'} {foundAgo}d ago</span></td>
                       {/* radius summary: what rotating touches; crit ink only for the
                           hold signal (in use with nothing mapped). Asserting lifts it. */}
                       <td>
@@ -201,6 +243,7 @@ export default function KeysScreen() {
       </div>
 
       <KeyDrawer keyData={selected} onClose={() => setSelected(null)} />
+      {registerDrawer}
     </div>
   )
 }
