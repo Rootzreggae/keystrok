@@ -18,10 +18,26 @@ const ROTATION_DAYS: Record<Severity, number> = {
   low: 90,
 }
 
+// Days of advance notice before rotationDueAt, by severity. Scaled to the
+// window above, not a flat number: 2 of a critical's 7 days is proportionally
+// louder than 10 of a low's 90, because a short window has less slack to
+// absorb a slow response.
+const REMINDER_LEAD_DAYS: Record<Severity, number> = {
+  critical: 2,
+  high: 5,
+  medium: 7,
+  low: 10,
+}
+
 const DAY_MS = 1000 * 60 * 60 * 24
 
 function bandDays(severity: string): number {
   return ROTATION_DAYS[severity?.toLowerCase() as Severity] ?? ROTATION_DAYS.high
+}
+
+/** Days of advance notice before the rotation deadline, by severity. */
+export function reminderLeadDays(severity: string): number {
+  return REMINDER_LEAD_DAYS[severity?.toLowerCase() as Severity] ?? REMINDER_LEAD_DAYS.high
 }
 
 /**

@@ -4,9 +4,9 @@
 // webhook via thin adapters, no SDK: both are "POST JSON to an HTTPS URL".
 // See Obsidian "Keystrok — Alerting (Spec)".
 import { isRecentlyUsed, rotationFailed } from './liveness.ts'
-import { riskStart, daysUntilDue } from './rotation-policy.ts'
+import { riskStart, daysUntilDue, reminderLeadDays } from './rotation-policy.ts'
 
-export type AlertKind = 'live_and_used' | 'rotation_failed' | 'sla_crossed'
+export type AlertKind = 'live_and_used' | 'rotation_failed' | 'sla_crossed' | 'due_soon'
 export type ChannelType = 'telegram' | 'webhook' | 'email'
 
 export interface AlertableKey {
@@ -48,9 +48,16 @@ export function incidentFor(k: AlertableKey, now: Date = new Date()): Incident |
   // deadline. A standing condition (no freshness gate), from stored dates only,
   // which is exactly why it needs the scheduler, an on-check run may never happen.
   if (k.foundAt && !k.rotatedAt) {
-    const overdueBy = -daysUntilDue(riskStart({ foundAt: k.foundAt, exposedAt: k.exposedAt }, now), k.severity, now)
-    if (overdueBy > 0) {
-      return { kind: 'sla_crossed', severity: k.severity === 'critical' ? 'critical' : 'high', detail: `past its rotation deadline by ${overdueBy}d and not yet rotated.` }
+    const dueIn = daysUntilDue(riskStart({ foundAt: k.foundAt, exposedAt: k.exposedAt }, now), k.severity, now)
+    if (dueIn < 0) {
+      return { kind: 'sla_crossed', severity: k.severity === 'critical' ? 'critical' : 'high', detail: `past its rotation deadline by ${-dueIn}d and not yet rotated.` }
+    }
+    // Advance notice, bottom of the precedence: still time, window closing.
+    // The lead scales with the severity band (rotation-policy owns the table).
+    // dueIn 0 (due today) intentionally fires neither: the reminder's premise
+    // is "you still have time", and tomorrow sla_crossed takes over anyway.
+    if (dueIn > 0 && dueIn <= reminderLeadDays(k.severity)) {
+      return { kind: 'due_soon', severity: k.severity, detail: `rotation due in ${dueIn}d.` }
     }
   }
   return null
@@ -59,16 +66,19 @@ export function incidentFor(k: AlertableKey, now: Date = new Date()): Incident |
 /** Promoted key names are verbose ("AWS_ACCESS_KEY Key - Found in ..."); bare name. */
 const bareName = (name: string) => name.split(/ Key | - /)[0]
 
-/** Human summary line shared by every channel. */
+/** Human summary line shared by every channel. A reminder is advance notice,
+ *  not an incident page, so it doesn't wear the red dot. */
 export function summaryText(k: AlertableKey, inc: Incident, baseUrl?: string): string {
   const link = baseUrl ? ` ${baseUrl.replace(/\/$/, '')}/inventory?key=${k.id}` : ''
-  return `🔴 Keystrok: ${bareName(k.keyName)} (${k.platform}) — ${inc.detail}${link}`
+  const icon = inc.kind === 'due_soon' ? '🟡' : '🔴'
+  return `${icon} Keystrok: ${bareName(k.keyName)} (${k.platform}) — ${inc.detail}${link}`
 }
 
 /** Recovery summary when a key leaves an alert state. */
 export function recoveryText(k: AlertableKey, kind: AlertKind, baseUrl?: string): string {
   const why = kind === 'rotation_failed' ? 'rotation confirmed, key no longer live'
     : kind === 'sla_crossed' ? 'rotated, back inside its window'
+    : kind === 'due_soon' ? 'rotated ahead of its deadline'
     : 'no longer live / not in use'
   const link = baseUrl ? ` ${baseUrl.replace(/\/$/, '')}/inventory?key=${k.id}` : ''
   return `✅ Keystrok: ${bareName(k.keyName)} (${k.platform}) resolved — ${why}${link}`

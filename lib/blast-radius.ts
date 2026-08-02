@@ -2,8 +2,9 @@
 // data we actually hold (scan findings, git history, platform liveness). We
 // never invent a consumer inventory; when consumers are unknown we say so.
 // ponytail: observed caller identity (CloudTrail-class) is a separate lane.
-import { isListable, isRecentlyUsed, providerOf } from '@/lib/liveness'
-import { hasTemplate } from '@/lib/workflow-templates'
+// relative + .ts so the strip-types test runner can resolve them (aliases break it)
+import { isListable, isRecentlyUsed, providerOf } from './liveness.ts'
+import { hasTemplate } from './workflow-templates.ts'
 
 export type RadiusTone = 'ok' | 'warn' | 'crit'
 export interface RadiusCheck {

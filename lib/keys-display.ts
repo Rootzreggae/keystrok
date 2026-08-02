@@ -1,5 +1,6 @@
 // Shared display helpers for the key ledger (Keys + Home). Pure, client-safe.
-import { slaDays, foundAgoDays } from '@/lib/rotation-policy'
+// relative + .ts so the strip-types test runner can resolve it (aliases break it)
+import { slaDays, foundAgoDays } from './rotation-policy.ts'
 
 export interface ApiKey {
   id: string

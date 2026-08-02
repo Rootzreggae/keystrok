@@ -17,7 +17,8 @@ export type LiveStatus = 'live' | 'revoked' | 'unknown'
 // providerOf/isListable live in keys-display (client-safe, no node built-ins
 // anywhere in its graph) so client components can use them; re-exported here
 // for all the server-side callers.
-export { providerOf, isListable } from '@/lib/keys-display'
+// relative + .ts so the strip-types test runner can resolve it (aliases break it)
+export { providerOf, isListable } from './keys-display.ts'
 
 /** Last-4 fingerprint from a masked preview ("sk_t********wxyz" -> "wxyz"). */
 export function last4(preview: string | null | undefined): string | null {
