@@ -34,6 +34,12 @@ const maskVal = (p?: string) => {
   const m = p.match(/^(.+?)[•*.]{2,}(.+)$/)
   return m ? `${m[1]}${'•'.repeat(8)}${m[2]}` : p
 }
+// The scan engine's failure strings are for logs; the operator gets what
+// happened and the way out. Unrecognized messages pass through untouched.
+const humanScanError = (m?: string | null) =>
+  m && /target path does not exist|invalid scan options/i.test(m)
+    ? 'This scan pointed at a folder that does not exist on the machine running Keystrok. Server-path scans read the Keystrok host, not your computer. Connect a Git source, or pick a real folder under "Scan a local folder".'
+    : m
 // path lives only in the group header; split so the dir truncates and the filename never does.
 const splitPath = (p: string) => { const c = cleanLocation(p); const i = c.lastIndexOf('/'); return i < 0 ? { dir: '', file: c } : { dir: c.slice(0, i + 1), file: c.slice(i + 1) } }
 
@@ -51,6 +57,7 @@ interface ScanSessionView {
   totalFiles?: number
   scannedFiles?: number
   findingsCount?: number
+  completedAt?: string
   errorMessage?: string | null
 }
 interface ScanStatus {
@@ -349,9 +356,13 @@ export default function DiscoveryScreen() {
 
           {failed && (
             <div className="ks-disc__failed" role="alert">
-              <div className="t">{failed.status === 'cancelled' ? 'Scan cancelled' : 'Scan failed'}</div>
+              <div className="t">
+                {failed.status === 'cancelled' ? 'Scan cancelled' : 'Scan failed'}
+                {/* dated, so a weeks-old failure never reads as breaking news */}
+                {failed.completedAt && ago(failed.completedAt) !== 'now' && <span className="when"> · {ago(failed.completedAt)} ago</span>}
+              </div>
               <div className="s">
-                {failed.errorMessage || (failed.status === 'cancelled' ? 'Stopped before it finished; findings below are from earlier scans.' : 'The scan did not finish. Findings below are from earlier scans.')}
+                {humanScanError(failed.errorMessage) || (failed.status === 'cancelled' ? 'Stopped before it finished; findings below are from earlier scans.' : 'The scan did not finish. Findings below are from earlier scans.')}
               </div>
               {/* retry only when it can succeed: this button re-runs the
                   server-path scan, which needs a path. Repo-scan failures
