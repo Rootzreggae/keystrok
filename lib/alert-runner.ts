@@ -5,7 +5,7 @@
 import { prisma } from './prisma.ts'
 import { decryptSecret } from './crypto.ts'
 import { assertSafePlatformUrl } from './ssrf.ts'
-import { incidentFor, summaryText, recoveryText, buildRequest, deliver, emailForAlert, type AlertableKey, type ChannelConfig } from './alerting.ts'
+import { incidentFor, summaryText, recoveryText, buildRequest, deliver, emailForAlert, type AlertableKey, type AlertKind, type ChannelConfig } from './alerting.ts'
 import { sendMail } from './mailer.ts'
 
 async function loadChannel(): Promise<{ cfg: ChannelConfig; baseUrl?: string } | null> {
@@ -89,7 +89,7 @@ export async function runAlerts(keys: AlertableKey[]): Promise<{ fired: number; 
       resolveIds.push(...open.filter((e) => e.kind !== inc.kind).map((e) => e.id))
     } else if (open.length) {
       // key left every incident state → resolve + send one recovery
-      const res = await send(cfg, recoveryText(k, open[0].kind as 'live_and_used', baseUrl))
+      const res = await send(cfg, recoveryText(k, open[0].kind as AlertKind, baseUrl))
       lastOk = res
       resolveIds.push(...open.map((e) => e.id))
       resolved++

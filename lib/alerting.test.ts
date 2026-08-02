@@ -2,7 +2,7 @@
 // Covers the parts with real branches: which incident a key is in, and the
 // per-channel request shaping (the whole vendor surface).
 import assert from 'node:assert/strict'
-import { incidentFor, buildRequest, summaryText, type AlertableKey } from './alerting.ts'
+import { incidentFor, buildRequest, summaryText, recoveryText, type AlertableKey } from './alerting.ts'
 
 const NOW = new Date('2026-07-06T00:00:00Z')
 const daysAgo = (d: number) => new Date(NOW.getTime() - d * 86400000)
@@ -26,6 +26,33 @@ assert.equal(incidentFor(base({ foundAt: daysAgo(2) }), NOW), null) // still ins
 assert.equal(incidentFor(base({ foundAt: daysAgo(40), rotatedAt: daysAgo(1) }), NOW), null) // rotated -> resolved, no page
 // precedence: live_and_used (fresh) outranks sla_crossed for the same overdue key
 assert.equal(incidentFor(base({ foundAt: daysAgo(40), liveStatus: 'live', liveCheckedAt: daysAgo(1), lastUsedAt: daysAgo(1) }), NOW)?.kind, 'live_and_used')
+
+// due_soon: inside the severity-scaled lead window, advance notice fires.
+// critical: 7d window, 2d lead — found 5d ago = due in 2d
+assert.equal(incidentFor(base({ foundAt: daysAgo(5) }), NOW)?.kind, 'due_soon')
+assert.equal(incidentFor(base({ foundAt: daysAgo(5) }), NOW)?.severity, 'critical') // mirrors the key
+assert.equal(incidentFor(base({ foundAt: daysAgo(4) }), NOW), null) // due in 3d, outside the 2d lead
+// high: 30d window, 5d lead — boundary on both sides
+assert.equal(incidentFor(base({ foundAt: daysAgo(25), severity: 'high' }), NOW)?.kind, 'due_soon') // due in 5d
+assert.equal(incidentFor(base({ foundAt: daysAgo(24), severity: 'high' }), NOW), null) // due in 6d
+// past the deadline it's sla_crossed, never due_soon (silent handoff is the runner's job)
+assert.equal(incidentFor(base({ foundAt: daysAgo(8) }), NOW)?.kind, 'sla_crossed')
+// due today (0d left): neither — the reminder's premise "you still have time" is false
+assert.equal(incidentFor(base({ foundAt: daysAgo(7) }), NOW), null)
+// rotated inside the lead window -> resolved, nothing fires
+assert.equal(incidentFor(base({ foundAt: daysAgo(5), rotatedAt: daysAgo(1) }), NOW), null)
+// riskStart anchoring: an attested earlier exposure pulls the reminder in with the deadline
+assert.equal(incidentFor(base({ foundAt: daysAgo(1), exposedAt: daysAgo(5) }), NOW)?.kind, 'due_soon')
+// exposure that consumed the whole band skips due_soon entirely: straight to overdue
+assert.equal(incidentFor(base({ foundAt: daysAgo(1), exposedAt: daysAgo(10) }), NOW)?.kind, 'sla_crossed')
+// the reminder reads as notice (amber), incidents page red
+const remind = incidentFor(base({ foundAt: daysAgo(5) }), NOW)!
+assert.ok(summaryText(base({}), remind).startsWith('🟡'))
+assert.ok(summaryText(base({}), remind).includes('rotation due in 2d'))
+assert.ok(summaryText(base({}), incidentFor(base({ foundAt: daysAgo(40) }), NOW)!).startsWith('🔴'))
+// recovery copy: rotated-ahead-of-deadline, never the sla_crossed line
+assert.ok(recoveryText(base({}), 'due_soon').includes('rotated ahead of its deadline'))
+assert.ok(!recoveryText(base({}), 'due_soon').includes('back inside its window'))
 
 // buildRequest: telegram needs token + chat_id; webhook needs a url.
 const inc = incidentFor(base({ liveStatus: 'live', lastUsedAt: daysAgo(1), liveCheckedAt: daysAgo(1) }), NOW)!
